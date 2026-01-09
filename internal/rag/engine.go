@@ -69,14 +69,17 @@ func (e *Engine) Query(query string, limit int) (*RAGResult, error) {
 
 	context := strings.Join(contextParts, "\n---\n")
 
-	// Analyze with LLM
+	// Try LLM analysis, but always have a good fallback
 	resp, err := e.llmClient.Analyze(query, context)
-	if err != nil {
-		log.Printf("[RAG] LLM analyze error: %v", err)
-		// Fallback to basic response
+	if err != nil || resp == nil || resp.Analysis == "" {
+		if err != nil {
+			log.Printf("[RAG] LLM analyze error: %v", err)
+		}
+		// Generate smart answer from sources
 		return &RAGResult{
-			Answer:  buildBasicAnswer(query, results),
-			Sources: sources,
+			Answer:           buildSmartAnswer(query, results),
+			Sources:          sources,
+			SuggestedQueries: generateSuggestions(query, results),
 		}, nil
 	}
 
@@ -103,22 +106,133 @@ func (e *Engine) GetStats() map[string]interface{} {
 	return stats
 }
 
-func buildBasicAnswer(query string, results []db.SearchResult) string {
+func buildSmartAnswer(query string, results []db.SearchResult) string {
 	if len(results) == 0 {
-		return "Aucun résultat trouvé."
+		return "Aucun résultat trouvé pour cette recherche."
 	}
 
-	var parts []string
-	parts = append(parts, fmt.Sprintf("J'ai trouvé %d résultat(s) pertinent(s):\n", len(results)))
+	queryLower := strings.ToLower(query)
+	var answer strings.Builder
 
+	// Analyze query intent
+	isWhoQuery := strings.Contains(queryLower, "who") || strings.Contains(queryLower, "qui")
+	isWhatQuery := strings.Contains(queryLower, "what") || strings.Contains(queryLower, "quoi") || strings.Contains(queryLower, "quel")
+	isConnectionQuery := strings.Contains(queryLower, "connection") || strings.Contains(queryLower, "associate") || strings.Contains(queryLower, "lien")
+
+	// Build contextual intro
+	topResult := results[0]
+	if isWhoQuery || isConnectionQuery {
+		answer.WriteString(fmt.Sprintf("Based on the documents, here's what I found about **%s**:\n\n", extractMainSubject(query)))
+	} else if isWhatQuery {
+		answer.WriteString(fmt.Sprintf("Here's the relevant information from %d source(s):\n\n", len(results)))
+	} else {
+		answer.WriteString(fmt.Sprintf("Found %d relevant document(s). Top result: **%s**\n\n", len(results), topResult.Title))
+	}
+
+	// Extract key facts from top results
 	for i, r := range results {
-		parts = append(parts, fmt.Sprintf(
-			"%d. **%s** [#%s]\n   %s\n",
-			i+1, r.Title, r.DocID, truncate(r.Excerpt, 150),
-		))
+		if i >= 3 {
+			break
+		}
+
+		// Extract meaningful excerpts
+		excerpt := cleanExcerpt(r.Excerpt)
+		if len(excerpt) > 300 {
+			excerpt = excerpt[:300] + "..."
+		}
+
+		answer.WriteString(fmt.Sprintf("**[%d] %s**\n", i+1, r.Title))
+		answer.WriteString(fmt.Sprintf("%s\n\n", excerpt))
 	}
 
-	return strings.Join(parts, "\n")
+	if len(results) > 3 {
+		answer.WriteString(fmt.Sprintf("_...and %d more sources available._\n", len(results)-3))
+	}
+
+	return answer.String()
+}
+
+func extractMainSubject(query string) string {
+	// Extract the main subject from the query
+	words := strings.Fields(query)
+	var subjects []string
+
+	skipWords := map[string]bool{
+		"who": true, "what": true, "where": true, "when": true, "how": true,
+		"is": true, "are": true, "was": true, "were": true, "the": true,
+		"a": true, "an": true, "of": true, "to": true, "in": true,
+		"qui": true, "quoi": true, "est": true, "sont": true, "le": true, "la": true,
+	}
+
+	for _, w := range words {
+		wLower := strings.ToLower(w)
+		if !skipWords[wLower] && len(w) > 2 {
+			// Capitalize proper nouns
+			subjects = append(subjects, strings.Title(strings.ToLower(w)))
+		}
+	}
+
+	if len(subjects) == 0 {
+		return "this topic"
+	}
+	if len(subjects) > 3 {
+		subjects = subjects[:3]
+	}
+	return strings.Join(subjects, " ")
+}
+
+func cleanExcerpt(excerpt string) string {
+	// Remove markdown bold markers used for highlighting
+	excerpt = strings.ReplaceAll(excerpt, "**", "")
+	// Clean up extra whitespace
+	excerpt = strings.Join(strings.Fields(excerpt), " ")
+	return excerpt
+}
+
+func generateSuggestions(query string, results []db.SearchResult) []string {
+	var suggestions []string
+
+	if len(results) == 0 {
+		return suggestions
+	}
+
+	// Extract entities from results to suggest follow-up queries
+	entities := make(map[string]bool)
+
+	for _, r := range results {
+		titleWords := strings.Fields(r.Title)
+		for _, w := range titleWords {
+			if len(w) > 3 && w[0] >= 'A' && w[0] <= 'Z' {
+				entities[w] = true
+			}
+		}
+	}
+
+	// Generate suggestions based on found entities
+	for entity := range entities {
+		if len(suggestions) >= 3 {
+			break
+		}
+		if !strings.Contains(strings.ToLower(query), strings.ToLower(entity)) {
+			suggestions = append(suggestions, fmt.Sprintf("What is %s's connection to this case?", entity))
+		}
+	}
+
+	// Add generic follow-ups if needed
+	genericFollowups := []string{
+		"What evidence exists?",
+		"Who else was involved?",
+		"What are the key dates?",
+	}
+
+	for _, g := range genericFollowups {
+		if len(suggestions) >= 3 {
+			break
+		}
+		suggestions = append(suggestions, g)
+	}
+
+	return suggestions
 }
 
 func truncate(s string, maxLen int) string {
