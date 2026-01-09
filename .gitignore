@@ -1,15 +1,29 @@
+# Secrets
 .env
 *.pem
 *.key
+
+# Python
 __pycache__/
 *.pyc
 venv/
 .venv/
+
+# Data (large files)
 *.db
 *.sqlite
 *.gguf
+exports/
+
+# IDE
 .vscode/
 .idea/
 .DS_Store
-exports/
-exports/
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
+*.bak
