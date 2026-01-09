@@ -218,6 +218,150 @@
             animation: pulse 2s infinite;
         }
 
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+        }
+
+        .footer-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .footer-sep {
+            color: var(--text-muted);
+        }
+
+        .footer-notice {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        /* License Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-box {
+            position: relative;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            color: var(--accent);
+        }
+
+        .modal-header button {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 8px;
+        }
+
+        .modal-header button:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .the-code {
+            font-style: italic;
+            color: var(--text);
+            border-left: 3px solid var(--accent);
+            padding: 12px 16px;
+            margin: 0 0 12px 0;
+            background: var(--accent-glow);
+            line-height: 1.6;
+        }
+
+        .code-source {
+            color: var(--text-dim);
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-body h3 {
+            color: var(--accent);
+            font-size: 14px;
+            margin: 16px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-body p {
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .license-footer {
+            display: flex;
+            gap: 16px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .license-footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .license-footer a:hover {
+            text-decoration: underline;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
@@ -535,7 +679,55 @@
                 Data Sources
             </button>
         </div>
+
+        <!-- Sidebar Footer - License & Sources -->
+        <div class="sidebar-footer">
+            <div class="footer-links">
+                <a href="#" onclick="showLicense(); return false;">License & The Code</a>
+                <span class="footer-sep">·</span>
+                <a href="https://github.com/prism-iq/pwnd" target="_blank">GitHub</a>
+            </div>
+            <div class="footer-notice">
+                MIT License · Evidence-based OSINT
+            </div>
+        </div>
     </aside>
+
+    <!-- License Modal -->
+    <div id="license-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="hideLicense()"></div>
+        <div class="modal-box license-box">
+            <div class="modal-header">
+                <h2>The Code</h2>
+                <button onclick="hideLicense()">×</button>
+            </div>
+            <div class="modal-body">
+                <blockquote class="the-code">
+                    "Never violate a woman, nor harm a child.<br>
+                    Do not lie, cheat or steal. These things are for lesser men.<br>
+                    Protect the weak against the evil strong.<br>
+                    Never allow thoughts of gain to lead you into the pursuit of evil.<br>
+                    Evil must be fought wherever it is found."
+                </blockquote>
+                <p class="code-source">— David Gemmell, The Drenai Code</p>
+
+                <h3>Purpose</h3>
+                <p>This is an investigative tool for OSINT research, evidence analysis, and criminal pattern detection. All findings cite source documents by ID.</p>
+
+                <h3>License</h3>
+                <p>MIT License · Copyright (c) 2025 Flow</p>
+                <p>All evidence includes SHA256 verification, source citations, and timestamps.</p>
+
+                <h3>Sourcing</h3>
+                <p>Every claim references emails by <strong>#ID</strong>. Click any source ID to view the original document. No fabrication. No invention. Evidence or speculation—clearly marked.</p>
+
+                <div class="license-footer">
+                    <a href="https://github.com/prism-iq/pwnd/blob/main/LICENSE" target="_blank">Full License</a>
+                    <a href="#" onclick="showSources(); hideLicense(); return false;">View Data Sources</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="main">
         <header>
@@ -1037,6 +1229,26 @@
             };
             return badges[method] || '';
         }
+
+        // ===================
+        // License Modal
+        // ===================
+        function showLicense() {
+            document.getElementById('license-modal').classList.remove('hidden');
+        }
+
+        function hideLicense() {
+            document.getElementById('license-modal').classList.add('hidden');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideLicense();
+                hideTimeline();
+                hideSources();
+            }
+        });
     </script>
 </body>
 </html>
