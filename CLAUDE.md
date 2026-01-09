@@ -384,3 +384,9 @@ git add -A && git commit -m "[type]: description" && git push
 ```
 Types: feat, fix, docs, refactor, chore
 
+
+---
+
+## STANDING PERMISSIONS
+
+**UI Improvements**: Autorisé à améliorer l'interface graphique (static/index.html, static/style.css, static/app.js) sans demander confirmation, dès que nécessaire.
