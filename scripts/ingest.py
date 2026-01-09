@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/rag/venv/bin/python3
 """
 L Auto-Ingest System
 Drop files in /opt/rag/data/inbox/, this script processes them into the database.
