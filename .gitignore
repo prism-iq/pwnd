@@ -28,3 +28,7 @@ logs/
 *.tmp
 *.bak
 service.env
+
+# Data directories
+data/
+*.tar.gz

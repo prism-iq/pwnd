@@ -640,6 +640,323 @@
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+        /* Sources View */
+        .sources-container {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        .sources-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sources-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .sources-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .source-card {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            transition: all 0.2s;
+        }
+
+        .source-card:hover {
+            background: var(--bg-hover);
+        }
+
+        .source-card[data-type="email"] {
+            border-left-color: #3ba55c;
+        }
+
+        .source-card[data-type="court_doc"] {
+            border-left-color: #faa61a;
+        }
+
+        .source-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .source-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .source-title-section {
+            flex: 1;
+        }
+
+        .source-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 6px 0;
+            text-transform: capitalize;
+        }
+
+        .source-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--bg-hover);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .method-badge.leak {
+            background: rgba(237, 66, 69, 0.2);
+            color: #ed4245;
+        }
+
+        .method-badge.court {
+            background: rgba(250, 166, 26, 0.2);
+            color: #faa61a;
+        }
+
+        .method-badge.pacer {
+            background: rgba(88, 101, 242, 0.2);
+            color: #5865f2;
+        }
+
+        .method-badge.foia {
+            background: rgba(59, 165, 92, 0.2);
+            color: #3ba55c;
+        }
+
+        .source-origin {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .source-origin strong {
+            color: var(--text-dim);
+        }
+
+        .source-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .source-stat {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .source-stat strong {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-right: 4px;
+        }
+
+        .source-dates {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .source-notes {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Ingest */
+        .ingest-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ingest-icon {
+            font-size: 16px;
+            font-weight: bold;
+            color: #3ba55c;
+        }
+
+        .ingest-box {
+            max-width: 500px;
+        }
+
+        .ingest-info {
+            margin-bottom: 20px;
+        }
+
+        .ingest-info code {
+            background: var(--bg-dark);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .ingest-formats {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+
+        .ingest-pending {
+            background: var(--bg-dark);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .pending-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .ingest-progress {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3ba55c, #57f287);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .progress-log {
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: var(--bg-dark);
+            padding: 12px;
+            border-radius: 6px;
+            color: var(--text-dim);
+        }
+
+        .progress-log .log-entry {
+            padding: 2px 0;
+        }
+
+        .progress-log .log-entry.success {
+            color: #3ba55c;
+        }
+
+        .progress-log .log-entry.skip {
+            color: var(--text-muted);
+        }
+
+        .progress-log .log-entry.error {
+            color: #ed4245;
+        }
+
+        .ingest-result {
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .ingest-result.success {
+            background: rgba(59, 165, 92, 0.2);
+            color: #3ba55c;
+        }
+
+        .ingest-result.error {
+            background: rgba(237, 66, 69, 0.2);
+            color: #ed4245;
+        }
+
+        .ingest-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ingest-start-btn {
+            flex: 1;
+            padding: 12px;
+            background: #3ba55c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ingest-start-btn:hover {
+            background: #2d8049;
+        }
+
+        .ingest-start-btn:disabled {
+            background: var(--text-dim);
+            cursor: not-allowed;
+        }
+
+        .ingest-refresh-btn {
+            padding: 12px 20px;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ingest-refresh-btn:hover {
+            border-color: var(--accent);
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -678,6 +995,10 @@
             <button class="new-btn" style="margin-top: 8px; border-color: var(--text-muted);" onclick="showSources()">
                 Data Sources
             </button>
+            <button class="new-btn ingest-btn" style="margin-top: 8px; border-color: #3ba55c;" onclick="showIngest()">
+                <span class="ingest-icon">+</span> Ingest Documents
+            </button>
+            <div class="ingest-status" id="ingest-status" style="display: none;"></div>
         </div>
 
         <!-- Sidebar Footer - License & Sources -->
@@ -724,6 +1045,46 @@
                 <div class="license-footer">
                     <a href="https://github.com/prism-iq/pwnd/blob/main/LICENSE" target="_blank">Full License</a>
                     <a href="#" onclick="showSources(); hideLicense(); return false;">View Data Sources</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingest Modal -->
+    <div id="ingest-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="hideIngest()"></div>
+        <div class="modal-box ingest-box">
+            <div class="modal-header">
+                <h2>Document Ingestion</h2>
+                <button onclick="hideIngest()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="ingest-info">
+                    <p>Drop documents in <code>/opt/rag/data/inbox/</code></p>
+                    <p class="ingest-formats">Supported: .txt, .eml files</p>
+                </div>
+
+                <div class="ingest-pending" id="ingest-pending">
+                    <span class="pending-count">0</span> files pending
+                </div>
+
+                <div class="ingest-progress" id="ingest-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">Starting...</div>
+                    <div class="progress-log" id="progress-log"></div>
+                </div>
+
+                <div class="ingest-result" id="ingest-result" style="display: none;"></div>
+
+                <div class="ingest-actions">
+                    <button class="ingest-start-btn" id="ingest-start-btn" onclick="startIngest()">
+                        Start Ingestion
+                    </button>
+                    <button class="ingest-refresh-btn" onclick="refreshIngestStatus()">
+                        Refresh
+                    </button>
                 </div>
             </div>
         </div>
@@ -1241,12 +1602,118 @@
             document.getElementById('license-modal').classList.add('hidden');
         }
 
+        // ===================
+        // Ingest Modal
+        // ===================
+        let ingestEventSource = null;
+
+        function showIngest() {
+            document.getElementById('ingest-modal').classList.remove('hidden');
+            refreshIngestStatus();
+        }
+
+        function hideIngest() {
+            document.getElementById('ingest-modal').classList.add('hidden');
+            if (ingestEventSource) {
+                ingestEventSource.close();
+                ingestEventSource = null;
+            }
+        }
+
+        async function refreshIngestStatus() {
+            try {
+                const response = await fetch('/api/ingest/status');
+                const data = await response.json();
+                const pendingEl = document.querySelector('.pending-count');
+                if (pendingEl) {
+                    pendingEl.textContent = data.pending;
+                }
+                const startBtn = document.getElementById('ingest-start-btn');
+                if (startBtn) {
+                    startBtn.disabled = data.pending === 0;
+                }
+            } catch (e) {
+                console.error('Failed to get ingest status:', e);
+            }
+        }
+
+        function startIngest() {
+            const progressEl = document.getElementById('ingest-progress');
+            const resultEl = document.getElementById('ingest-result');
+            const logEl = document.getElementById('progress-log');
+            const fillEl = document.getElementById('progress-fill');
+            const textEl = document.getElementById('progress-text');
+            const startBtn = document.getElementById('ingest-start-btn');
+
+            // Reset UI
+            progressEl.style.display = 'block';
+            resultEl.style.display = 'none';
+            logEl.innerHTML = '';
+            fillEl.style.width = '0%';
+            textEl.textContent = 'Starting...';
+            startBtn.disabled = true;
+
+            // Start SSE connection
+            ingestEventSource = new EventSource('/api/ingest?source=inbox_upload');
+
+            ingestEventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'start') {
+                    textEl.textContent = `Processing ${data.total} files...`;
+                }
+                else if (data.type === 'progress') {
+                    const pct = (data.current / data.total) * 100;
+                    fillEl.style.width = pct + '%';
+                    textEl.textContent = `${data.current}/${data.total}: ${data.file}`;
+
+                    const statusClass = data.status === 'ingested' ? 'success' :
+                                       data.status === 'skipped' ? 'skip' : 'error';
+                    const logLine = document.createElement('div');
+                    logLine.className = 'log-entry ' + statusClass;
+                    logLine.textContent = `[${data.status.toUpperCase()}] ${data.file}`;
+                    logEl.appendChild(logLine);
+                    logEl.scrollTop = logEl.scrollHeight;
+                }
+                else if (data.type === 'complete') {
+                    fillEl.style.width = '100%';
+                    textEl.textContent = 'Complete';
+
+                    resultEl.style.display = 'block';
+                    resultEl.className = 'ingest-result success';
+                    resultEl.innerHTML = `<strong>${data.processed}</strong> ingested · <strong>${data.skipped}</strong> skipped · <strong>${data.errors}</strong> errors`;
+
+                    startBtn.disabled = false;
+                    refreshIngestStatus();
+
+                    // Refresh stats
+                    fetch('/api/stats').then(r => r.json()).then(stats => {
+                        document.getElementById('stats').textContent = `${stats.sources?.toLocaleString() || '13,009'} emails`;
+                    });
+
+                    ingestEventSource.close();
+                    ingestEventSource = null;
+                }
+            };
+
+            ingestEventSource.onerror = (e) => {
+                console.error('Ingest SSE error:', e);
+                resultEl.style.display = 'block';
+                resultEl.className = 'ingest-result error';
+                resultEl.textContent = 'Connection error';
+                startBtn.disabled = false;
+                ingestEventSource.close();
+                ingestEventSource = null;
+            };
+        }
+
         // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 hideLicense();
                 hideTimeline();
                 hideSources();
+                hideIngest();
             }
         });
     </script>

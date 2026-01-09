@@ -291,6 +291,43 @@ async def get_sources():
     return sources
 
 
+# Ingest
+@router.get("/api/ingest")
+async def ingest_files(source: str = "inbox_upload"):
+    """Ingest files from inbox with SSE progress"""
+    from scripts.ingest import ingest_with_progress
+
+    async def event_generator():
+        async for event in ingest_with_progress(source):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+
+@router.get("/api/ingest/status")
+async def ingest_status():
+    """Get inbox status"""
+    from pathlib import Path
+    inbox = Path("/opt/rag/data/inbox")
+    inbox.mkdir(parents=True, exist_ok=True)
+
+    txt_files = list(inbox.rglob('*.txt'))
+    eml_files = list(inbox.rglob('*.eml'))
+
+    return {
+        "pending": len(txt_files) + len(eml_files),
+        "txt_files": len(txt_files),
+        "eml_files": len(eml_files),
+        "inbox_path": str(inbox)
+    }
+
+
 # Timeline
 @router.get("/api/timeline")
 async def get_timeline(person: Optional[str] = None):
