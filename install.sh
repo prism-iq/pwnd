@@ -70,23 +70,34 @@ pip install -r requirements.txt
 echo -e "${GREEN}[5/8]${NC} Checking Phi-3 model..."
 MODEL_DIR="$INSTALL_DIR/llm"
 MODEL_FILE="$MODEL_DIR/Phi-3-mini-4k-instruct-q4.gguf"
-MODEL_URL="https://github.com/prism-iq/pwnd/releases/download/v1.0/Phi-3-mini-4k-instruct-q4.gguf"
+RELEASE_URL="https://github.com/prism-iq/pwnd/releases/download/v1.0"
 
 mkdir -p "$MODEL_DIR"
 
 if [ -f "$MODEL_FILE" ]; then
     echo -e "  Model already exists: ${YELLOW}$(du -h "$MODEL_FILE" | cut -f1)${NC}"
 else
-    echo -e "  Downloading Phi-3 model (2.3GB)..."
-    echo -e "  From: ${BLUE}$MODEL_URL${NC}"
+    echo -e "  Downloading Phi-3 model (2.3GB in 2 parts)..."
     echo ""
-    curl -L -# -o "$MODEL_FILE" "$MODEL_URL"
+
+    # Download part 1
+    echo -e "  ${BLUE}[Part 1/2]${NC}"
+    curl -L -# -o "$MODEL_DIR/model.partaa" "$RELEASE_URL/Phi-3-mini-4k-instruct-q4.gguf.partaa"
+
+    # Download part 2
+    echo -e "  ${BLUE}[Part 2/2]${NC}"
+    curl -L -# -o "$MODEL_DIR/model.partab" "$RELEASE_URL/Phi-3-mini-4k-instruct-q4.gguf.partab"
+
+    # Reassemble
+    echo -e "  Reassembling model..."
+    cat "$MODEL_DIR"/model.part* > "$MODEL_FILE"
+    rm -f "$MODEL_DIR"/model.part*
+
     echo ""
     if [ -f "$MODEL_FILE" ]; then
         echo -e "  ${GREEN}✓${NC} Downloaded: ${YELLOW}$(du -h "$MODEL_FILE" | cut -f1)${NC}"
     else
         echo -e "${RED}Error: Failed to download model${NC}"
-        echo "Download manually from: $MODEL_URL"
         exit 1
     fi
 fi
