@@ -20,7 +20,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Detect OS
-echo -e "${GREEN}[1/7]${NC} Detecting operating system..."
+echo -e "${GREEN}[1/8]${NC} Detecting operating system..."
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$ID
@@ -31,15 +31,15 @@ else
 fi
 
 # Install system dependencies
-echo -e "${GREEN}[2/7]${NC} Installing system dependencies..."
+echo -e "${GREEN}[2/8]${NC} Installing system dependencies..."
 case $OS in
     arch|manjaro)
         pacman -Syu --noconfirm
-        pacman -S --noconfirm python python-pip sqlite caddy
+        pacman -S --noconfirm python python-pip sqlite caddy curl
         ;;
     ubuntu|debian)
         apt-get update
-        apt-get install -y python3 python3-pip python3-venv sqlite3 caddy
+        apt-get install -y python3 python3-pip python3-venv sqlite3 caddy curl
         # Create python symlink if needed
         if ! command -v python &> /dev/null; then
             ln -s /usr/bin/python3 /usr/bin/python
@@ -57,17 +57,42 @@ INSTALL_DIR=$(pwd)
 echo -e "  Install directory: ${YELLOW}$INSTALL_DIR${NC}"
 
 # Create virtual environment
-echo -e "${GREEN}[3/7]${NC} Creating Python virtual environment..."
+echo -e "${GREEN}[3/8]${NC} Creating Python virtual environment..."
 python3 -m venv venv
 source venv/bin/activate
 
 # Install Python dependencies
-echo -e "${GREEN}[4/7]${NC} Installing Python packages..."
+echo -e "${GREEN}[4/8]${NC} Installing Python packages..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Download Phi-3 model
+echo -e "${GREEN}[5/8]${NC} Checking Phi-3 model..."
+MODEL_DIR="$INSTALL_DIR/llm"
+MODEL_FILE="$MODEL_DIR/Phi-3-mini-4k-instruct-q4.gguf"
+MODEL_URL="https://github.com/prism-iq/pwnd/releases/download/v1.0/Phi-3-mini-4k-instruct-q4.gguf"
+
+mkdir -p "$MODEL_DIR"
+
+if [ -f "$MODEL_FILE" ]; then
+    echo -e "  Model already exists: ${YELLOW}$(du -h "$MODEL_FILE" | cut -f1)${NC}"
+else
+    echo -e "  Downloading Phi-3 model (2.3GB)..."
+    echo -e "  From: ${BLUE}$MODEL_URL${NC}"
+    echo ""
+    curl -L -# -o "$MODEL_FILE" "$MODEL_URL"
+    echo ""
+    if [ -f "$MODEL_FILE" ]; then
+        echo -e "  ${GREEN}✓${NC} Downloaded: ${YELLOW}$(du -h "$MODEL_FILE" | cut -f1)${NC}"
+    else
+        echo -e "${RED}Error: Failed to download model${NC}"
+        echo "Download manually from: $MODEL_URL"
+        exit 1
+    fi
+fi
+
 # Setup database directories
-echo -e "${GREEN}[5/7]${NC} Setting up databases..."
+echo -e "${GREEN}[6/8]${NC} Setting up databases..."
 mkdir -p db
 
 # Create sessions database with schema
@@ -90,11 +115,11 @@ if [ ! -f "db/graph.db" ]; then
 fi
 
 # Setup systemd services
-echo -e "${GREEN}[6/7]${NC} Creating systemd services..."
+echo -e "${GREEN}[7/8]${NC} Creating systemd services..."
 
 cat > /etc/systemd/system/l-llm.service << EOF
 [Unit]
-Description=L Investigation LLM Server (Mistral 7B)
+Description=L Investigation LLM Server (Phi-3)
 After=network.target
 
 [Service]
@@ -102,7 +127,7 @@ Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR
 Environment=PATH=$INSTALL_DIR/venv/bin:/usr/bin
-ExecStart=$INSTALL_DIR/venv/bin/python backend.py
+ExecStart=$INSTALL_DIR/venv/bin/python llm/backend.py
 Restart=always
 RestartSec=5
 
@@ -132,7 +157,7 @@ EOF
 systemctl daemon-reload
 
 # Configure Caddy
-echo -e "${GREEN}[7/7]${NC} Configuring Caddy web server..."
+echo -e "${GREEN}[8/8]${NC} Configuring Caddy web server..."
 
 # Create Caddyfile if doesn't exist
 if [ ! -f "Caddyfile" ]; then
@@ -174,19 +199,15 @@ echo -e "1. Create ${BLUE}.env${NC} file with your configuration:"
 echo "   cp .env.example .env"
 echo "   nano .env  # Add your API keys"
 echo ""
-echo -e "2. Download Mistral 7B model (if not present):"
-echo "   wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
-echo "   mv mistral-7b-instruct-v0.2.Q4_K_M.gguf models/"
+echo -e "2. Import your email data to ${BLUE}db/sources.db${NC}"
 echo ""
-echo -e "3. Import your email data to ${BLUE}db/sources.db${NC}"
+echo -e "3. Build graph database to ${BLUE}db/graph.db${NC}"
 echo ""
-echo -e "4. Build graph database to ${BLUE}db/graph.db${NC}"
-echo ""
-echo -e "5. Run the rebuild script:"
-echo "   ./scripts/rebuild.sh"
+echo -e "4. Run the rebuild script:"
+echo "   ./rebuild.sh"
 echo ""
 echo -e "${GREEN}Services installed (not started yet):${NC}"
-echo "  • l-llm.service  - Mistral LLM backend"
+echo "  • l-llm.service  - Phi-3 LLM backend"
 echo "  • l-api.service  - FastAPI application"
 echo "  • caddy.service  - Web server"
 echo ""
