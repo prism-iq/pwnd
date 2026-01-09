@@ -302,7 +302,7 @@ pub fn extract_all(text: &str) -> ExtractionResult {
     let start = std::time::Instant::now();
 
     // Run all extractions in parallel using rayon
-    let (dates, persons, orgs, amounts, locations, emails, phones, urls) = rayon::join(
+    let ((dates, persons), rest) = rayon::join(
         || rayon::join(
             || extract_dates(text),
             || extract_persons(text)
@@ -325,8 +325,7 @@ pub fn extract_all(text: &str) -> ExtractionResult {
         )
     );
 
-    let ((dates, persons), ((orgs, amounts), ((locations, emails), (phones, urls)))) =
-        (dates, (persons, ((orgs, amounts), ((locations, emails), (phones, urls)))));
+    let ((orgs, amounts), ((locations, emails), (phones, urls))) = rest;
 
     let total_count = dates.len() + persons.len() + orgs.len() + amounts.len() +
                       locations.len() + emails.len() + phones.len() + urls.len();

@@ -33,3 +33,20 @@ service.env
 data/
 *.tar.gz
 courtlistener-download
+
+# Build artifacts
+rust-extract/target/
+rust-extract/Cargo.lock
+go-gateway/l-gateway
+go-gateway/go.sum
+polyglot/cpp-core/build/
+polyglot/cpp-core/lib/*.so
+polyglot/go-brain/brain
+polyglot/go-brain/go.sum
+polyglot/node-api/dist/
+polyglot/node-api/node_modules/
+polyglot/svelte-ui/dist/
+polyglot/svelte-ui/node_modules/
+
+# Test files (keep templates)
+*.output

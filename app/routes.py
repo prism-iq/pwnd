@@ -49,12 +49,21 @@ async def stats():
     except:
         pass
 
+    # Cache stats
+    cache_stats = None
+    try:
+        from app.pipeline import _search_cache
+        cache_stats = _search_cache.stats()
+    except:
+        pass
+
     return {
         "nodes": nodes_count,
         "edges": edges_count,
         "sources": emails_count,
         "databases": ["sources", "graph", "scores", "audit", "sessions"],
-        "workers": worker_stats
+        "workers": worker_stats,
+        "cache": cache_stats
     }
 
 # Search
