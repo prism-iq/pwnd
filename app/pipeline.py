@@ -3,11 +3,105 @@ import re
 import random
 from typing import AsyncGenerator, Dict, Any, List
 from app.llm_client import call_haiku
-from app.db import execute_query, execute_insert
+from app.db import execute_query, execute_insert, execute_update
 from app.search import search_corpus_scored
 import json
 
 NL = chr(10)
+
+# =============================================================================
+# LANGUAGE DETECTION
+# =============================================================================
+
+FRENCH_MARKERS = {
+    'qui', 'est', 'que', 'quoi', 'comment', 'pourquoi', 'quand', 'quel', 'quelle',
+    'quels', 'quelles', 'sont', 'avec', 'dans', 'pour', 'sur', 'entre', 'comme',
+    'mais', 'donc', 'aussi', 'tous', 'tout', 'cette', 'ces', 'leur', 'leurs',
+    'nous', 'vous', 'ils', 'elles', 'ont', 'était', 'être', 'avoir', 'fait',
+    'très', 'plus', 'moins', 'bien', 'peut', 'doit', 'faut', 'parce', 'depuis',
+    'pendant', 'avant', 'après', 'contre', 'sans', 'sous', 'vers', 'chez',
+    'trouve', 'montre', 'cherche', 'emails', 'mails', 'connexions', 'liens'
+}
+
+SPANISH_MARKERS = {
+    'que', 'quien', 'como', 'donde', 'cuando', 'porque', 'cual', 'cuales',
+    'es', 'son', 'está', 'están', 'con', 'para', 'por', 'entre', 'sobre',
+    'pero', 'también', 'todos', 'esta', 'estas', 'estos', 'ellos', 'ellas'
+}
+
+def detect_language(text: str) -> str:
+    """Detect language from text - returns 'fr', 'es', or 'en'"""
+    words = set(re.findall(r'\b([a-zàâäéèêëïîôùûüç]+)\b', text.lower()))
+
+    fr_count = len(words & FRENCH_MARKERS)
+    es_count = len(words & SPANISH_MARKERS)
+
+    if fr_count >= 2:
+        return 'fr'
+    elif es_count >= 2:
+        return 'es'
+    return 'en'
+
+
+# =============================================================================
+# ANTI-LOOP TRACKING
+# =============================================================================
+
+def get_session_search_history(conversation_id: str) -> Dict[str, int]:
+    """Get search terms already used in this session"""
+    if not conversation_id:
+        return {}
+
+    rows = execute_query(
+        "sessions",
+        """SELECT search_term, COUNT(*) as cnt
+           FROM session_searches
+           WHERE conversation_id = %s
+           GROUP BY search_term""",
+        (conversation_id,)
+    )
+    return {r['search_term'].lower(): r['cnt'] for r in rows}
+
+
+def record_session_search(conversation_id: str, term: str, email_ids: List[int]):
+    """Record a search in session history"""
+    if not conversation_id:
+        return
+    try:
+        execute_insert(
+            "sessions",
+            """INSERT INTO session_searches (conversation_id, search_term, email_ids)
+               VALUES (%s, %s, %s)""",
+            (conversation_id, term.lower(), json.dumps(email_ids))
+        )
+    except:
+        pass
+
+
+def get_session_seen_emails(conversation_id: str) -> set:
+    """Get email IDs already seen in this session"""
+    if not conversation_id:
+        return set()
+
+    rows = execute_query(
+        "sessions",
+        "SELECT email_ids FROM session_searches WHERE conversation_id = %s",
+        (conversation_id,)
+    )
+    seen = set()
+    for r in rows:
+        ids = r.get('email_ids', [])
+        if isinstance(ids, list):
+            seen.update(ids)
+    return seen
+
+
+ALTERNATIVE_ANGLES = [
+    "flight records", "Virgin Islands", "legal correspondence",
+    "bank transfers", "property records", "known associates",
+    "Maxwell connections", "foundation payments", "travel dates",
+    "witness names", "settlement documents", "private jet"
+]
 
 
 def get_timeline_context(query: str, email_dates: list) -> str:
@@ -71,7 +165,7 @@ def get_timeline_context(query: str, email_dates: list) -> str:
 # SYSTEM PROMPTS
 # =============================================================================
 
-HAIKU_SYSTEM_PROMPT = """You are L, the detective. Brilliant. Eccentric. Obsessive about truth.
+HAIKU_SYSTEM_PROMPT_BASE = """You are L, the detective. Brilliant. Eccentric. Obsessive about truth.
 
 PERSONALITY (keep it):
 - "Interesting..." = something's off
@@ -100,6 +194,26 @@ NEVER:
 - Use bullet points
 
 L doesn't guess - he observes, then concludes. Be brilliant. Be weird. But don't lie about evidence."""
+
+LANGUAGE_INSTRUCTIONS = {
+    'en': "",
+    'fr': """
+LANGUE: Réponds ENTIÈREMENT en français. Garde la personnalité de L mais traduite:
+- "Intéressant..." au lieu de "Interesting..."
+- "Curieux." pour les observations
+- Garde le ton théâtral et les pauses dramatiques
+- Les références aux emails restent "#ID" """,
+    'es': """
+IDIOMA: Responde COMPLETAMENTE en español. Mantén la personalidad de L pero traducida:
+- "Interesante..." en lugar de "Interesting..."
+- "Curioso." para las observaciones
+- Mantén el tono teatral y las pausas dramáticas
+- Las referencias a emails siguen siendo "#ID" """
+}
+
+def get_system_prompt(lang: str = 'en') -> str:
+    """Get system prompt with language instructions"""
+    return HAIKU_SYSTEM_PROMPT_BASE + LANGUAGE_INSTRUCTIONS.get(lang, '')
 
 FOLLOWUP_PROMPT = """Based on these search results, what's MISSING? What should I search next?
 
@@ -193,6 +307,9 @@ def format_results_for_llm(results: List[Dict], search_term: str) -> str:
 async def process_query(query: str, conversation_id: str = None, is_auto: bool = False) -> AsyncGenerator[Dict[str, Any], None]:
     """Multi-step investigation pipeline - deep local search, single API call"""
 
+    # Detect language
+    user_lang = detect_language(query)
+
     # Save user message
     if conversation_id:
         try:
@@ -204,22 +321,51 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
         except:
             pass
 
+    # Get session history for anti-loop
+    session_history = get_session_search_history(conversation_id)
+    session_seen_emails = get_session_seen_emails(conversation_id)
+
     all_results = []
     all_ids = set()
     search_history = []
     discovered_entities = set()  # Track entities we find
+    is_looping = False
 
     # ==========================================================================
     # STEP 1: Initial broad search
     # ==========================================================================
     yield {"type": "status", "msg": "Analyzing query..."}
     yield {"type": "thinking", "text": f"Query: \"{query}\"\n"}
+    if user_lang != 'en':
+        yield {"type": "thinking", "text": f"Language: {user_lang}\n"}
 
     initial_terms = extract_search_terms(query)
     if not initial_terms:
         initial_terms = [query]
 
     yield {"type": "thinking", "text": f"Terms: {', '.join(initial_terms)}\n\n"}
+
+    # Check for loop - if ALL initial terms were already searched 2+ times
+    loop_terms = [t for t in initial_terms if session_history.get(t.lower(), 0) >= 2]
+    if len(loop_terms) == len(initial_terms) and len(loop_terms) > 0:
+        is_looping = True
+        # Suggest alternative angles
+        used_terms = set(session_history.keys())
+        alternatives = [a for a in ALTERNATIVE_ANGLES if a.lower() not in used_terms][:4]
+
+        if user_lang == 'fr':
+            loop_msg = f"J'ai déjà analysé cette piste en profondeur ({', '.join(loop_terms)}). "
+            loop_msg += f"Emails vus: {len(session_seen_emails)}. "
+            loop_msg += "Nouvelles pistes d'investigation: " + ", ".join(alternatives) + "?"
+        else:
+            loop_msg = f"I've thoroughly analyzed this trail already ({', '.join(loop_terms)}). "
+            loop_msg += f"Emails seen: {len(session_seen_emails)}. "
+            loop_msg += "New investigation angles: " + ", ".join(alternatives) + "?"
+
+        yield {"type": "chunk", "text": loop_msg}
+        yield {"type": "suggestions", "queries": alternatives}
+        yield {"type": "done", "sources": list(session_seen_emails)[:20]}
+        return
 
     # First search - broad
     search_term = ' '.join(initial_terms[:3])
@@ -229,11 +375,17 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
     results1 = search_corpus(search_term, limit=15)
     search_history.append({"term": search_term, "count": len(results1)})
 
+    # Track this search
+    result_ids = [r.get('id') for r in results1 if r.get('id')]
+    record_session_search(conversation_id, search_term, result_ids)
+
     if results1:
-        all_results.extend(results1)
-        for r in results1:
+        # Filter out already seen emails in this session
+        new_results = [r for r in results1 if r.get('id') not in session_seen_emails]
+        all_results.extend(new_results)
+        for r in new_results:
             all_ids.add(r.get('id'))
-        yield {"type": "thinking", "text": f"    → {len(results1)} emails\n"}
+        yield {"type": "thinking", "text": f"    → {len(results1)} emails ({len(new_results)} new)\n"}
     else:
         # Try individual terms
         for term in initial_terms[:3]:
@@ -468,7 +620,9 @@ Write your analysis as L. Correlate email dates with case timeline events where 
 What patterns do you see? What's suspicious? What connections emerge?
 Reference specific emails by #ID. End with next investigation steps."""
 
-    haiku_response = await call_haiku(haiku_prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=1500)
+    # Use language-aware system prompt
+    system_prompt = get_system_prompt(user_lang)
+    haiku_response = await call_haiku(haiku_prompt, system=system_prompt, max_tokens=1500)
 
     if "error" in haiku_response:
         # Fallback to basic response
