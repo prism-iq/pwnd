@@ -348,6 +348,7 @@ async function processQuery(query) {
         } else if (data.type === 'suggestions') {
             // Extract suggested queries for auto-investigation
             suggestedQueries = data.queries || [];
+            console.log('[Auto] Got suggestions:', suggestedQueries, 'autoEnabled:', autoInvestigateEnabled);
         } else if (data.type === 'debug' && data.haiku_analysis) {
             // Legacy: Extract suggested queries from debug
             suggestedQueries = data.haiku_analysis.suggested_queries || [];
@@ -362,7 +363,9 @@ async function processQuery(query) {
             enableInput();
 
             // Auto-investigation: trigger next query if enabled
+            console.log('[Auto] Check:', {autoInvestigateEnabled, suggestionsCount: suggestedQueries.length, autoQueryCount, maxAutoQueries});
             if (autoInvestigateEnabled && suggestedQueries.length > 0 && autoQueryCount < maxAutoQueries) {
+                console.log('[Auto] Triggering next query:', suggestedQueries[0]);
                 // Increment counter AFTER successful query
                 autoQueryCount++;
                 localStorage.setItem('autoQueryCount', autoQueryCount.toString());

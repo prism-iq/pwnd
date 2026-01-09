@@ -438,11 +438,15 @@ Reference specific emails by #ID. End with next investigation steps."""
         except:
             pass
 
-    # Suggest follow-ups
+    # Suggest follow-ups (exclude terms too similar to original query)
+    query_lower = query.lower()
     suggestions = []
     for s in search_history:
-        if s['count'] > 0:
-            suggestions.append(s['term'])
+        term = s['term']
+        term_lower = term.lower()
+        # Skip if term is same as query or query contains term
+        if s['count'] > 0 and term_lower not in query_lower and query_lower not in term_lower:
+            suggestions.append(term)
 
     if suggestions:
         yield {"type": "suggestions", "queries": suggestions[:4]}
