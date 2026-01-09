@@ -1,0 +1,14 @@
+[Unit]
+Description=L Investigation - Discord Bot
+After=network.target l-brain.service l-cells.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rag
+ExecStart=/opt/rag/venv/bin/python discord_bot.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/rag/.env
+
+[Install]
+WantedBy=multi-user.target

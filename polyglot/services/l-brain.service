@@ -1,0 +1,16 @@
+[Unit]
+Description=L Investigation - Go Brain (Decision Engine)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rag/polyglot/go-brain
+ExecStart=/opt/rag/polyglot/go-brain/brain
+Restart=always
+RestartSec=5
+Environment=BRAIN_PORT=8085
+Environment=PG_HOST=localhost
+Environment=PG_DATABASE=l_investigation
+
+[Install]
+WantedBy=multi-user.target

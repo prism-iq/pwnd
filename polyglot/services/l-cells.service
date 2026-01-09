@@ -1,0 +1,16 @@
+[Unit]
+Description=L Investigation - Rust Cells (Entity Extraction)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rag/rust-extract
+ExecStart=/opt/rag/rust-extract/target/release/rust-extract
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=info
+Environment=HOST=127.0.0.1
+Environment=PORT=9001
+
+[Install]
+WantedBy=multi-user.target

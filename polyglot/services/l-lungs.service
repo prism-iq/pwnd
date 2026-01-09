@@ -1,0 +1,15 @@
+[Unit]
+Description=L Investigation - Node.js Lungs (I/O Orchestrator)
+After=network.target l-brain.service l-cells.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rag/polyglot/node-api
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target

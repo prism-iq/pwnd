@@ -1,0 +1,68 @@
+# L Investigation - Caddy Reverse Proxy Configuration
+# Add this to your main Caddyfile or include it
+
+# API Gateway (Brain + Lungs)
+:8000 {
+    # Brain endpoints (Go)
+    handle /api/analyze* {
+        reverse_proxy localhost:8085
+    }
+    handle /api/investigate* {
+        reverse_proxy localhost:8085
+    }
+    handle /api/health/brain {
+        reverse_proxy localhost:8085/health
+    }
+
+    # Cells endpoints (Rust)
+    handle /api/extract* {
+        reverse_proxy localhost:9001
+    }
+    handle /api/health/cells {
+        reverse_proxy localhost:9001/health
+    }
+
+    # Veins endpoints (Python)
+    handle /api/query* {
+        reverse_proxy localhost:8002
+    }
+    handle /api/search* {
+        reverse_proxy localhost:8002
+    }
+    handle /api/health/veins {
+        reverse_proxy localhost:8002/health
+    }
+
+    # Lungs - WebSocket & SSE (Node.js)
+    handle /ws* {
+        reverse_proxy localhost:3000
+    }
+    handle /breathe* {
+        reverse_proxy localhost:3000
+    }
+    handle /socket.io* {
+        reverse_proxy localhost:3000
+    }
+
+    # Health aggregator
+    handle /api/health {
+        respond "OK" 200
+    }
+
+    # Default to Svelte frontend
+    handle {
+        root * /opt/rag/polyglot/svelte-ui/dist
+        try_files {path} /index.html
+        file_server
+    }
+
+    log {
+        output file /var/log/caddy/l-investigation.log
+        format json
+    }
+}
+
+# Alternative: Full domain config
+# pwnd.example.com {
+#     import /opt/rag/polyglot/services/Caddyfile.polyglot
+# }

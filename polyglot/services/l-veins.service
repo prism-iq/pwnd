@@ -1,0 +1,14 @@
+[Unit]
+Description=L Investigation - Python Veins (LLM Pipeline)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rag
+ExecStart=/opt/rag/venv/bin/python -m uvicorn app.pipeline:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/rag/.env
+
+[Install]
+WantedBy=multi-user.target
