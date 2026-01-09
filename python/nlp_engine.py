@@ -312,7 +312,7 @@ class NLPHandler(BaseHTTPRequestHandler):
 
 def main():
     host = '127.0.0.1'
-    port = 8002
+    port = 8003
 
     print(f"""
 ╔═══════════════════════════════════════════════════════════╗

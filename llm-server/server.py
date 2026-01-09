@@ -164,20 +164,22 @@ JSON:"""
                 query = data.get('query', '')
                 context = data.get('context', '')
 
-                prompt = f"""You are an OSINT analyst. Answer based ONLY on the provided context.
+                prompt = f"""You are HybridCore, an intelligent assistant specialized in document analysis and OSINT investigation.
 
 Question: {query}
 
-Context:
+Documents found:
 {context[:3000]}
 
 Instructions:
-1. Answer concisely based on the context
-2. Cite sources using [#ID] format where ID is the document number
-3. If info not in context, say "Not found in documents"
-4. Suggest 2 follow-up questions
+- Answer based on the documents above
+- Be concise and direct
+- Cite sources with [#1], [#2] etc.
+- Extract key entities (names, emails, IPs, dates, amounts)
+- If analyzing chat logs, identify participants and key events
+- Suggest 2 relevant follow-up questions
 
-Response:"""
+Answer:"""
 
                 with lock:
                     response = llm(

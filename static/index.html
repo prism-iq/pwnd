@@ -1,66 +1,608 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="HybridCore 2.0 - OSINT Investigation Platform">
-    <title>HybridCore 2.0</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chat.css">
+    <meta name="description" content="HybridCore - OSINT Investigation Platform with Hypothesis Engine">
+    <title>HybridCore Investigation</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-yellow: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #a371f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            grid-template-rows: 50px 1fr;
+            height: 100vh;
+        }
+        .header {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 .icon { color: var(--accent); }
+        .header-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .stat { display: flex; align-items: center; gap: 4px; }
+        .stat-value { color: var(--accent); font-weight: 600; }
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-section {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .quick-btn {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 4px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .quick-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+        .hypotheses-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        .hypothesis-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .hypothesis-card:hover { border-color: var(--text-secondary); }
+        .hypothesis-card.supported { border-left: 3px solid var(--accent-green); }
+        .hypothesis-card.refuted { border-left: 3px solid var(--accent-red); }
+        .hypothesis-card.pending { border-left: 3px solid var(--accent-yellow); }
+        .hypothesis-type {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        .hypothesis-statement {
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 8px 0;
+        }
+        .hypothesis-metrics {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            max-width: 85%;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+        .message.user {
+            margin-left: auto;
+            text-align: right;
+        }
+        .message-content {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .message.user .message-content {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant .message-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+            text-align: left;
+        }
+        .message-sources {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .source-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .source-tag:hover { color: var(--accent); border-color: var(--accent); }
+        .thinking {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: monospace;
+            white-space: pre-wrap;
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+        .input-box {
+            display: flex;
+            gap: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        .input-box:focus-within { border-color: var(--accent); }
+        .input-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+        .input-box button {
+            padding: 6px 14px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .input-box button:hover { opacity: 0.9; }
+        .input-box button:disabled { background: var(--bg-tertiary); color: var(--text-muted); }
+        .input-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .input-controls button {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .input-controls button:hover { color: var(--text-primary); }
+        .input-controls button.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .right-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 12px;
+        }
+        .panel-section {
+            margin-bottom: 16px;
+        }
+        .panel-section h4 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .entity-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        .entity-tag .type { color: var(--text-muted); font-size: 9px; }
+        .suggestions-list button {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 4px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .suggestions-list button:hover { color: var(--accent); border-color: var(--accent); }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .modal-body pre {
+            white-space: pre-wrap;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .close-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 20px; }
+    </style>
 </head>
 <body>
-    <div id="app">
+    <div class="app">
         <header class="header">
-            <h1>HybridCore <span class="version">2.0</span></h1>
-            <div class="stats" id="stats">
-                <span class="stat" id="stat-docs">--</span>
-                <span class="stat" id="stat-llm">--</span>
+            <h1><span class="icon">🔍</span> HybridCore Investigation</h1>
+            <div class="header-stats">
+                <div class="stat">Docs: <span class="stat-value" id="stat-docs">--</span></div>
+                <div class="stat">Entities: <span class="stat-value" id="stat-entities">--</span></div>
+                <div class="stat">Hypotheses: <span class="stat-value" id="stat-hypotheses">0</span></div>
             </div>
         </header>
 
-        <main class="main">
-            <div class="chat-container" id="chat-container">
-                <div class="messages" id="messages">
-                    <div class="message assistant">
-                        <div class="content">
-                            Bienvenue! Je suis HybridCore, votre assistant OSINT. Posez-moi une question sur vos documents.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="suggestions" id="suggestions"></div>
-
-                <form class="input-form" id="chat-form">
-                    <input
-                        type="text"
-                        id="message-input"
-                        placeholder="Posez votre question..."
-                        autocomplete="off"
-                        required
-                    >
-                    <button type="submit" id="send-btn">
-                        <svg viewBox="0 0 24 24" width="20" height="20">
-                            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                        </svg>
-                    </button>
-                </form>
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>Quick Queries</h3>
+                <button class="quick-btn" onclick="query('Main actors and connections')">Main actors</button>
+                <button class="quick-btn" onclick="query('Suspicious patterns')">Suspicious patterns</button>
+                <button class="quick-btn" onclick="query('Financial transactions')">Financial transactions</button>
+                <button class="quick-btn" onclick="query('Timeline of events')">Timeline</button>
             </div>
+            <div class="sidebar-section">
+                <h3>Hypotheses</h3>
+            </div>
+            <div class="hypotheses-list" id="hypotheses-list">
+                <p style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px;">
+                    No hypotheses yet.<br>Start investigating to generate hypotheses.
+                </p>
+            </div>
+        </aside>
 
-            <aside class="sidebar" id="sidebar">
-                <div class="sidebar-section">
-                    <h3>Sources</h3>
-                    <div class="sources-list" id="sources-list">
-                        <p class="empty">Aucune source pour l'instant</p>
+        <main class="main">
+            <div class="chat-area" id="chat-area">
+                <div class="message assistant">
+                    <div class="message-content">
+                        Welcome to HybridCore Investigation. Ask questions about your documents and I'll help you build hypotheses from the evidence.
                     </div>
                 </div>
-            </aside>
+            </div>
+            <div class="input-area">
+                <form class="input-box" id="chat-form">
+                    <input type="text" id="query-input" placeholder="Ask a question..." autocomplete="off">
+                    <button type="submit" id="send-btn">Send</button>
+                </form>
+                <div class="input-controls">
+                    <button id="stop-btn" onclick="stopQuery()">Stop</button>
+                    <button id="auto-btn" onclick="toggleAuto()">Auto-Investigate</button>
+                    <button onclick="generateHypotheses()">Generate Hypotheses</button>
+                </div>
+            </div>
         </main>
+
+        <aside class="right-panel">
+            <div class="panel-section">
+                <h4>Extracted Entities</h4>
+                <div id="entities-panel">
+                    <span class="entity-tag"><span class="type">-</span> No entities yet</span>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h4>Suggestions</h4>
+                <div class="suggestions-list" id="suggestions-list">
+                    <button onclick="query('Who are the main people involved?')">Who are the main people?</button>
+                    <button onclick="query('What are the key dates?')">What are the key dates?</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h4>Sources</h4>
+                <div id="sources-panel" style="font-size: 12px; color: var(--text-muted);">
+                    Click on source IDs to view documents
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <script src="/js/utils.js"></script>
-    <script src="/js/api.js"></script>
-    <script src="/js/sse.js"></script>
-    <script src="/js/chat.js"></script>
-    <script src="/js/app.js"></script>
+    <div class="modal" id="doc-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Document</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="modal-body"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let autoMode = false;
+        let currentEventSource = null;
+        let entities = [];
+        let hypotheses = [];
+
+        // API
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('stat-docs').textContent = data.sources || '--';
+                document.getElementById('stat-entities').textContent = data.nodes || '--';
+            } catch (e) {}
+        }
+
+        function query(q) {
+            document.getElementById('query-input').value = q;
+            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+
+        function stopQuery() {
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+        }
+
+        function toggleAuto() {
+            autoMode = !autoMode;
+            document.getElementById('auto-btn').classList.toggle('active', autoMode);
+        }
+
+        async function generateHypotheses() {
+            if (entities.length === 0) {
+                alert('No entities extracted yet. Run some queries first.');
+                return;
+            }
+            // Call hypothesis API (would need backend integration)
+            console.log('Generating hypotheses from', entities.length, 'entities');
+        }
+
+        function addMessage(role, content, sources = []) {
+            const chatArea = document.getElementById('chat-area');
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            
+            let html = `<div class="message-content">${content}</div>`;
+            if (sources.length > 0) {
+                html += '<div class="message-sources">';
+                sources.slice(0, 10).forEach(id => {
+                    html += `<span class="source-tag" onclick="viewDoc(${id})">#${id}</span>`;
+                });
+                if (sources.length > 10) {
+                    html += `<span class="source-tag">+${sources.length - 10} more</span>`;
+                }
+                html += '</div>';
+            }
+            
+            msg.innerHTML = html;
+            chatArea.appendChild(msg);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function updateThinking(text) {
+            let thinkingEl = document.querySelector('.thinking');
+            if (!thinkingEl) {
+                thinkingEl = document.createElement('div');
+                thinkingEl.className = 'thinking';
+                const chatArea = document.getElementById('chat-area');
+                chatArea.appendChild(thinkingEl);
+            }
+            thinkingEl.textContent += text;
+            thinkingEl.scrollTop = thinkingEl.scrollHeight;
+        }
+
+        function clearThinking() {
+            const el = document.querySelector('.thinking');
+            if (el) el.remove();
+        }
+
+        async function viewDoc(id) {
+            try {
+                const res = await fetch(`/api/documents/${id}`);
+                const doc = await res.json();
+                document.getElementById('modal-title').textContent = `Document #${id}`;
+                document.getElementById('modal-body').textContent = doc.content || JSON.stringify(doc, null, 2);
+                document.getElementById('doc-modal').classList.add('active');
+            } catch (e) {
+                alert('Failed to load document');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('doc-modal').classList.remove('active');
+        }
+
+        function updateEntities(newEntities) {
+            entities = [...entities, ...newEntities].slice(-50);
+            const panel = document.getElementById('entities-panel');
+            panel.innerHTML = entities.slice(-15).map(e => 
+                `<span class="entity-tag"><span class="type">${e.type || '?'}</span> ${e.value || e}</span>`
+            ).join('');
+        }
+
+        function updateSuggestions(suggestions) {
+            const list = document.getElementById('suggestions-list');
+            list.innerHTML = suggestions.map(s => 
+                `<button onclick="query('${s.replace(/'/g, "\\'")}')">${s}</button>`
+            ).join('');
+        }
+
+        // Chat form handler
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('query-input');
+            const q = input.value.trim();
+            if (!q) return;
+
+            input.value = '';
+            addMessage('user', q);
+            clearThinking();
+
+            // SSE connection
+            stopQuery();
+            currentEventSource = new EventSource(`/api/chat/stream?q=${encodeURIComponent(q)}`);
+            
+            let responseText = '';
+            let sources = [];
+
+            currentEventSource.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    
+                    if (data.type === 'thinking' || data.msg) {
+                        updateThinking(data.text || data.msg || '');
+                    }
+                    
+                    if (data.type === 'chunk') {
+                        responseText += data.text || '';
+                    }
+                    
+                    if (data.type === 'sources' || data.ids) {
+                        sources = data.sources || data.ids || [];
+                    }
+                    
+                    if (data.type === 'suggestions' || data.queries) {
+                        updateSuggestions(data.queries || data.suggestions || []);
+                    }
+
+                    if (data.type === 'entities') {
+                        updateEntities(data.entities || []);
+                    }
+                    
+                    if (data.type === 'done') {
+                        clearThinking();
+                        if (responseText) {
+                            addMessage('assistant', responseText, sources);
+                        }
+                        currentEventSource.close();
+                        currentEventSource = null;
+
+                        // Auto mode - continue with first suggestion
+                        if (autoMode) {
+                            const suggestions = document.querySelectorAll('.suggestions-list button');
+                            if (suggestions.length > 0) {
+                                setTimeout(() => suggestions[0].click(), 2000);
+                            }
+                        }
+                    }
+                } catch (err) {}
+            };
+
+            currentEventSource.onerror = () => {
+                clearThinking();
+                if (responseText) {
+                    addMessage('assistant', responseText, sources);
+                }
+                currentEventSource.close();
+                currentEventSource = null;
+            };
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') stopQuery();
+        });
+
+        // Init
+        fetchStats();
+        setInterval(fetchStats, 30000);
+    </script>
 </body>
 </html>
