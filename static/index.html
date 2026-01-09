@@ -528,6 +528,12 @@
                 </label>
             </div>
             <div class="auto-status" id="auto-status">Running investigation...</div>
+            <button class="new-btn" style="margin-top: 12px; border-color: var(--accent-dim);" onclick="showTimeline()">
+                Case Timeline
+            </button>
+            <button class="new-btn" style="margin-top: 8px; border-color: var(--text-muted);" onclick="showSources()">
+                Data Sources
+            </button>
         </div>
     </aside>
 
@@ -555,6 +561,37 @@
             </form>
             <div class="status" id="status"></div>
         </div>
+
+        <!-- Timeline View -->
+        <div id="timeline-view" class="timeline-container" style="display: none;">
+            <div class="timeline-header">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="timeline-back-btn" onclick="hideTimeline()">
+                        <span>←</span> Back
+                    </button>
+                    <h2>Case Timeline</h2>
+                </div>
+                <div class="timeline-filters">
+                    <button class="timeline-filter-btn active" data-filter="all" onclick="filterTimeline('all', this)">All</button>
+                    <button class="timeline-filter-btn" data-filter="epstein" onclick="filterTimeline('epstein', this)">Epstein</button>
+                    <button class="timeline-filter-btn" data-filter="maxwell" onclick="filterTimeline('maxwell', this)">Maxwell</button>
+                </div>
+            </div>
+            <div class="timeline-list" id="timeline-list"></div>
+        </div>
+
+        <!-- Sources View -->
+        <div id="sources-view" class="sources-container" style="display: none;">
+            <div class="sources-header">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="timeline-back-btn" onclick="hideSources()">
+                        <span>←</span> Back
+                    </button>
+                    <h2>Data Sources</h2>
+                </div>
+            </div>
+            <div class="sources-list" id="sources-list"></div>
+        </div>
     </main>
 
     <script>
@@ -569,6 +606,9 @@
 
         let eventSource = null;
         let conversationId = null;
+        let autoQueryCount = 0;
+        let maxAutoQueries = 20;
+        let isAutoProcessing = false;
 
         // Load stats
         fetch('/api/stats')
@@ -628,6 +668,7 @@
             let thinkingMsg = null;
             let assistantMsg = null;
             let sources = [];
+            let suggestedQueries = [];
 
             eventSource.onmessage = (e) => {
                 const data = JSON.parse(e.data);
@@ -645,6 +686,11 @@
                 }
                 else if (data.type === 'sources') {
                     sources = data.ids || [];
+                }
+                else if (data.type === 'suggestions') {
+                    // Capture suggestions for auto-investigate
+                    suggestedQueries = data.queries || [];
+                    console.log('[Auto] Got suggestions:', suggestedQueries);
                 }
                 else if (data.type === 'chunk') {
                     if (!assistantMsg) {
@@ -691,9 +737,32 @@
                     setStatus('');
                     eventSource.close();
 
-                    // Auto mode
-                    if (autoMode.checked && data.type === 'done') {
-                        // Could trigger next query from suggestions
+                    // Auto-investigate: chain to next query
+                    console.log('[Auto] Check:', {autoMode: autoMode.checked, suggestions: suggestedQueries.length, count: autoQueryCount, max: maxAutoQueries});
+                    if (autoMode.checked && suggestedQueries.length > 0 && autoQueryCount < maxAutoQueries) {
+                        autoQueryCount++;
+                        const nextQuery = suggestedQueries[0];
+                        console.log('[Auto] Chaining to:', nextQuery);
+
+                        autoStatus.textContent = `Query ${autoQueryCount}/${maxAutoQueries}: ${nextQuery}`;
+                        autoStatus.classList.add('active');
+
+                        // Auto-submit after delay
+                        setTimeout(() => {
+                            if (!autoMode.checked) {
+                                autoStatus.classList.remove('active');
+                                return;
+                            }
+                            queryInput.value = nextQuery;
+                            handleSubmit(new Event('submit'));
+                        }, 2500);
+                    } else if (autoMode.checked) {
+                        // Done with auto-investigate
+                        autoStatus.textContent = `Completed ${autoQueryCount} queries`;
+                        setTimeout(() => {
+                            autoStatus.classList.remove('active');
+                            autoQueryCount = 0;
+                        }, 3000);
                     }
                 }
                 else if (data.type === 'error') {
@@ -757,11 +826,217 @@
         // Auto mode toggle
         autoMode.addEventListener('change', () => {
             if (autoMode.checked) {
+                autoQueryCount = 0;
+                autoStatus.textContent = 'Auto-investigate enabled';
                 autoStatus.classList.add('active');
             } else {
+                autoQueryCount = 0;
                 autoStatus.classList.remove('active');
+                // Close any pending EventSource
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
             }
         });
+
+        // ===================
+        // Timeline Functions
+        // ===================
+        let timelineData = [];
+        let currentFilter = 'all';
+
+        async function showTimeline() {
+            const chatEl = document.getElementById('chat');
+            const inputArea = document.querySelector('.input-area');
+            const timelineView = document.getElementById('timeline-view');
+
+            chatEl.style.display = 'none';
+            inputArea.style.display = 'none';
+            timelineView.style.display = 'block';
+
+            // Load timeline data
+            await loadTimeline();
+        }
+
+        function hideTimeline() {
+            const chatEl = document.getElementById('chat');
+            const inputArea = document.querySelector('.input-area');
+            const timelineView = document.getElementById('timeline-view');
+
+            chatEl.style.display = 'flex';
+            inputArea.style.display = 'block';
+            timelineView.style.display = 'none';
+        }
+
+        async function loadTimeline(person = null) {
+            const timelineList = document.getElementById('timeline-list');
+            timelineList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading...</div>';
+
+            try {
+                const url = person && person !== 'all' ? `/api/timeline?person=${person}` : '/api/timeline';
+                const response = await fetch(url);
+                timelineData = await response.json();
+                renderTimeline(timelineData);
+            } catch (error) {
+                console.error('Failed to load timeline:', error);
+                timelineList.innerHTML = '<div class="timeline-empty"><h3>Failed to load timeline</h3><p>Please try again later.</p></div>';
+            }
+        }
+
+        function renderTimeline(events) {
+            const timelineList = document.getElementById('timeline-list');
+
+            if (!events || events.length === 0) {
+                timelineList.innerHTML = '<div class="timeline-empty"><h3>No events found</h3><p>Try a different filter.</p></div>';
+                return;
+            }
+
+            timelineList.innerHTML = events.map(event => {
+                const people = event.people_involved || [];
+                const peopleHtml = people.map(p =>
+                    `<span class="timeline-person" onclick="filterTimeline('${p.toLowerCase()}', null)">${p}</span>`
+                ).join('');
+
+                return `
+                    <div class="timeline-event" data-type="${event.event_type}">
+                        <div class="timeline-date">
+                            ${formatDate(event.event_date)}
+                            <span class="timeline-type">${event.event_type}</span>
+                        </div>
+                        <div class="timeline-title">${escapeHtml(event.event_title)}</div>
+                        ${event.event_description ? `<div class="timeline-description">${escapeHtml(event.event_description)}</div>` : ''}
+                        <div class="timeline-meta">
+                            ${event.jurisdiction ? `<span>📍 ${event.jurisdiction}</span>` : ''}
+                            ${event.case_number ? `<span>📁 ${event.case_number}</span>` : ''}
+                        </div>
+                        ${peopleHtml ? `<div class="timeline-people">${peopleHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterTimeline(filter, btn) {
+            currentFilter = filter;
+
+            // Update active button
+            if (btn) {
+                document.querySelectorAll('.timeline-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            // Reload with filter
+            loadTimeline(filter === 'all' ? null : filter);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===================
+        // Sources Functions
+        // ===================
+        async function showSources() {
+            const chatEl = document.getElementById('chat');
+            const inputArea = document.querySelector('.input-area');
+            const timelineView = document.getElementById('timeline-view');
+            const sourcesView = document.getElementById('sources-view');
+
+            chatEl.style.display = 'none';
+            inputArea.style.display = 'none';
+            timelineView.style.display = 'none';
+            sourcesView.style.display = 'block';
+
+            await loadSources();
+        }
+
+        function hideSources() {
+            const chatEl = document.getElementById('chat');
+            const inputArea = document.querySelector('.input-area');
+            const sourcesView = document.getElementById('sources-view');
+
+            chatEl.style.display = 'flex';
+            inputArea.style.display = 'block';
+            sourcesView.style.display = 'none';
+        }
+
+        async function loadSources() {
+            const sourcesList = document.getElementById('sources-list');
+            sourcesList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading...</div>';
+
+            try {
+                const response = await fetch('/api/sources');
+                const sources = await response.json();
+                renderSources(sources);
+            } catch (error) {
+                console.error('Failed to load sources:', error);
+                sourcesList.innerHTML = '<div class="timeline-empty"><h3>Failed to load sources</h3></div>';
+            }
+        }
+
+        function renderSources(sources) {
+            const sourcesList = document.getElementById('sources-list');
+
+            if (!sources || sources.length === 0) {
+                sourcesList.innerHTML = '<div class="timeline-empty"><h3>No sources found</h3></div>';
+                return;
+            }
+
+            sourcesList.innerHTML = sources.map(source => {
+                const typeIcon = source.source_type === 'email' ? '📧' : '📄';
+                const methodBadge = getMethodBadge(source.how_obtained);
+
+                return `
+                    <div class="source-card" data-type="${source.source_type}">
+                        <div class="source-card-header">
+                            <span class="source-icon">${typeIcon}</span>
+                            <div class="source-title-section">
+                                <h3 class="source-title">${escapeHtml(source.source_name.replace(/_/g, ' '))}</h3>
+                                <span class="source-type-badge">${source.source_type}</span>
+                                ${methodBadge}
+                            </div>
+                        </div>
+                        <div class="source-origin">
+                            <strong>Origin:</strong> ${escapeHtml(source.origin || 'Unknown')}
+                        </div>
+                        ${source.file_count ? `
+                        <div class="source-stats">
+                            <span class="source-stat">
+                                <strong>${source.file_count.toLocaleString()}</strong> files
+                            </span>
+                        </div>
+                        ` : ''}
+                        ${source.date_range_start ? `
+                        <div class="source-dates">
+                            <span>📅 ${formatDate(source.date_range_start)} — ${formatDate(source.date_range_end) || 'Present'}</span>
+                        </div>
+                        ` : ''}
+                        ${source.notes ? `
+                        <div class="source-notes">${escapeHtml(source.notes)}</div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getMethodBadge(method) {
+            const badges = {
+                'public_leak': '<span class="method-badge leak">LEAK</span>',
+                'court_unsealing': '<span class="method-badge court">COURT ORDER</span>',
+                'PACER': '<span class="method-badge pacer">PACER</span>',
+                'FOIA': '<span class="method-badge foia">FOIA</span>'
+            };
+            return badges[method] || '';
+        }
     </script>
 </body>
 </html>

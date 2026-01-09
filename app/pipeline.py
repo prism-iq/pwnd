@@ -5,8 +5,67 @@ from typing import AsyncGenerator, Dict, Any, List
 from app.llm_client import call_haiku
 from app.db import execute_query, execute_insert
 from app.search import search_corpus_scored
+import json
 
 NL = chr(10)
+
+
+def get_timeline_context(query: str, email_dates: list) -> str:
+    """Get relevant case timeline events for context"""
+    events = []
+
+    # Search by people mentioned in query
+    people_terms = ['epstein', 'maxwell', 'giuffre', 'acosta']
+    query_lower = query.lower()
+    matching_people = [p for p in people_terms if p in query_lower]
+
+    if matching_people:
+        # Get events involving these people
+        placeholders = ','.join(['%s'] * len(matching_people))
+        for person in matching_people:
+            rows = execute_query(
+                "l_data",
+                f"""SELECT event_date, event_type, event_title, event_description, jurisdiction, case_number
+                    FROM case_timeline
+                    WHERE people_involved::text ILIKE %s
+                    ORDER BY event_date""",
+                (f'%{person}%',)
+            )
+            for r in rows:
+                if r not in events:
+                    events.append(r)
+
+    # Also get events near email dates
+    if email_dates:
+        date_range = [d for d in email_dates if d and len(str(d)) >= 7]
+        if date_range:
+            min_date = min(date_range)[:10]
+            max_date = max(date_range)[:10]
+            rows = execute_query(
+                "l_data",
+                """SELECT event_date, event_type, event_title, event_description, jurisdiction, case_number
+                   FROM case_timeline
+                   WHERE event_date BETWEEN %s AND %s
+                   ORDER BY event_date""",
+                (min_date, max_date)
+            )
+            for r in rows:
+                if r not in events:
+                    events.append(r)
+
+    if not events:
+        return ""
+
+    # Sort and format
+    events = sorted(events, key=lambda x: x['event_date'])
+    lines = ["CASE TIMELINE (verified events):"]
+    for e in events[:10]:
+        case_ref = f" [{e['case_number']}]" if e.get('case_number') else ""
+        lines.append(f"  {e['event_date']} | {e['event_type'].upper()}: {e['event_title']}{case_ref}")
+        if e.get('event_description'):
+            lines.append(f"    → {e['event_description'][:100]}")
+
+    return NL.join(lines)
 
 # =============================================================================
 # SYSTEM PROMPTS
@@ -376,27 +435,37 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
 
     # Prepare data for Haiku - send more context
     results_text = []
+    email_dates = []
     for r in all_results[:25]:  # Send up to 25 emails for richer analysis
+        date_str = str(r.get('date', ''))[:10]
+        if date_str:
+            email_dates.append(date_str)
         results_text.append(
             f"Email #{r.get('id')}:\n"
             f"  Subject: {r.get('name', 'No subject')}\n"
             f"  From: {r.get('sender_email', '?')}\n"
             f"  To: {r.get('recipients_to', '?')}\n"
-            f"  Date: {str(r.get('date', '?'))[:10]}\n"
+            f"  Date: {date_str}\n"
             f"  Excerpt: {re.sub(r'<[^>]+>', '', r.get('snippet', ''))[:200]}"
         )
 
     search_summary = ", ".join([f"'{s['term']}' ({s['count']})" for s in search_history])
+
+    # Get timeline context for case events
+    timeline_context = get_timeline_context(query, email_dates)
 
     haiku_prompt = f"""Investigation query: "{query}"
 
 Searches performed: {search_summary}
 Total unique emails found: {len(all_results)}
 
+{timeline_context}
+
 EMAIL DATA:
 {NL.join(results_text)}
 
-Write your analysis as L. What patterns do you see? What's suspicious? What connections emerge?
+Write your analysis as L. Correlate email dates with case timeline events where relevant.
+What patterns do you see? What's suspicious? What connections emerge?
 Reference specific emails by #ID. End with next investigation steps."""
 
     haiku_response = await call_haiku(haiku_prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=1500)

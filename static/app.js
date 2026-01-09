@@ -443,10 +443,6 @@ async function processQuery(query) {
             ).join(' ');
         }
     }
-            const messagesContainer = document.getElementById('messages');
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-    }
 }
 
 // ========================================

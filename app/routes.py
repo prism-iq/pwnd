@@ -268,3 +268,59 @@ async def set_language(request: LanguageRequest):
         (request.language,)
     )
     return {"status": "updated", "language": request.language}
+
+
+# Sources metadata
+@router.get("/api/sources")
+async def get_sources():
+    """Get data source metadata"""
+    sources = execute_query(
+        "l_data",
+        """SELECT id, source_name, source_type, origin, how_obtained,
+                  date_obtained, original_format, file_count, total_size_mb,
+                  date_range_start, date_range_end, notes, created_at
+           FROM source_metadata
+           ORDER BY date_obtained""",
+        ()
+    )
+    # Convert dates for JSON
+    for s in sources:
+        for k in ['date_obtained', 'date_range_start', 'date_range_end', 'created_at']:
+            if s.get(k):
+                s[k] = str(s[k])
+    return sources
+
+
+# Timeline
+@router.get("/api/timeline")
+async def get_timeline(person: Optional[str] = None):
+    """Get case timeline events"""
+    if person:
+        events = execute_query(
+            "l_data",
+            """SELECT id, event_date, event_type, event_title, event_description,
+                      jurisdiction, case_number, people_involved, verified
+               FROM case_timeline
+               WHERE people_involved::text ILIKE %s
+               ORDER BY event_date""",
+            (f'%{person}%',)
+        )
+    else:
+        events = execute_query(
+            "l_data",
+            """SELECT id, event_date, event_type, event_title, event_description,
+                      jurisdiction, case_number, people_involved, verified
+               FROM case_timeline
+               ORDER BY event_date""",
+            ()
+        )
+
+    # Convert dates to strings for JSON
+    for e in events:
+        if e.get('event_date'):
+            e['event_date'] = str(e['event_date'])
+        if e.get('people_involved'):
+            # Already JSONB, should be a list
+            pass
+
+    return events
