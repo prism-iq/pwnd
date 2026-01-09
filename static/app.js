@@ -345,8 +345,11 @@ async function processQuery(query) {
         } else if (data.type === 'sources') {
             sources = data.ids;
             updateCurrentMessage(assistantMessage, sources);
-        } else if (data.type === 'debug' && data.haiku_analysis) {
+        } else if (data.type === 'suggestions') {
             // Extract suggested queries for auto-investigation
+            suggestedQueries = data.queries || [];
+        } else if (data.type === 'debug' && data.haiku_analysis) {
+            // Legacy: Extract suggested queries from debug
             suggestedQueries = data.haiku_analysis.suggested_queries || [];
         } else if (data.type === 'done') {
             if (statusDiv) statusDiv.remove();
