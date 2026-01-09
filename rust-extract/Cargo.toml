@@ -1,0 +1,43 @@
+[package]
+name = "l-extract"
+version = "1.0.0"
+edition = "2021"
+description = "Blazing fast entity extraction for L Investigation"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Regex - fastest in class
+regex = "1.10"
+lazy_static = "1.4"
+
+# Parallelism
+rayon = "1.8"
+crossbeam = "0.8"
+
+# JSON
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP server
+actix-web = "4"
+actix-rt = "2"
+tokio = { version = "1", features = ["full"] }
+
+# Date parsing
+chrono = "0.4"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
