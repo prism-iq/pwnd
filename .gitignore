@@ -1,52 +1,37 @@
-# Secrets
-.env
-*.pem
-*.key
+# Binaries
+hybridcore
+*.exe
+*.o
+*.a
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+go.sum
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
+.env
 venv/
-.venv/
 
-# Data (large files)
-*.db
-*.sqlite
-*.gguf
-exports/
-
-# IDE
-.vscode/
-.idea/
-.DS_Store
+# Data (keep structure)
+data/*.db
+data/*.log
 
 # Logs
 *.log
 logs/
 
 # Temp
+tmp/
 *.tmp
-*.bak
-service.env
-
-# Data directories
-data/
-*.tar.gz
-courtlistener-download
-
-# Build artifacts
-rust-extract/target/
-rust-extract/Cargo.lock
-go-gateway/l-gateway
-go-gateway/go.sum
-polyglot/cpp-core/build/
-polyglot/cpp-core/lib/*.so
-polyglot/go-brain/brain
-polyglot/go-brain/go.sum
-polyglot/node-api/dist/
-polyglot/node-api/node_modules/
-polyglot/svelte-ui/dist/
-polyglot/svelte-ui/node_modules/
-
-# Test files (keep templates)
-*.output
