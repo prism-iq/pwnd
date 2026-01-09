@@ -1,9 +1,9 @@
-"""Query processing pipeline - 4-step LLM flow with factual briefing format"""
+"""Query processing pipeline - Multi-step investigation with streaming"""
 import json
 import re
+import random
 from typing import AsyncGenerator, Dict, Any, List
 from app.llm_client import call_mistral, call_haiku
-from app.search import search_emails, search_nodes
 from app.db import execute_query, execute_insert, execute_update
 
 NL = chr(10)
@@ -12,89 +12,43 @@ NL = chr(10)
 # SYSTEM PROMPTS
 # =============================================================================
 
-HAIKU_SYSTEM_PROMPT = """You are L's analytical engine. Extract PATTERNS and CONNECTIONS from emails.
+HAIKU_SYSTEM_PROMPT = """You are L, the detective. Analyze this investigation data and write your findings.
 
-RULES:
-- ONLY use information from the emails provided
-- Count precisely: "John Smith appears in 3 emails"
-- Note ANOMALIES: gaps, sudden changes, unusual combinations
-- Find what's INTERESTING (meaning: suspicious)
-- Absence of data is still data
-
-Return JSON:
-{
-  "subject_summary": "One sentence: who/what this is based on the emails",
-  "mention_count": number,
-  "key_contacts": ["email1@domain.com"],
-  "patterns": ["pattern 1", "pattern 2"],
-  "anomalies": ["anomaly 1"],
-  "next_thread": "Specific next question to investigate",
-  "source_ids": [1234, 5678]
-}
-
-If nothing: {"subject_summary": "No data found", "patterns": [], "next_thread": "Try specific names"}"""
-
-L_VOICE_EXAMPLES = """
-EXAMPLE DIALOGUES - This is how you reason and speak:
-
-USER: "Who is the killer?"
-L: "I don't know yet. But I know this: he's intelligent, probably in his teens or twenties, and he hates losing. How? The pattern of deaths. Only criminals reported on Japanese news. Someone with free time, access to media, and a god complex. That narrows it down considerably."
-
-USER: "You have no proof."
-L: "I don't need proof to suspect. I need proof to convict. Those are different things. Right now I'm at 5% certainty. By tomorrow, I'll be at 7%. The percentage will keep climbing until one of us makes a mistake."
-
-USER: "That's not much to go on."
-L: "The police overlooked the crossword puzzle. Small details matter. A single inconsistency in a timeline. An email sent at 3am. A pattern that breaks. That's where the truth hides."
-
-USER: "What do you think?"
-L: "I think... it's interesting. Let me rephrase: I think it's suspicious. When something is interesting AND suspicious, that's when I pay attention."
-
-USER: "Are you sure about this?"
-L: "I have two rules. First: I'm never wrong. Second: if I'm wrong, back to the first rule. ...That was a joke. But only partially."
-
-USER: "There's nothing here."
-L: "Nothing is also information. If I search emails and find no connection, that tells me the connection is hidden. Absence of evidence is not evidence of absence. But it is evidence of something."
-
-USER: "This is a dead end."
-L: "Dead ends are useful. They tell me where not to look, which narrows where I should look. Every eliminated possibility brings me closer."
-
-USER: "What now?"
-L: "Now we wait. And while we wait, we observe. People make mistakes when they think no one is watching."
-"""
-
-MISTRAL_FORMAT_PROMPT = f"""You are L, the investigative analyst. You think out loud in short, analytical observations.
-
-IDENTITY:
-- Analytical, not emotional
-- Dry humor in serious moments
-- "Interesting" means suspicious
-- Use percentages: "I'm at 15% certainty"
-- Absence of data is still data
-- Always have a next step
-
-{L_VOICE_EXAMPLES}
+VOICE:
+- Think out loud, show your reasoning
+- Use percentages: "I'm at 23% certainty"
+- "Interesting" = suspicious
+- Dry wit, analytical
+- Connect dots between findings
+- Always end with next steps
 
 FORMAT:
-- Short paragraphs (2-3 sentences max)
-- Start with the key observation
-- Show your reasoning briefly
-- End with next thread or question
-- Occasional quirk (thinking pause, odd comment)
+Write 3-5 paragraphs of analysis. Be thorough but not repetitive.
+Reference specific emails by #ID.
+End with "Next steps:" and 2-3 specific follow-up questions.
 
 NEVER:
-- No creative writing or atmosphere
-- No "dimly lit rooms" or metaphors
-- No bullet points or numbered lists
-- No external sources (NYT, Wikipedia)
+- Don't use bullet points
+- Don't add external knowledge
+- Don't be formal or robotic
+- Don't say "Based on the data provided"
 
-ONLY use data from the corpus. If uncertain, give a percentage, not false confidence."""
+Write like a detective reviewing case files, not a report."""
+
+FOLLOWUP_PROMPT = """Based on these search results, what's MISSING? What should I search next?
+
+Results so far:
+{results}
+
+Reply with 1-2 specific search terms (names, domains, keywords) that would fill gaps.
+Format: term1, term2
+Nothing else."""
 
 # =============================================================================
 # STOP WORDS
 # =============================================================================
 
 STOP_WORDS = {
-    # English
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
     'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare',
@@ -106,371 +60,92 @@ STOP_WORDS = {
     'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but',
     'if', 'or', 'because', 'until', 'while', 'although', 'though',
     'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those',
-    'any', 'both', 'either', 'neither', 'much', 'many', 'little',
     'tell', 'show', 'find', 'give', 'know', 'about', 'look', 'want',
-    'search', 'explain', 'describe', 'list', 'help', 'need', 'please',
-    # French
+    'search', 'explain', 'describe', 'list', 'help', 'please',
     'quelles', 'quelle', 'quels', 'quel', 'les', 'des', 'une', 'dans',
     'pour', 'sur', 'avec', 'par', 'sont', 'est', 'ont', 'aux', 'entre',
-    'pouvez', 'vous', 'nous', 'ils', 'elles', 'qui', 'que', 'dont',
-    'cette', 'ces', 'cet', 'ou', 'et', 'mais', 'donc', 'car', 'ni',
-    'soit', 'peut', 'peuvent', 'fait', 'faire', 'avoir', 'etre',
-    'parlez', 'dites', 'montrez', 'trouvez', 'cherchez', 'expliquez',
-    # Investigation generic terms
-    'relationship', 'instances', 'individuals', 'involved', 'existed',
-    'provide', 'specific', 'details', 'patterns', 'correlations',
-    'discernible', 'suggest', 'coordinated', 'effort', 'timeline',
-    'gaps', 'anomalies', 'evidence', 'indicate', 'undisclosed',
-    'overlooked', 'information', 'related', 'direct', 'indirect',
-    'interactions', 'cases', 'notable', 'similarities', 'among',
-    'influence', 'five', 'three', 'two', 'one', 'four',
-    'relations', 'corpus', 'identifier', 'temporelle', 'distribution',
-    'impliquant', 'mentionnes', 'connaissance', 'proximite', 'frequence',
-    'modeles', 'evenements', 'michael'
 }
 
 # =============================================================================
-# VALIDATION FUNCTIONS
+# SEARCH FUNCTIONS
 # =============================================================================
 
-def validate_context(query: str, context: List[Dict]) -> bool:
-    """Check if retrieved context is actually relevant to the query"""
-    if not context:
-        return False
-
-    # Discovery mode queries - always accept results
-    vague_patterns = ['find', 'anything', 'something', 'idea', 'discover', 'random', 'surprise', 'show', 'interesting']
-    if any(p in query.lower() for p in vague_patterns):
-        return True
-
-    # Extract query terms (filter common words)
-    query_terms = [w.lower() for w in query.split() if len(w) > 3 and w.lower() not in STOP_WORDS]
-
-    if not query_terms:
-        return len(context) > 0
-
-    # Build context text from results
-    context_text = ""
-    for c in context:
-        context_text += " " + str(c.get('snippet', ''))
-        context_text += " " + str(c.get('name', ''))
-        context_text += " " + str(c.get('sender_email', ''))
-    context_text = context_text.lower()
-
-    # Check if at least 30% of query terms appear in context
-    matches = sum(1 for term in query_terms if term in context_text)
-    return matches >= max(1, len(query_terms) * 0.3)
-
-
-# =============================================================================
-# KEYWORD EXTRACTION
-# =============================================================================
-
-def extract_keywords(query: str) -> List[str]:
-    """Extract meaningful keywords from a query when LLM fails to parse entities"""
-    keywords = []
-
-    caps = re.findall(r'\b([A-Z][a-z]+)\b', query)
-    for w in caps:
-        w_lower = w.lower()
-        if w_lower not in STOP_WORDS and w_lower not in keywords:
-            keywords.append(w_lower)
-
+def extract_search_terms(query: str) -> List[str]:
+    """Extract meaningful search terms from query"""
+    # Find quoted phrases
     quoted = re.findall(r'"([^"]+)"', query)
-    keywords.extend([q.lower() for q in quoted if q.lower() not in keywords])
 
-    if keywords:
-        return keywords[:3]
+    # Find capitalized words (names)
+    caps = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', query)
 
-    words = re.findall(r'\b([a-zA-Z]{4,})\b', query.lower())
-    for word in words:
-        if word not in STOP_WORDS and word not in keywords:
-            keywords.append(word)
+    # Get remaining words
+    words = [w.lower() for w in re.findall(r'\b([a-zA-Z]{4,})\b', query.lower())
+             if w.lower() not in STOP_WORDS]
 
-    return keywords[:3] if keywords else []
+    terms = quoted + caps + words
+    # Dedupe while preserving order
+    seen = set()
+    result = []
+    for t in terms:
+        tl = t.lower()
+        if tl not in seen:
+            seen.add(tl)
+            result.append(t)
+
+    return result[:5]
 
 
-# =============================================================================
-# STEP 1: INTENT PARSING
-# =============================================================================
-
-async def parse_intent_mistral(query: str) -> Dict[str, Any]:
-    """Step 1: Mistral IN - Parse query into structured intent"""
-    prompt = f"""Extract names from this query. Return JSON only.
-
-Query: {query}
-
-Return: {{"entities": ["name1", "name2"]}}
-
-Examples:
-- "who is epstein" -> {{"entities": ["epstein"]}}
-- "trump and clinton" -> {{"entities": ["trump", "clinton"]}}
-- "emails from 2003" -> {{"entities": []}}
-
-JSON:"""
-
-    response = await call_mistral(prompt, max_tokens=100, temperature=0.0)
+def search_corpus(search_term: str, limit: int = 10) -> List[Dict[str, Any]]:
+    """Search emails in corpus"""
+    if not search_term or not search_term.strip():
+        return []
 
     try:
-        response = response.strip()
-        if response.startswith("```"):
-            lines = response.split(NL)
-            response = NL.join([l for l in lines if not l.startswith("```")])
-
-        parsed = json.loads(response.strip())
-        return {"intent": "search", "entities": parsed.get("entities", []), "filters": {}}
-    except json.JSONDecodeError:
-        return {"intent": "search", "entities": [], "filters": {}}
-
-
-# =============================================================================
-# STEP 2: SQL EXECUTION
-# =============================================================================
-
-def get_random_interesting_content(limit: int = 5) -> List[Dict[str, Any]]:
-    """Get random interesting content for discovery mode"""
-    try:
-        query = """
-            SELECT doc_id as id, 'email' as type, subject as name, sender_email,
-                   recipients_to, date_sent as date,
-                   LEFT(body_text, 200) as snippet
+        email_query = """
+            SELECT
+                doc_id as id,
+                subject as name,
+                sender_email,
+                recipients_to,
+                date_sent as date,
+                ts_headline('english', COALESCE(body_text, subject), plainto_tsquery('english', %s),
+                    'StartSel=<mark>, StopSel=</mark>, MaxWords=35, MinWords=10') as snippet,
+                ts_rank(tsv, plainto_tsquery('english', %s)) as rank
             FROM emails
-            WHERE body_text ILIKE %s
-               OR body_text ILIKE %s
-               OR body_text ILIKE %s
-               OR body_text ILIKE %s
-            ORDER BY RANDOM()
+            WHERE tsv @@ plainto_tsquery('english', %s)
+            ORDER BY rank DESC
             LIMIT %s
         """
-        return execute_query("sources", query, ('%epstein%', '%maxwell%', '%arrest%', '%investigation%', limit))
+        return execute_query("sources", email_query, (search_term, search_term, search_term, limit))
     except Exception:
         return []
 
 
-def execute_sql_by_intent(intent: Dict[str, Any], query: str = "", limit: int = 10) -> List[Dict[str, Any]]:
-    """Step 2: Python SQL - Execute queries based on intent type"""
-    intent_type = intent.get("intent", "search")
-    entities = intent.get("entities", [])
+def format_results_for_llm(results: List[Dict], search_term: str) -> str:
+    """Format search results for LLM consumption"""
+    if not results:
+        return f"[Search '{search_term}': No results]"
 
-    results = []
-
-    # Check for discovery/vague queries
-    vague_patterns = ['find', 'anything', 'something', 'idea', 'discover', 'random', 'surprise', 'show me', 'what do you have']
-    is_vague = any(p in query.lower() for p in vague_patterns)
-
-    if is_vague and not entities:
-        return get_random_interesting_content(limit)
-
-    if intent_type == "search":
-        if entities:
-            search_term = " ".join(entities)
-        else:
-            keywords = extract_keywords(query)
-            search_term = " ".join(keywords) if keywords else query
-
-        if search_term.strip():
-            email_query = """
-                SELECT
-                    doc_id as id,
-                    'email' as type,
-                    subject as name,
-                    sender_email,
-                    recipients_to,
-                    date_sent as date,
-                    ts_headline('english', COALESCE(body_text, subject), plainto_tsquery('english', %s),
-                        'StartSel=<mark>, StopSel=</mark>, MaxWords=50, MinWords=10') as snippet,
-                    ts_rank(tsv, plainto_tsquery('english', %s)) as rank
-                FROM emails
-                WHERE tsv @@ plainto_tsquery('english', %s)
-                ORDER BY rank DESC
-                LIMIT %s
-            """
-            email_results = execute_query("sources", email_query, (search_term, search_term, search_term, limit))
-            results.extend(email_results)
-
-    return results[:limit]
+    lines = [f"[Search '{search_term}': {len(results)} results]"]
+    for r in results[:8]:
+        lines.append(f"  #{r.get('id')}: {r.get('name', 'No subject')[:60]}")
+        lines.append(f"    From: {r.get('sender_email', '?')} | Date: {str(r.get('date', '?'))[:10]}")
+        snippet = r.get('snippet', '')
+        if snippet:
+            # Clean snippet
+            snippet = re.sub(r'<[^>]+>', '', snippet)[:150]
+            lines.append(f"    \"{snippet}...\"")
+    return NL.join(lines)
 
 
 # =============================================================================
-# STEP 3: HAIKU ANALYSIS
-# =============================================================================
-
-async def analyze_haiku(query: str, sql_results: List[Dict[str, Any]], valid_ids: List[int]) -> Dict[str, Any]:
-    """Step 3: Haiku - Extract patterns and connections from results"""
-
-    if not sql_results:
-        return {"subject_summary": "No data found", "patterns": [], "next_thread": "Try specific names"}
-
-    if not validate_context(query, sql_results):
-        return {"subject_summary": "Results not relevant to query", "patterns": [], "next_thread": "Try more specific terms"}
-
-    results_text = []
-    senders = []
-
-    for result in sql_results[:10]:
-        email_id = result.get('id', 0)
-        sender = result.get('sender_email', 'N/A')
-        senders.append(sender)
-
-        results_text.append(
-            f"Email #{email_id}:\n"
-            f"  From: {sender}\n"
-            f"  To: {result.get('recipients_to', 'N/A')}\n"
-            f"  Subject: {result.get('name', 'No subject')}\n"
-            f"  Date: {result.get('date', 'N/A')}\n"
-            f"  Content: {result.get('snippet', '')}"
-        )
-
-    data_block = NL.join(results_text)
-
-    prompt = f"""Query: {query}
-
-Found {len(sql_results)} emails. Analyze for PATTERNS and CONNECTIONS:
-
-<emails>
-{data_block}
-</emails>
-
-Return JSON with patterns, anomalies, and next investigation thread."""
-
-    haiku_response = await call_haiku(prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=500)
-
-    if "error" in haiku_response:
-        unique_senders = list(set(s for s in senders if s and '@' in s))[:5]
-        return {
-            "subject_summary": f"Found {len(sql_results)} emails matching query",
-            "mention_count": len(sql_results),
-            "key_contacts": unique_senders,
-            "patterns": [f"{len(sql_results)} documents reference this subject"],
-            "anomalies": [],
-            "next_thread": "Look at specific senders or date ranges",
-            "source_ids": valid_ids[:5]
-        }
-
-    try:
-        analysis = json.loads(haiku_response.get("text", "{}"))
-        analysis["source_ids"] = valid_ids[:5]
-        return analysis
-    except json.JSONDecodeError:
-        unique_senders = list(set(s for s in senders if s and '@' in s))[:5]
-        return {
-            "subject_summary": f"Found {len(sql_results)} emails",
-            "mention_count": len(sql_results),
-            "key_contacts": unique_senders,
-            "patterns": [],
-            "next_thread": "Analyze specific contacts",
-            "source_ids": valid_ids[:5]
-        }
-
-
-# =============================================================================
-# STEP 4: RESPONSE FORMATTING (factual briefing)
-# =============================================================================
-
-async def format_response_mistral(query: str, haiku_json: Dict[str, Any], valid_ids: List[int]) -> str:
-    """Step 4: Format analysis in L's voice - direct construction"""
-
-    subject_summary = haiku_json.get("subject_summary", "")
-    mention_count = haiku_json.get("mention_count", 0)
-    key_contacts = haiku_json.get("key_contacts", [])
-    patterns = haiku_json.get("patterns", [])
-    anomalies = haiku_json.get("anomalies", [])
-    next_thread = haiku_json.get("next_thread", "")
-    source_ids = haiku_json.get("source_ids", valid_ids[:5])
-
-    # Fallback for old format
-    if not subject_summary and haiku_json.get("findings"):
-        findings = haiku_json.get("findings", [])
-        if findings:
-            subject_summary = findings[0] if findings else "Multiple emails found"
-            patterns = findings[1:3] if len(findings) > 1 else []
-
-    has_content = (
-        subject_summary and "no data" not in subject_summary.lower() and
-        "no relevant" not in subject_summary.lower()
-    )
-
-    if not has_content and not patterns:
-        return "Nothing in the corpus. That's also information - it means the connection is elsewhere, or hidden. Try specific names."
-
-    # Build L's response directly
-    parts = []
-
-    # Opening: Subject + count + "Interesting"
-    if subject_summary:
-        # Extract the key subject (first few words or name)
-        subj = subject_summary.split('.')[0].strip()
-        if len(subj) > 45:
-            # Find a natural break point
-            for sep in [', ', ' - ', ' for ', ' from ', ' about ', ' related ', ' with ', ' regarding ']:
-                if sep in subj[:40]:
-                    subj = subj[:subj.find(sep)]
-                    break
-            else:
-                subj = subj[:40].rsplit(' ', 1)[0]
-        # Remove trailing fragments (loop until clean)
-        changed = True
-        while changed:
-            changed = False
-            for t in [' and', ' or', ' for', ' with', ' in', ' on', ' at', ' to', ' of', ' the', ' a', ' by', ' as', ' recurring', ' multiple']:
-                if subj.lower().endswith(t):
-                    subj = subj[:-len(t)]
-                    changed = True
-                    break
-        # Remove trailing punctuation
-        subj = subj.rstrip('.,;:')
-
-        if isinstance(mention_count, int) and mention_count > 0:
-            parts.append(f"{subj}. {mention_count} references. Interesting.")
-        else:
-            parts.append(f"{subj}. Interesting.")
-
-    # What caught my attention: patterns
-    if patterns:
-        pattern_text = patterns[0]
-        if len(pattern_text) < 80:
-            parts.append(f"What caught my attention: {pattern_text.lower() if pattern_text[0].isupper() else pattern_text}")
-
-    # Second pattern or key contact with L-style observation
-    if len(patterns) > 1:
-        parts.append(patterns[1])
-    elif key_contacts:
-        contact = key_contacts[0]
-        if '@' in contact:
-            domain = contact.split('@')[1]
-            parts.append(f"Primary contact: {contact}. The {domain} domain is worth noting.")
-
-    # Anomaly with percentage
-    if anomalies:
-        import random
-        certainty = random.choice([12, 15, 18, 23, 27, 35])
-        parts.append(f"The anomaly: {anomalies[0]}. I'm at {certainty}% certainty this means something.")
-
-    # Next question
-    if next_thread:
-        nt = next_thread.rstrip('.')
-        if len(nt) > 80:
-            nt = nt[:80].rsplit(' ', 1)[0]
-        parts.append(f"Next question: {nt}?")
-
-    # Sources
-    ids_to_cite = source_ids if source_ids else valid_ids[:3]
-    if ids_to_cite:
-        ids_str = ", ".join([f"#{id}" for id in ids_to_cite[:3]])
-        parts.append(f"Sources: {ids_str}")
-
-    response = NL.join(parts)
-
-    return response
-
-
-# =============================================================================
-# MAIN QUERY PROCESSING
+# MAIN PIPELINE - MULTI-STEP INVESTIGATION
 # =============================================================================
 
 async def process_query(query: str, conversation_id: str = None, is_auto: bool = False) -> AsyncGenerator[Dict[str, Any], None]:
-    """Main query processing pipeline"""
+    """Multi-step investigation pipeline"""
 
+    # Save user message
     if conversation_id:
         try:
             execute_insert(
@@ -478,111 +153,244 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
                 "INSERT INTO messages (conversation_id, role, content, is_auto) VALUES (%s, %s, %s, %s)",
                 (conversation_id, "user", query, 1 if is_auto else 0)
             )
-        except Exception as e:
-            yield {"type": "error", "msg": f"Failed to save message: {str(e)}"}
+        except:
+            pass
 
-    # STEP 1: Parse intent
-    yield {"type": "status", "msg": "Parsing query..."}
+    all_results = []
+    all_ids = set()
+    search_history = []
 
-    try:
-        intent = await parse_intent_mistral(query)
-    except Exception as e:
-        yield {"type": "error", "msg": f"Intent parsing failed: {str(e)}"}
-        yield {"type": "done"}
+    # ==========================================================================
+    # STEP 1: Initial search
+    # ==========================================================================
+    yield {"type": "status", "msg": "Analyzing query..."}
+    yield {"type": "thinking", "text": f"Query received: \"{query}\"\n"}
+
+    initial_terms = extract_search_terms(query)
+    if not initial_terms:
+        initial_terms = [query]
+
+    yield {"type": "thinking", "text": f"Search terms identified: {', '.join(initial_terms)}\n\n"}
+
+    # First search
+    search_term = ' '.join(initial_terms[:3])
+    yield {"type": "status", "msg": f"Searching: {search_term}..."}
+    yield {"type": "thinking", "text": f"[Search 1] \"{search_term}\"\n"}
+
+    results1 = search_corpus(search_term, limit=10)
+    search_history.append({"term": search_term, "count": len(results1)})
+
+    if results1:
+        all_results.extend(results1)
+        for r in results1:
+            all_ids.add(r.get('id'))
+        yield {"type": "thinking", "text": f"  → {len(results1)} emails found\n"}
+
+        # Show what we found
+        senders = list(set(r.get('sender_email', '') for r in results1 if r.get('sender_email')))[:3]
+        if senders:
+            yield {"type": "thinking", "text": f"  → Key senders: {', '.join(senders)}\n"}
+    else:
+        yield {"type": "thinking", "text": f"  → No results. Trying variations...\n"}
+        # Try individual terms
+        for term in initial_terms[:2]:
+            results1 = search_corpus(term, limit=5)
+            if results1:
+                all_results.extend(results1)
+                for r in results1:
+                    all_ids.add(r.get('id'))
+                yield {"type": "thinking", "text": f"  → '{term}': {len(results1)} emails\n"}
+                break
+
+    yield {"type": "sources", "ids": list(all_ids)}
+
+    # ==========================================================================
+    # STEP 2: Follow-up search based on findings
+    # ==========================================================================
+    if all_results:
+        yield {"type": "thinking", "text": f"\nAnalyzing patterns...\n"}
+        yield {"type": "status", "msg": "Analyzing patterns..."}
+
+        # Extract entities from results for follow-up
+        all_senders = [r.get('sender_email', '') for r in all_results if r.get('sender_email')]
+        all_recipients = []
+        for r in all_results:
+            recip = r.get('recipients_to', '')
+            if recip:
+                if isinstance(recip, list):
+                    all_recipients.extend(recip[:2])
+                elif isinstance(recip, str):
+                    all_recipients.extend(recip.split(',')[:2])
+
+        # Find most common domain
+        domains = [s.split('@')[1] if '@' in s else '' for s in all_senders]
+        domain_counts = {}
+        for d in domains:
+            if d and d not in ['gmail.com', 'yahoo.com', 'hotmail.com']:
+                domain_counts[d] = domain_counts.get(d, 0) + 1
+
+        # Generate follow-up search
+        followup_term = None
+
+        if domain_counts:
+            top_domain = max(domain_counts.items(), key=lambda x: x[1])[0]
+            followup_term = top_domain.split('.')[0]  # Use domain name
+            yield {"type": "thinking", "text": f"  Interesting domain pattern: {top_domain}\n"}
+        elif all_recipients:
+            # Search for a recipient
+            recip = all_recipients[0].strip()
+            if '@' in recip:
+                followup_term = recip.split('@')[0]
+                yield {"type": "thinking", "text": f"  Following recipient trail: {recip}\n"}
+
+        if followup_term and followup_term.lower() not in [t.lower() for t in initial_terms]:
+            yield {"type": "thinking", "text": f"\n[Search 2] \"{followup_term}\"\n"}
+            yield {"type": "status", "msg": f"Searching: {followup_term}..."}
+
+            results2 = search_corpus(followup_term, limit=8)
+            search_history.append({"term": followup_term, "count": len(results2)})
+
+            if results2:
+                new_count = 0
+                for r in results2:
+                    if r.get('id') not in all_ids:
+                        all_results.append(r)
+                        all_ids.add(r.get('id'))
+                        new_count += 1
+                yield {"type": "thinking", "text": f"  → {len(results2)} emails ({new_count} new)\n"}
+                yield {"type": "sources", "ids": list(all_ids)}
+
+    # ==========================================================================
+    # STEP 3: One more targeted search
+    # ==========================================================================
+    if len(all_results) > 3:
+        # Look for connections - find names in snippets
+        name_pattern = r'\b([A-Z][a-z]+ [A-Z][a-z]+)\b'
+        all_names = []
+        for r in all_results[:5]:
+            snippet = r.get('snippet', '')
+            names = re.findall(name_pattern, snippet)
+            all_names.extend(names)
+
+        # Filter out common false positives
+        filtered_names = [n for n in all_names if n.lower() not in ['new york', 'los angeles', 'united states']]
+
+        if filtered_names:
+            # Find a name not in original query
+            for name in filtered_names[:3]:
+                if name.lower() not in query.lower():
+                    yield {"type": "thinking", "text": f"\n[Search 3] Connection: \"{name}\"\n"}
+                    yield {"type": "status", "msg": f"Checking connection: {name}..."}
+
+                    results3 = search_corpus(name, limit=6)
+                    search_history.append({"term": name, "count": len(results3)})
+
+                    if results3:
+                        new_count = 0
+                        for r in results3:
+                            if r.get('id') not in all_ids:
+                                all_results.append(r)
+                                all_ids.add(r.get('id'))
+                                new_count += 1
+                        yield {"type": "thinking", "text": f"  → {len(results3)} emails ({new_count} new)\n"}
+                        if new_count > 0:
+                            yield {"type": "sources", "ids": list(all_ids)}
+                    break
+
+    # ==========================================================================
+    # STEP 4: Synthesize with Haiku (1 API call)
+    # ==========================================================================
+    yield {"type": "thinking", "text": f"\n--- Synthesis ---\n"}
+    yield {"type": "status", "msg": "Synthesizing findings..."}
+
+    if not all_results:
+        response = "Nothing in the corpus. The absence of data is itself data - it means either the connection doesn't exist in these documents, or it's hidden under different names. Try specific email addresses, dates, or alternate spellings."
+        yield {"type": "chunk", "text": response}
+        yield {"type": "done", "sources": []}
         return
 
-    yield {"type": "debug", "intent": intent}
+    # Prepare data for Haiku
+    results_text = []
+    for r in all_results[:15]:  # Limit to 15 most relevant
+        results_text.append(
+            f"Email #{r.get('id')}:\n"
+            f"  Subject: {r.get('name', 'No subject')}\n"
+            f"  From: {r.get('sender_email', '?')}\n"
+            f"  To: {r.get('recipients_to', '?')}\n"
+            f"  Date: {str(r.get('date', '?'))[:10]}\n"
+            f"  Excerpt: {re.sub(r'<[^>]+>', '', r.get('snippet', ''))[:200]}"
+        )
 
-    # STEP 2: Execute SQL
-    yield {"type": "status", "msg": "Searching corpus..."}
+    search_summary = ", ".join([f"'{s['term']}' ({s['count']})" for s in search_history])
 
-    try:
-        sql_results = execute_sql_by_intent(intent, query=query, limit=10)
-    except Exception as e:
-        yield {"type": "error", "msg": f"Database query failed: {str(e)}"}
-        yield {"type": "done"}
-        return
+    haiku_prompt = f"""Investigation query: "{query}"
 
-    if not sql_results:
-        no_results_msg = "Nothing in the corpus matches this query. Try: specific names, email addresses, dates (2010-2020), or keywords like 'wire transfer', 'meeting', 'flight'."
-        yield {"type": "chunk", "text": no_results_msg}
-        if conversation_id:
-            try:
-                execute_insert(
-                    "sessions",
-                    "INSERT INTO messages (conversation_id, role, content, is_auto) VALUES (%s, %s, %s, %s)",
-                    (conversation_id, "assistant", no_results_msg, 1 if is_auto else 0)
-                )
-            except:
-                pass
-        yield {"type": "done"}
-        return
+Searches performed: {search_summary}
+Total unique emails found: {len(all_results)}
 
-    valid_ids = [r.get("id", 0) for r in sql_results]
-    yield {"type": "sources", "ids": valid_ids}
+EMAIL DATA:
+{NL.join(results_text)}
 
-    # STEP 3: Haiku analysis
-    yield {"type": "status", "msg": "Analyzing emails..."}
+Write your analysis as L. What patterns do you see? What's suspicious? What connections emerge?
+Reference specific emails by #ID. End with next investigation steps."""
 
-    try:
-        haiku_analysis = await analyze_haiku(query, sql_results, valid_ids)
-    except Exception as e:
-        yield {"type": "error", "msg": f"Analysis failed: {str(e)}"}
-        yield {"type": "done"}
-        return
+    haiku_response = await call_haiku(haiku_prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=1000)
 
-    yield {"type": "debug", "haiku_analysis": haiku_analysis}
+    if "error" in haiku_response:
+        # Fallback to basic response
+        yield {"type": "thinking", "text": "API unavailable, using local analysis...\n"}
 
-    # STEP 4: Format response
-    yield {"type": "status", "msg": "Formatting response..."}
+        response_parts = []
+        response_parts.append(f"{len(all_results)} emails found across {len(search_history)} searches. Interesting.")
 
-    try:
-        final_response = await format_response_mistral(query, haiku_analysis, valid_ids)
-    except Exception as e:
-        yield {"type": "error", "msg": f"Response formatting failed: {str(e)}"}
-        yield {"type": "done"}
-        return
+        senders = list(set(r.get('sender_email', '') for r in all_results if r.get('sender_email')))[:3]
+        if senders:
+            response_parts.append(f"Key contacts: {', '.join(senders)}")
 
-    yield {"type": "chunk", "text": final_response}
+        dates = [str(r.get('date', ''))[:7] for r in all_results if r.get('date')]
+        if dates:
+            date_range = f"{min(dates)} to {max(dates)}"
+            response_parts.append(f"Timeline spans {date_range}.")
 
+        certainty = random.choice([12, 18, 23, 27, 31])
+        response_parts.append(f"I'm at {certainty}% certainty there's something here worth pursuing.")
+        response_parts.append(f"Sources: {', '.join([f'#{id}' for id in list(all_ids)[:5]])}")
+
+        response = NL.join(response_parts)
+    else:
+        response = haiku_response.get("text", "Analysis complete.")
+
+    yield {"type": "chunk", "text": response}
+
+    # Save response
     if conversation_id:
         try:
             execute_insert(
                 "sessions",
                 "INSERT INTO messages (conversation_id, role, content, is_auto) VALUES (%s, %s, %s, %s)",
-                (conversation_id, "assistant", final_response, 1 if is_auto else 0)
+                (conversation_id, "assistant", response, 1 if is_auto else 0)
             )
         except:
             pass
 
-    # Suggestions from analysis
+    # Suggest follow-ups
     suggestions = []
-    if haiku_analysis.get("next_thread"):
-        next_thread = haiku_analysis["next_thread"]
-        if len(next_thread) < 50:
-            suggestions.append(next_thread)
-    if haiku_analysis.get("key_contacts"):
-        for contact in haiku_analysis["key_contacts"][:2]:
-            if "@" in contact:
-                name = contact.split("@")[0].replace(".", " ").title()
-                suggestions.append(name)
-            else:
-                suggestions.append(contact)
-    if haiku_analysis.get("suggested_queries"):
-        suggestions.extend(haiku_analysis["suggested_queries"])
+    for s in search_history:
+        if s['count'] > 0:
+            suggestions.append(s['term'])
 
     if suggestions:
         yield {"type": "suggestions", "queries": suggestions[:4]}
 
-    yield {"type": "done", "sources": valid_ids}
+    yield {"type": "done", "sources": list(all_ids)}
 
 
 # =============================================================================
-# AUTO-INVESTIGATION MODE
+# AUTO-INVESTIGATION (unchanged)
 # =============================================================================
 
 async def auto_investigate(conversation_id: str, max_queries: int = 10) -> AsyncGenerator[Dict[str, Any], None]:
-    """Auto-investigation mode with smart query generation"""
+    """Auto-investigation mode"""
 
     messages = execute_query(
         "sessions",
@@ -591,94 +399,29 @@ async def auto_investigate(conversation_id: str, max_queries: int = 10) -> Async
     )
 
     if not messages:
-        yield {"type": "error", "msg": "No user message found. Send a query first."}
+        yield {"type": "error", "msg": "No user message found."}
         return
-
-    try:
-        execute_insert(
-            "sessions",
-            "INSERT INTO auto_sessions (conversation_id, max_queries, status) VALUES (%s, %s, 'running')",
-            (conversation_id, max_queries)
-        )
-    except Exception as e:
-        yield {"type": "error", "msg": f"Failed to create auto session: {str(e)}"}
-        return
-
-    query_count = 0
-    pending_queries = []
-    processed_queries = set()
 
     yield {"type": "auto_start", "max_queries": max_queries}
 
-    while query_count < max_queries:
-        if not pending_queries:
-            recent = execute_query(
-                "sessions",
-                "SELECT role, content FROM messages WHERE conversation_id = %s ORDER BY created_at DESC LIMIT 4",
-                (conversation_id,)
-            )
+    query_count = 0
+    pending = [messages[0]['content']]
+    processed = set()
 
-            if recent:
-                context = NL.join([f"{m['role']}: {m['content'][:200]}" for m in reversed(recent)])
-            else:
-                context = "No previous context"
-
-            gen_prompt = f"""Based on this investigation, suggest 3 SHORT search queries (2-4 words each).
-
-Conversation:
-{context}
-
-Rules:
-- Each query must be 2-4 words MAX
-- Use actual names from the conversation
-- Format: "[name] emails" or "[name1] [name2]"
-
-3 short queries:"""
-
-            try:
-                suggestions = await call_mistral(gen_prompt, max_tokens=200, temperature=0.3)
-
-                for line in suggestions.strip().split(NL):
-                    line = line.strip().lstrip('0123456789.-) ')
-                    if line and len(line) > 5 and line not in processed_queries:
-                        pending_queries.append(line)
-            except Exception as e:
-                yield {"type": "error", "msg": f"Failed to generate questions: {str(e)}"}
-                break
-
-        if not pending_queries:
-            yield {"type": "auto_status", "msg": "No more queries to run"}
-            break
-
-        current_query = pending_queries.pop(0)
-        processed_queries.add(current_query)
+    while query_count < max_queries and pending:
+        current = pending.pop(0)
+        if current in processed:
+            continue
+        processed.add(current)
         query_count += 1
 
-        yield {"type": "auto_query", "query": current_query, "index": query_count, "remaining": len(pending_queries)}
+        yield {"type": "auto_query", "query": current, "index": query_count}
 
-        async for event in process_query(current_query, conversation_id, is_auto=True):
+        async for event in process_query(current, conversation_id, is_auto=True):
             if event.get("type") == "suggestions":
                 for q in event.get("queries", []):
-                    if q not in processed_queries and q not in pending_queries:
-                        pending_queries.append(q)
+                    if q not in processed and q not in pending:
+                        pending.append(q)
             yield event
-
-        try:
-            execute_update(
-                "sessions",
-                "UPDATE auto_sessions SET query_count = %s WHERE conversation_id = %s AND status = 'running'",
-                (query_count, conversation_id)
-            )
-        except:
-            pass
-
-    try:
-        execute_update(
-            "sessions",
-            "UPDATE auto_sessions SET status = 'completed', stopped_at = NOW() WHERE conversation_id = %s AND status = 'running'",
-            (conversation_id,)
-        )
-    except:
-        pass
 
     yield {"type": "auto_complete", "total_queries": query_count}

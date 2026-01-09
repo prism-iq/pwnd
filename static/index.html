@@ -111,6 +111,30 @@
             letter-spacing: 2px;
         }
 
+        /* Thinking process */
+        .message.thinking {
+            opacity: 0.7;
+            border-left: 2px solid var(--border);
+            padding-left: 16px;
+            margin-left: 20px;
+        }
+
+        .message.thinking .content {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            color: var(--text-dim);
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .message.thinking .label {
+            font-size: 0.65em;
+            color: var(--accent-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
         /* Typing animation */
         .typing::after {
             content: '▋';
@@ -354,6 +378,7 @@
             const url = `/api/ask?q=${encodeURIComponent(query)}`;
             eventSource = new EventSource(url);
 
+            let thinkingMsg = null;
             let assistantMsg = null;
             let sources = [];
 
@@ -363,10 +388,20 @@
                 if (data.type === 'status') {
                     setStatus(data.msg);
                 }
+                else if (data.type === 'thinking') {
+                    // Show L's investigation process
+                    if (!thinkingMsg) {
+                        thinkingMsg = addMessage('thinking', '', false);
+                    }
+                    const content = thinkingMsg.querySelector('.content');
+                    content.textContent += data.text;
+                    chat.scrollTop = chat.scrollHeight;
+                }
                 else if (data.type === 'sources') {
                     sources = data.ids || [];
                 }
                 else if (data.type === 'chunk') {
+                    // Final analysis
                     if (!assistantMsg) {
                         assistantMsg = addMessage('assistant', '', true);
                     }
@@ -384,7 +419,7 @@
                         if (sources.length > 0) {
                             const sourcesDiv = document.createElement('div');
                             sourcesDiv.className = 'sources';
-                            sourcesDiv.innerHTML = sources.slice(0, 5).map(id =>
+                            sourcesDiv.innerHTML = sources.slice(0, 8).map(id =>
                                 `<a href="/api/email/${id}" target="_blank">#${id}</a>`
                             ).join('');
                             assistantMsg.appendChild(sourcesDiv);
@@ -415,6 +450,11 @@
             if (role === 'assistant') {
                 msg.innerHTML = `
                     <div class="label">L</div>
+                    <div class="content">${content}</div>
+                `;
+            } else if (role === 'thinking') {
+                msg.innerHTML = `
+                    <div class="label">investigating</div>
                     <div class="content">${content}</div>
                 `;
             } else {
