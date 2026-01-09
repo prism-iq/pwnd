@@ -40,11 +40,21 @@ async def stats():
     edges_count = execute_query("graph", "SELECT COUNT(*) as c FROM edges", ())[0]["c"]
     emails_count = execute_query("sources", "SELECT COUNT(*) as c FROM emails", ())[0]["c"]
 
+    # Worker stats if available
+    worker_stats = None
+    try:
+        from app.workers import worker_pool
+        if worker_pool.workers:
+            worker_stats = worker_pool.stats()
+    except:
+        pass
+
     return {
         "nodes": nodes_count,
         "edges": edges_count,
         "sources": emails_count,
-        "databases": ["sources", "graph", "scores", "audit", "sessions"]
+        "databases": ["sources", "graph", "scores", "audit", "sessions"],
+        "workers": worker_stats
     }
 
 # Search
@@ -361,3 +371,55 @@ async def get_timeline(person: Optional[str] = None):
             pass
 
     return events
+
+
+# Parallel extraction endpoint
+@router.post("/api/extract")
+async def extract_entities(text: str, query: str = "", entity_types: Optional[str] = None, insert_db: bool = False):
+    """
+    Parallel Phi-3 extraction with Haiku validation.
+
+    Architecture:
+        [Doc batch]
+              ↓
+    ┌─────────────────────────────────────┐
+    │  Phi3-A (dates)    → SQL dates      │
+    │  Phi3-B (persons)  → SQL persons    │  parallel
+    │  Phi3-C (orgs)     → SQL orgs       │
+    │  Phi3-D (amounts)  → SQL amounts    │
+    └─────────────────────────────────────┘
+              ↓ merge results
+    [Haiku] → validate, correct, structure → clean INSERT
+    """
+    from app.llm_client import parallel_extract_entities, insert_extracted_entities
+
+    # Parse entity types if provided
+    types_list = None
+    if entity_types:
+        types_list = [t.strip() for t in entity_types.split(",")]
+
+    # Run parallel extraction
+    result = await parallel_extract_entities(text, query, types_list)
+
+    # Optionally insert into database
+    if insert_db and "validated" in result:
+        insert_counts = insert_extracted_entities(result["validated"])
+        result["insert_counts"] = insert_counts
+
+    return result
+
+
+@router.get("/api/extract/stats")
+async def extraction_stats():
+    """Get parallel extraction worker stats"""
+    try:
+        from app.workers import worker_pool
+        if worker_pool.workers:
+            return {
+                "status": "ready",
+                "workers": worker_pool.stats(),
+                "entity_types": ["dates", "persons", "orgs", "amounts", "locations"]
+            }
+        return {"status": "no_workers", "workers": None}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}

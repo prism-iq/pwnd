@@ -1,42 +1,181 @@
-"""Full-text search functions with score integration"""
-import sqlite3
-from typing import List, Dict, Any
-from pathlib import Path
+"""Full-text search functions with score integration - PostgreSQL + Go
+
+Hybrid search architecture:
+- Go microservice (port 8003): Fast parallel term search
+- PostgreSQL FTS: Full-text with scoring and snippets
+- In-memory caching: Avoid redundant queries
+"""
+from typing import List, Dict, Any, Optional
+import httpx
+import threading
+import time
+from collections import OrderedDict
 from app.db import execute_query
 from app.models import SearchResult
 
-SCORES_DB = Path("/opt/rag/db/scores.db")
+GO_SEARCH_URL = "http://127.0.0.1:8003"
 
 # =============================================================================
-# SCORE LOOKUP
+# SEARCH CACHE - Avoid redundant queries
+# =============================================================================
+
+class SearchCache:
+    """Thread-safe LRU cache for search results"""
+    def __init__(self, max_size: int = 200, ttl: int = 300):
+        self.max_size = max_size
+        self.ttl = ttl
+        self.cache: OrderedDict = OrderedDict()
+        self.timestamps: Dict[str, float] = {}
+        self.lock = threading.Lock()
+        self.hits = 0
+        self.misses = 0
+
+    def get(self, key: str) -> Optional[List]:
+        with self.lock:
+            if key not in self.cache:
+                self.misses += 1
+                return None
+            if time.time() - self.timestamps[key] > self.ttl:
+                del self.cache[key]
+                del self.timestamps[key]
+                self.misses += 1
+                return None
+            self.cache.move_to_end(key)
+            self.hits += 1
+            return self.cache[key]
+
+    def set(self, key: str, value: List):
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+            else:
+                if len(self.cache) >= self.max_size:
+                    oldest = next(iter(self.cache))
+                    del self.cache[oldest]
+                    del self.timestamps[oldest]
+            self.cache[key] = value
+            self.timestamps[key] = time.time()
+
+    def stats(self) -> Dict:
+        with self.lock:
+            total = self.hits + self.misses
+            return {"size": len(self.cache), "hits": self.hits, "misses": self.misses,
+                    "hit_rate": round(self.hits / total, 2) if total > 0 else 0}
+
+_search_cache = SearchCache()
+
+# =============================================================================
+# AUTO-SCORING - Keywords that indicate importance
+# =============================================================================
+
+SUSPICIOUS_KEYWORDS = {
+    'epstein', 'maxwell', 'trafficking', 'abuse', 'minor', 'underage', 'victim',
+    'settlement', 'lawsuit', 'subpoena', 'deposition', 'indictment', 'arrest',
+    'investigation', 'fbi', 'secret', 'confidential', 'offshore', 'shell company',
+    'wire transfer', 'cash', 'anonymous', 'cover up', 'destroy', 'delete'
+}
+
+PERTINENT_KEYWORDS = {
+    'flight', 'plane', 'jet', 'aircraft', 'passenger', 'manifest', 'log',
+    'island', 'ranch', 'mansion', 'property', 'yacht', 'helicopter',
+    'meeting', 'visit', 'stayed', 'traveled', 'accompanied', 'introduced',
+    'payment', 'donation', 'transfer', 'account', 'foundation', 'trust'
+}
+
+def auto_score_result(result: Dict) -> Dict[str, int]:
+    """Calculate suspicion/pertinence scores from content"""
+    text = f"{result.get('name', '')} {result.get('snippet', '')}".lower()
+
+    suspicion = 0
+    pertinence = 50
+
+    for kw in SUSPICIOUS_KEYWORDS:
+        if kw in text:
+            suspicion += 15
+
+    for kw in PERTINENT_KEYWORDS:
+        if kw in text:
+            pertinence += 10
+
+    return {
+        'suspicion': min(suspicion, 100),
+        'pertinence': min(pertinence, 100),
+        'confidence': 70,
+        'anomaly': 0
+    }
+
+# =============================================================================
+# GO FAST SEARCH - Sync wrapper for pipeline
+# =============================================================================
+
+def search_go_sync(terms: List[str], limit: int = 15) -> List[Dict[str, Any]]:
+    """Synchronous Go search for use in pipeline"""
+    cache_key = f"go:{'+'.join(sorted(terms[:4]))}:{limit}"
+    cached = _search_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        q = " ".join(terms[:4])
+        resp = httpx.get(f"{GO_SEARCH_URL}/search/fast", params={"q": q}, timeout=3.0)
+        if resp.status_code == 200:
+            results = resp.json()
+            out = [{"id": r["id"], "name": r["name"], "snippet": r.get("snippet", ""),
+                    "rank": r["rank"], "type": "email"} for r in results[:limit]]
+            _search_cache.set(cache_key, out)
+            return out
+    except:
+        pass
+    return []
+
+async def search_go_fast(terms: List[str], limit: int = 15) -> List[Dict[str, Any]]:
+    """Fast parallel search via Go microservice (async)"""
+    cache_key = f"go:{'+'.join(sorted(terms[:4]))}:{limit}"
+    cached = _search_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            q = " ".join(terms[:4])
+            resp = await client.get(f"{GO_SEARCH_URL}/search/fast", params={"q": q})
+            if resp.status_code == 200:
+                results = resp.json()
+                out = [{"id": r["id"], "name": r["name"], "snippet": r.get("snippet", ""),
+                         "rank": r["rank"], "type": "email"} for r in results[:limit]]
+                _search_cache.set(cache_key, out)
+                return out
+    except:
+        pass
+    return []
+
+# =============================================================================
+# SCORE LOOKUP (PostgreSQL)
 # =============================================================================
 
 def get_scores(target_type: str, target_ids: List[int]) -> Dict[int, Dict[str, int]]:
-    """Fetch scores from scores.db for given targets"""
+    """Fetch scores from PostgreSQL for given targets"""
     if not target_ids:
         return {}
 
     try:
-        conn = sqlite3.connect(SCORES_DB)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        placeholders = ','.join(['?'] * len(target_ids))
-        cursor.execute(f"""
-            SELECT target_id, suspicion, pertinence, confidence, anomaly
-            FROM scores
-            WHERE target_type = ? AND target_id IN ({placeholders})
-        """, [target_type] + list(target_ids))
+        placeholders = ','.join(['%s'] * len(target_ids))
+        rows = execute_query(
+            "scores",
+            f"""SELECT target_id, suspicion, pertinence, confidence, anomaly
+                FROM scores
+                WHERE target_type = %s AND target_id IN ({placeholders})""",
+            tuple([target_type] + list(target_ids))
+        )
 
         scores = {}
-        for row in cursor.fetchall():
+        for row in rows:
             scores[row['target_id']] = {
                 'suspicion': row['suspicion'] or 0,
                 'pertinence': row['pertinence'] or 50,
                 'confidence': row['confidence'] or 50,
                 'anomaly': row['anomaly'] or 0
             }
-        conn.close()
         return scores
     except Exception:
         return {}

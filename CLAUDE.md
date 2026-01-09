@@ -27,12 +27,31 @@ Browser (https://pwnd.icu)
   ↓ SSE Stream
 FastAPI (127.0.0.1:8002) ← Caddy (0.0.0.0:80/443)
   ↓
-Phi-3-Mini 4K (127.0.0.1:8001) - Intent parsing (2-3s)
+┌─────────────────────────────────────────────────────────┐
+│   PARALLEL PHI-3 EXTRACTION (multi-worker)              │
+│   ┌─────────────────────────────────────┐               │
+│   │  Phi3-A (dates)    → SQL dates      │               │
+│   │  Phi3-B (persons)  → SQL persons    │  parallel     │
+│   │  Phi3-C (orgs)     → SQL orgs       │               │
+│   │  Phi3-D (amounts)  → SQL amounts    │               │
+│   │  Phi3-E (locations)→ SQL locations  │               │
+│   └─────────────────────────────────────┘               │
+│                    ↓ merge results                       │
+└─────────────────────────────────────────────────────────┘
   ↓
-SQLite (sources.db, graph.db, sessions.db)
+SQLite/PostgreSQL (sources.db, graph.db, sessions.db)
   ↓
-Claude Haiku API - Analysis (3-5s)
+Claude Haiku API - Validation + Final Analysis (1 call)
+  ↓
+Clean INSERT to database tables
 ```
+
+**Parallel Extraction Pipeline:**
+1. Document batch received
+2. 5 Phi-3 workers run in parallel (each specialized for entity type)
+3. Results merged and deduplicated
+4. Single Haiku call validates and corrects
+5. Validated entities inserted to graph.db
 
 ### File Structure
 
@@ -141,6 +160,14 @@ GET  /api/search?q=...                   # Search emails
 GET  /api/stats                          # Database statistics
 POST /api/auto/start                     # Start auto-investigation
 POST /api/auto/stop                      # Stop auto-investigation
+
+# Parallel Extraction (NEW)
+POST /api/extract                        # Parallel Phi-3 extraction + Haiku validation
+  - text: Document text to process
+  - query: Optional query context
+  - entity_types: Optional comma-separated (dates,persons,orgs,amounts,locations)
+  - insert_db: Boolean, insert validated entities to graph.db
+GET  /api/extract/stats                  # Worker pool statistics
 
 # Authentication
 POST /api/auth/register                  # Create account (email + password)

@@ -1,10 +1,237 @@
-"""LLM client for Mistral (local) and Haiku (API)"""
+"""LLM client - Local Phi-3 workers + Haiku API
+
+Architecture:
+- Phi-3 (local, free): Entity extraction, filtering, simple tasks
+- Haiku (API, paid): Complex synthesis, final analysis
+"""
 import httpx
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from app.config import LLM_MISTRAL_URL, LLM_HAIKU_API_KEY
 
+
+async def call_local(prompt: str, max_tokens: int = 512, temperature: float = 0.3) -> str:
+    """Call local Phi-3 via worker pool"""
+    try:
+        from app.workers import worker_pool, JobType
+        if not worker_pool.workers:
+            return ""
+
+        # Use summarize job type for general prompts
+        job_id = await worker_pool.submit(
+            JobType.SUMMARIZE,
+            {"text": prompt, "max_length": max_tokens * 4},
+        )
+        job = await worker_pool.get_result(job_id, timeout=60)
+        if job and job.result:
+            return job.result
+        return ""
+    except Exception as e:
+        return ""
+
+
+async def extract_entities_local(text: str) -> List[Dict]:
+    """Extract entities using local Phi-3"""
+    try:
+        from app.workers import worker_pool, JobType
+        if not worker_pool.workers:
+            return []
+
+        job_id = await worker_pool.submit(
+            JobType.EXTRACT_ENTITIES,
+            {"text": text[:3000]}
+        )
+        job = await worker_pool.get_result(job_id, timeout=30)
+        if job and job.result:
+            return job.result
+        return []
+    except:
+        return []
+
+
+async def extract_relationships_local(text: str, entities: List[Dict]) -> List[Dict]:
+    """Extract relationships using local Phi-3"""
+    try:
+        from app.workers import worker_pool, JobType
+        if not worker_pool.workers:
+            return []
+
+        job_id = await worker_pool.submit(
+            JobType.EXTRACT_RELATIONSHIPS,
+            {"text": text[:2500], "entities": entities}
+        )
+        job = await worker_pool.get_result(job_id, timeout=30)
+        if job and job.result:
+            return job.result
+        return []
+    except:
+        return []
+
+
+async def parallel_extract_entities(text: str, query: str = "", entity_types: List[str] = None) -> Dict:
+    """
+    Parallel Phi-3 extraction with Haiku validation.
+
+    Architecture:
+        [Doc batch]
+              ↓
+    ┌─────────────────────────────────────┐
+    │  Phi3-A (dates)    → SQL dates      │
+    │  Phi3-B (persons)  → SQL persons    │  parallel
+    │  Phi3-C (orgs)     → SQL orgs       │
+    │  Phi3-D (amounts)  → SQL amounts    │
+    └─────────────────────────────────────┘
+              ↓ merge results
+    [Haiku] → validate, correct, structure → clean INSERT
+    """
+    try:
+        from app.workers import parallel_extract
+        return await parallel_extract(text, query, entity_types)
+    except Exception as e:
+        return {"error": str(e), "raw_extracted": {}, "validated": {}}
+
+
+async def parse_query_intent(query: str) -> Dict:
+    """Parse user query intent using local Phi-3"""
+    try:
+        from app.workers import worker_pool, JobType
+        if not worker_pool.workers:
+            return {"intent": "other", "targets": [], "keywords": []}
+
+        job_id = await worker_pool.submit(
+            JobType.PARSE_INTENT,
+            {"query": query}
+        )
+        job = await worker_pool.get_result(job_id, timeout=20)
+        if job and job.result:
+            return job.result
+        return {"intent": "other", "targets": [], "keywords": []}
+    except:
+        return {"intent": "other", "targets": [], "keywords": []}
+
+
+async def generate_subqueries(query: str, context: str = "") -> List[str]:
+    """Generate follow-up queries (self-questioning) using local Phi-3"""
+    try:
+        from app.workers import worker_pool, JobType
+        if not worker_pool.workers:
+            return []
+
+        job_id = await worker_pool.submit(
+            JobType.GENERATE_SUBQUERIES,
+            {"query": query, "context": context}
+        )
+        job = await worker_pool.get_result(job_id, timeout=25)
+        if job and job.result:
+            return job.result
+        return []
+    except:
+        return []
+
+
+def insert_extracted_entities(validated: Dict, source_email_id: int = None) -> Dict[str, int]:
+    """
+    Insert validated entities into the graph database.
+
+    Args:
+        validated: Dict with dates, persons, orgs, amounts, locations
+        source_email_id: Optional email ID to create edges from
+
+    Returns:
+        Dict with counts of inserted entities by type
+    """
+    from app.db import execute_insert, execute_query
+
+    counts = {"persons": 0, "orgs": 0, "locations": 0, "edges": 0}
+
+    # Insert persons
+    for person in validated.get("persons", []):
+        name = person.get("name", "")
+        if not name:
+            continue
+        try:
+            execute_insert(
+                "graph",
+                """INSERT INTO nodes (type, name, name_normalized, metadata)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (type, name_normalized) DO UPDATE SET
+                   metadata = nodes.metadata || EXCLUDED.metadata""",
+                ("person", name, name.lower(), person)
+            )
+            counts["persons"] += 1
+        except:
+            pass
+
+    # Insert organizations
+    for org in validated.get("orgs", []):
+        name = org.get("name", "")
+        if not name:
+            continue
+        try:
+            execute_insert(
+                "graph",
+                """INSERT INTO nodes (type, name, name_normalized, metadata)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (type, name_normalized) DO UPDATE SET
+                   metadata = nodes.metadata || EXCLUDED.metadata""",
+                ("organization", name, name.lower(), org)
+            )
+            counts["orgs"] += 1
+        except:
+            pass
+
+    # Insert locations
+    for loc in validated.get("locations", []):
+        name = loc.get("name", "")
+        if not name:
+            continue
+        try:
+            execute_insert(
+                "graph",
+                """INSERT INTO nodes (type, name, name_normalized, metadata)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (type, name_normalized) DO UPDATE SET
+                   metadata = nodes.metadata || EXCLUDED.metadata""",
+                ("location", name, name.lower(), loc)
+            )
+            counts["locations"] += 1
+        except:
+            pass
+
+    # If we have a source email, create edges
+    if source_email_id:
+        # Get email node ID
+        email_node = execute_query(
+            "graph",
+            "SELECT id FROM nodes WHERE type = 'email' AND metadata->>'email_id' = %s",
+            (str(source_email_id),)
+        )
+        if email_node:
+            email_node_id = email_node[0]["id"]
+            # Create edges to extracted entities
+            for person in validated.get("persons", []):
+                try:
+                    person_node = execute_query(
+                        "graph",
+                        "SELECT id FROM nodes WHERE type = 'person' AND name_normalized = %s",
+                        (person.get("name", "").lower(),)
+                    )
+                    if person_node:
+                        execute_insert(
+                            "graph",
+                            """INSERT INTO edges (from_node_id, to_node_id, type)
+                               VALUES (%s, %s, 'mentions')
+                               ON CONFLICT DO NOTHING""",
+                            (email_node_id, person_node[0]["id"])
+                        )
+                        counts["edges"] += 1
+                except:
+                    pass
+
+    return counts
+
+
 async def call_mistral(prompt: str, max_tokens: int = 512, temperature: float = 0.7) -> str:
-    """Call local Mistral LLM"""
+    """Call local LLM via HTTP (legacy)"""
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
             response = await client.post(
@@ -20,7 +247,7 @@ async def call_mistral(prompt: str, max_tokens: int = 512, temperature: float = 
             data = response.json()
             return data.get("text", "").strip()
     except Exception as e:
-        return f"Error calling Mistral: {str(e)}"
+        return f"Error calling local LLM: {str(e)}"
 
 def check_haiku_rate_limit() -> Dict[str, Any]:
     """Check if Haiku rate limit is reached for today"""

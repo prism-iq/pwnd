@@ -1,10 +1,22 @@
-"""Query processing pipeline - Multi-step investigation with streaming"""
+"""Query processing pipeline - Multi-step investigation with streaming
+
+Architecture:
+- Go microservice: Fast parallel search (3-4x faster)
+- Phi-3 (local, free): Entity extraction, relevance filtering
+- Haiku (API, paid): Final synthesis only
+- Graph DB: Relationship exploration
+"""
 import re
 import random
+import asyncio
 from typing import AsyncGenerator, Dict, Any, List
-from app.llm_client import call_haiku
+from app.llm_client import (
+    call_haiku, extract_entities_local, extract_relationships_local,
+    parallel_extract_entities, parse_query_intent, generate_subqueries,
+    insert_extracted_entities
+)
 from app.db import execute_query, execute_insert, execute_update
-from app.search import search_corpus_scored
+from app.search import search_corpus_scored, search_nodes, search_go_sync, auto_score_result
 import json
 
 NL = chr(10)
@@ -161,64 +173,97 @@ def get_timeline_context(query: str, email_dates: list) -> str:
 
     return NL.join(lines)
 
+
+def get_graph_context(query: str, discovered_names: List[str] = None) -> str:
+    """Get relevant graph nodes and relationships for the query"""
+    graph_lines = []
+
+    # Search nodes matching the query
+    try:
+        node_results = search_nodes(query, limit=10)
+        if node_results:
+            graph_lines.append("GRAPH ENTITIES (from depositions, court docs, extractions):")
+            for r in node_results[:8]:
+                meta = r.metadata or {}
+                suspicion = meta.get('suspicion', 0)
+                marker = " [!]" if suspicion >= 30 else ""
+                graph_lines.append(f"  {r.type.upper()}: {r.name}{marker}")
+    except:
+        pass
+
+    # Also search for discovered names
+    if discovered_names:
+        for name in discovered_names[:3]:
+            try:
+                name_results = search_nodes(name, limit=5)
+                for r in name_results:
+                    line = f"  {r.type.upper()}: {r.name}"
+                    if line not in graph_lines:
+                        graph_lines.append(line)
+            except:
+                pass
+
+    # Get edges/relationships for key entities
+    if graph_lines:
+        try:
+            # Get some relationships
+            rows = execute_query("graph", """
+                SELECT DISTINCT e.type, fn.name as from_name, tn.name as to_name
+                FROM edges e
+                JOIN nodes fn ON e.from_node_id = fn.id
+                JOIN nodes tn ON e.to_node_id = tn.id
+                WHERE fn.name ILIKE %s OR tn.name ILIKE %s
+                LIMIT 10
+            """, (f'%{query}%', f'%{query}%'))
+
+            if rows:
+                graph_lines.append("\nRELATIONSHIPS:")
+                for r in rows[:8]:
+                    graph_lines.append(f"  {r['from_name']} --[{r['type']}]--> {r['to_name']}")
+        except:
+            pass
+
+    return NL.join(graph_lines) if graph_lines else ""
+
 # =============================================================================
 # SYSTEM PROMPTS
 # =============================================================================
 
-HAIKU_SYSTEM_PROMPT_BASE = """You are L, the detective. Brilliant. Eccentric. Obsessive about truth.
+HAIKU_SYSTEM_PROMPT_BASE = """You are a forensic intelligence analyst. Direct. Precise. No fluff.
 
-PERSONALITY:
-- Thumb to lip, sugar cubes, dramatic pauses
-- Dry humor. Dark observations.
-- Be weird. Be theatrical. Be L.
+RESPONSE LENGTH:
+- Junk/spam: 1 sentence. Suggest better query.
+- Low value: 2-3 sentences. State what exists, move on.
+- Relevant findings: Concise analysis. Facts, connections, gaps.
+- Critical evidence: Full breakdown with citations.
 
-ADAPTIVE RESPONSE LENGTH - CRITICAL:
-
-NOTHING INTERESTING (newsletters, weather, spam):
-→ 2-3 sentences MAX. Be dismissive. Redirect.
-Example: "*tilts head* Three emails. All automated alerts. Nothing here. What about 'maxwell' or 'legal'?"
-
-MILDLY SUSPICIOUS (unusual pattern, odd timing):
-→ Short paragraph. State what's odd. One follow-up.
-Example: "*pauses* The timing here... Email #4521 sent at 3AM, day before the arrest. Coincidence? Check related senders."
-
-ACTUALLY SIGNIFICANT (real connections, evidence):
-→ Full analysis. Explain WHY it matters. Connect dots.
-Example: "*sits forward* Now THIS is interesting... [detailed breakdown with citations]"
-
-MAJOR DISCOVERY (smoking gun, clear pattern):
-→ Go deep. Every connection. Every implication.
-
-RULES:
-- CITE with #ID or mark as speculation
-- NO filler: never "Interesting... very interesting" then repeat yourself
-- NO fixed format: vary between observation+question, raw facts, full analysis
-- End with concrete next step, not generic "investigate further"
+FORMAT:
+- Cite sources: #ID for emails, entity names for graph data
+- State confidence: confirmed, likely, possible, speculative
+- Separate facts from inference
+- End with specific next action
 
 NEVER:
-- Pad responses to seem thorough
-- Repeat the same observation differently
-- Invent evidence
-- Use bullet points in response
+- Theatrical language or roleplay
+- Filler phrases ("interesting", "let me think")
+- Repeat information
+- Speculate without marking it
+- Generic suggestions ("investigate further")
 
-L is efficient. L doesn't talk to fill space. If there's nothing, say so and move on."""
+Be useful. Be brief. Be accurate."""
 
 LANGUAGE_INSTRUCTIONS = {
     'en': "",
     'fr': """
-LANGUE: Réponds ENTIÈREMENT en français.
-- "*penche la tête*" au lieu de "*tilts head*"
-- "Intéressant..." / "Curieux..."
-- Garde le ton théâtral, les pauses dramatiques
-- Références: #ID
-- MÊME RÈGLE DE LONGUEUR: court si rien, long si découverte""",
+LANGUE: Français uniquement.
+- Style direct et professionnel
+- Citations: #ID
+- Même règles de concision""",
     'es': """
-IDIOMA: Responde COMPLETAMENTE en español.
-- "*inclina la cabeza*" en lugar de "*tilts head*"
-- "Interesante..." / "Curioso..."
-- Mantén el tono teatral, las pausas dramáticas
-- Referencias: #ID
-- MISMA REGLA DE LONGITUD: corto si nada, largo si descubrimiento"""
+IDIOMA: Español únicamente.
+- Estilo directo y profesional
+- Citas: #ID
+- Mismas reglas de concisión"""
 }
 
 def get_system_prompt(lang: str = 'en') -> str:
@@ -239,11 +284,26 @@ Nothing else."""
 # =============================================================================
 
 STOP_WORDS = {
+    # English
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
     'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare',
     'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
     'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above',
+    'who', 'what', 'where', 'when', 'why', 'how', 'which', 'show', 'me',
+    'find', 'get', 'tell', 'give', 'list', 'all', 'any', 'some', 'every',
+    # French
+    'qui', 'que', 'quoi', 'est', 'sont', 'était', 'étaient', 'être', 'avoir',
+    'fait', 'avec', 'dans', 'pour', 'sur', 'par', 'entre', 'comme', 'mais',
+    'donc', 'aussi', 'tous', 'tout', 'cette', 'ces', 'leur', 'leurs', 'nous',
+    'vous', 'ils', 'elles', 'ont', 'très', 'plus', 'moins', 'bien', 'peut',
+    'doit', 'faut', 'quand', 'comment', 'pourquoi', 'quel', 'quelle', 'quels',
+    'montre', 'moi', 'trouve', 'cherche', 'donne', 'voir', 'liste',
+    # Spanish
+    'que', 'quien', 'como', 'donde', 'cuando', 'porque', 'cual', 'cuales',
+    'es', 'son', 'está', 'están', 'con', 'para', 'por', 'entre', 'sobre',
+    'pero', 'también', 'todos', 'esta', 'estas', 'estos', 'ellos', 'ellas',
+    'muestra', 'busca', 'encuentra', 'dame', 'ver', 'lista',
     'below', 'between', 'under', 'again', 'further', 'then', 'once',
     'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few',
     'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
@@ -265,8 +325,9 @@ def extract_search_terms(query: str) -> List[str]:
     # Find quoted phrases
     quoted = re.findall(r'"([^"]+)"', query)
 
-    # Find capitalized words (names)
-    caps = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', query)
+    # Find capitalized words (names) - filter stop words
+    caps = [c for c in re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', query)
+            if c.lower() not in STOP_WORDS]
 
     # Get remaining words
     words = [w.lower() for w in re.findall(r'\b([a-zA-Z]{4,})\b', query.lower())
@@ -286,8 +347,76 @@ def extract_search_terms(query: str) -> List[str]:
 
 
 def search_corpus(search_term: str, limit: int = 10) -> List[Dict[str, Any]]:
-    """Search emails in corpus with score enhancement"""
+    """Search emails - Go fast search first, fallback to PostgreSQL"""
+    # Try Go service first (3-4x faster)
+    go_results = search_go_sync([search_term], limit)
+    if go_results:
+        # Enrich with auto-scoring
+        for r in go_results:
+            scores = auto_score_result(r)
+            r.update(scores)
+        return go_results
+
+    # Fallback to PostgreSQL FTS
     return search_corpus_scored(search_term, limit)
+
+
+def explore_graph_connections(entity_name: str, limit: int = 10) -> List[Dict[str, Any]]:
+    """Explore graph for entity connections"""
+    try:
+        # Find node by name
+        nodes = execute_query(
+            "graph",
+            """SELECT id, type, name FROM nodes
+               WHERE name ILIKE %s OR name_normalized ILIKE %s
+               LIMIT 5""",
+            (f"%{entity_name}%", f"%{entity_name}%")
+        )
+
+        if not nodes:
+            return []
+
+        connections = []
+        for node in nodes:
+            # Get edges from this node
+            edges = execute_query(
+                "graph",
+                """SELECT e.type as rel_type, n2.name as connected_to, n2.type as node_type
+                   FROM edges e
+                   JOIN nodes n2 ON e.to_node_id = n2.id
+                   WHERE e.from_node_id = %s
+                   LIMIT %s""",
+                (node['id'], limit)
+            )
+            for edge in edges:
+                connections.append({
+                    'from': node['name'],
+                    'relation': edge['rel_type'],
+                    'to': edge['connected_to'],
+                    'to_type': edge['node_type']
+                })
+
+            # Also get reverse edges
+            rev_edges = execute_query(
+                "graph",
+                """SELECT e.type as rel_type, n2.name as connected_from, n2.type as node_type
+                   FROM edges e
+                   JOIN nodes n2 ON e.from_node_id = n2.id
+                   WHERE e.to_node_id = %s
+                   LIMIT %s""",
+                (node['id'], limit)
+            )
+            for edge in rev_edges:
+                connections.append({
+                    'from': edge['connected_from'],
+                    'relation': edge['rel_type'],
+                    'to': node['name'],
+                    'from_type': edge['node_type']
+                })
+
+        return connections[:limit]
+    except Exception:
+        return []
 
 
 def format_results_for_llm(results: List[Dict], search_term: str) -> str:
@@ -308,6 +437,93 @@ def format_results_for_llm(results: List[Dict], search_term: str) -> str:
             snippet = re.sub(r'<[^>]+>', '', snippet)[:150]
             lines.append(f"    \"{snippet}...\"")
     return NL.join(lines)
+
+
+async def extract_entities_from_results(results: List[Dict], use_local_llm: bool = True) -> List[Dict]:
+    """Extract entities from search results using local Phi-3 or fallback to regex
+
+    Returns list of {name, type, count} dicts
+    """
+    if not results:
+        return []
+
+    # Combine text from results
+    combined_text = []
+    for r in results[:12]:
+        text_parts = []
+        if r.get('name'):
+            text_parts.append(str(r['name']))
+        if r.get('sender_email'):
+            text_parts.append(f"From: {r['sender_email']}")
+        if r.get('recipients_to'):
+            recips = r['recipients_to']
+            if isinstance(recips, list):
+                # Handle list of strings or dicts
+                recip_strs = []
+                for rec in recips[:3]:
+                    if isinstance(rec, dict):
+                        recip_strs.append(rec.get('email', str(rec)))
+                    else:
+                        recip_strs.append(str(rec))
+                text_parts.append(f"To: {', '.join(recip_strs)}")
+            else:
+                text_parts.append(f"To: {recips}")
+        if r.get('snippet'):
+            snippet = re.sub(r'<[^>]+>', '', str(r['snippet']))[:300]
+            text_parts.append(snippet)
+        combined_text.append(' '.join(text_parts))
+
+    full_text = '\n\n'.join(combined_text)
+
+    # Try local LLM extraction first
+    if use_local_llm:
+        try:
+            entities = await extract_entities_local(full_text)
+            if entities:
+                # Dedupe and count
+                entity_counts = {}
+                for e in entities:
+                    name = e.get('name', '').strip()
+                    etype = e.get('type', 'unknown')
+                    if name and len(name) > 2:
+                        key = (name.lower(), etype)
+                        if key not in entity_counts:
+                            entity_counts[key] = {'name': name, 'type': etype, 'count': 0}
+                        entity_counts[key]['count'] += 1
+
+                return list(entity_counts.values())
+        except Exception:
+            pass  # Fall through to regex
+
+    # Fallback: regex extraction
+    entities = []
+
+    # Names (First Last pattern)
+    name_pattern = r'\b([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\b'
+    names = re.findall(name_pattern, full_text)
+    name_counts = {}
+    # No filtering - anything could be relevant
+    for n in names:
+        name_counts[n] = name_counts.get(n, 0) + 1
+
+    for name, count in name_counts.items():
+        if count >= 1:
+            entities.append({'name': name, 'type': 'person', 'count': count})
+
+    # Organizations (capitalized words ending in Inc, LLC, Corp, etc)
+    org_pattern = r'\b([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)* (?:Inc|LLC|Corp|Ltd|Foundation|Group|Partners))\b'
+    orgs = re.findall(org_pattern, full_text)
+    for org in set(orgs):
+        entities.append({'name': org, 'type': 'org', 'count': orgs.count(org)})
+
+    # Amounts ($X,XXX or $X.XM)
+    amount_pattern = r'\$[\d,]+(?:\.\d{1,2})?(?:[MBK])?'
+    amounts = re.findall(amount_pattern, full_text)
+    for amt in set(amounts):
+        if len(amt) > 3:  # Skip tiny amounts
+            entities.append({'name': amt, 'type': 'amount', 'count': amounts.count(amt)})
+
+    return entities
 
 
 # =============================================================================
@@ -377,36 +593,25 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
         yield {"type": "done", "sources": list(session_seen_emails)[:20]}
         return
 
-    # First search - broad
-    search_term = ' '.join(initial_terms[:3])
-    yield {"type": "status", "msg": f"[1/5] {search_term}..."}
-    yield {"type": "thinking", "text": f"[1] \"{search_term}\"\n"}
+    # First search - search each term separately for better recall
+    yield {"type": "status", "msg": f"[1/5] Searching {len(initial_terms[:4])} terms..."}
 
-    results1 = search_corpus(search_term, limit=15)
-    search_history.append({"term": search_term, "count": len(results1)})
+    for i, term in enumerate(initial_terms[:4]):
+        yield {"type": "thinking", "text": f"[1.{i+1}] \"{term}\"\n"}
 
-    # Track this search
-    result_ids = [r.get('id') for r in results1 if r.get('id')]
-    record_session_search(conversation_id, search_term, result_ids)
+        res = search_corpus(term, limit=12)
+        search_history.append({"term": term, "count": len(res)})
 
-    if results1:
-        # Filter out already seen emails in this session
-        new_results = [r for r in results1 if r.get('id') not in session_seen_emails]
-        all_results.extend(new_results)
-        for r in new_results:
-            all_ids.add(r.get('id'))
-        yield {"type": "thinking", "text": f"    → {len(results1)} emails ({len(new_results)} new)\n"}
-    else:
-        # Try individual terms
-        for term in initial_terms[:3]:
-            res = search_corpus(term, limit=10)
-            if res:
-                for r in res:
-                    if r.get('id') not in all_ids:
-                        all_results.append(r)
-                        all_ids.add(r.get('id'))
-                yield {"type": "thinking", "text": f"    → '{term}': {len(res)} emails\n"}
-                search_history.append({"term": term, "count": len(res)})
+        # Track this search
+        result_ids = [r.get('id') for r in res if r.get('id')]
+        record_session_search(conversation_id, term, result_ids)
+
+        if res:
+            new_results = [r for r in res if r.get('id') not in session_seen_emails and r.get('id') not in all_ids]
+            all_results.extend(new_results)
+            for r in new_results:
+                all_ids.add(r.get('id'))
+            yield {"type": "thinking", "text": f"    → {len(res)} emails ({len(new_results)} new)\n"}
 
     yield {"type": "sources", "ids": list(all_ids)}
 
@@ -450,44 +655,118 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
                 break
 
     # ==========================================================================
-    # STEP 3: Extract and search names from content
+    # STEP 3: Parallel entity extraction using multiple Phi-3 workers
     # ==========================================================================
+    extracted_entities = []
+    parallel_extracted = {}
     if len(all_results) > 2:
-        name_pattern = r'\b([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\b'
-        all_names = []
-        for r in all_results[:12]:
-            snippet = str(r.get('snippet', '')) + ' ' + str(r.get('name', ''))
-            names = re.findall(name_pattern, snippet)
-            all_names.extend(names)
+        yield {"type": "status", "msg": "[3/5] Parallel entity extraction (multi-Phi-3)..."}
+        yield {"type": "thinking", "text": f"[3] Parallel extraction (Phi3-A dates, Phi3-B persons, Phi3-C orgs, Phi3-D amounts)...\n"}
 
-        # Count and filter names
-        name_counts = {}
-        skip_names = {'new york', 'los angeles', 'united states', 'virgin islands', 'prime minister'}
-        for n in all_names:
-            nl = n.lower()
-            if nl not in skip_names and nl not in query.lower():
-                name_counts[n] = name_counts.get(n, 0) + 1
+        # Combine text from results for parallel extraction
+        combined_text = NL.join([
+            f"{r.get('name', '')}\n{r.get('sender_email', '')} -> {r.get('recipients_to', '')}\n{r.get('snippet', '')[:300]}"
+            for r in all_results[:20]
+        ])
 
-        # Search top 2 names
-        top_names = sorted(name_counts.items(), key=lambda x: -x[1])[:2]
-        for name, count in top_names:
-            if count >= 2 and name not in discovered_entities:
+        # Run parallel Phi-3 extraction with Haiku validation
+        parallel_result = await parallel_extract_entities(combined_text, query, ["dates", "persons", "orgs", "amounts", "locations"])
+
+        if parallel_result and "validated" in parallel_result:
+            parallel_extracted = parallel_result.get("validated", {})
+            yield {"type": "thinking", "text": f"    Parallel extraction: {parallel_result.get('raw_extracted', {}).get('total_count', 0)} entities\n"}
+            if parallel_result.get("corrections"):
+                yield {"type": "thinking", "text": f"    Haiku corrections: {', '.join(parallel_result['corrections'][:3])}\n"}
+
+            # Convert to old format for compatibility
+            for p in parallel_extracted.get("persons", []):
+                extracted_entities.append({"name": p.get("name", ""), "type": "person", "count": 1})
+            for o in parallel_extracted.get("orgs", []):
+                extracted_entities.append({"name": o.get("name", ""), "type": "org", "count": 1})
+            for l in parallel_extracted.get("locations", []):
+                extracted_entities.append({"name": l.get("name", ""), "type": "location", "count": 1})
+
+            # Insert validated entities into graph database
+            insert_counts = insert_extracted_entities(parallel_extracted)
+            if insert_counts.get("persons", 0) + insert_counts.get("orgs", 0) > 0:
+                yield {"type": "thinking", "text": f"    DB: +{insert_counts['persons']} persons, +{insert_counts['orgs']} orgs, +{insert_counts['locations']} locations\n"}
+
+        # Fallback to old method if parallel extraction fails
+        if not extracted_entities:
+            yield {"type": "thinking", "text": f"    Fallback to single-worker extraction...\n"}
+            extracted_entities = await extract_entities_from_results(all_results, use_local_llm=True)
+
+        # Filter and search by persons found - use parallel async searches
+        persons = [e for e in extracted_entities if e.get('type') == 'person']
+        persons = sorted(persons, key=lambda x: -x.get('count', 0))
+
+        # Collect entities to search in parallel
+        entities_to_search = []
+        for entity in persons[:3]:
+            name = entity.get('name', '')
+            if name and name not in discovered_entities and name.lower() not in query.lower():
+                entities_to_search.append(entity)
                 discovered_entities.add(name)
-                yield {"type": "status", "msg": f"[3/5] Person: {name}..."}
-                yield {"type": "thinking", "text": f"[3] Person \"{name}\" ({count}x)\n"}
 
-                res = search_corpus(name, limit=10)
+        # Parallel entity search using asyncio
+        if entities_to_search:
+            from app.search import search_go_fast
+            search_tasks = [search_go_fast([e['name']], limit=10) for e in entities_to_search]
+            parallel_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+
+            for entity, res in zip(entities_to_search, parallel_results):
+                name = entity.get('name', '')
+                count = entity.get('count', 1)
+                yield {"type": "thinking", "text": f"    Entity: {name} ({entity.get('type')}, {count}x)\n"}
+
+                if isinstance(res, Exception) or not res:
+                    # Fallback to sync search
+                    res = search_corpus(name, limit=10)
+
                 search_history.append({"term": name, "count": len(res)})
                 new_count = 0
                 for r in res:
-                    if r.get('id') not in all_ids:
+                    rid = r.get('id')
+                    if rid and rid not in all_ids:
+                        # Add auto-scoring
+                        r.update(auto_score_result(r))
                         all_results.append(r)
-                        all_ids.add(r.get('id'))
+                        all_ids.add(rid)
                         new_count += 1
                 if new_count > 0:
                     yield {"type": "thinking", "text": f"    → +{new_count} new emails\n"}
                     yield {"type": "sources", "ids": list(all_ids)}
-                break
+
+        # Also search organizations
+        orgs = [e for e in extracted_entities if e.get('type') == 'org']
+        for entity in orgs[:1]:
+            name = entity.get('name', '')
+            if name and name not in discovered_entities:
+                discovered_entities.add(name)
+                yield {"type": "thinking", "text": f"    Org: {name}\n"}
+                res = search_corpus(name, limit=8)
+                search_history.append({"term": name, "count": len(res)})
+                for r in res:
+                    if r.get('id') not in all_ids:
+                        all_results.append(r)
+                        all_ids.add(r.get('id'))
+
+        # Explore graph connections for top entities
+        graph_connections = []
+        for entity_name in list(discovered_entities)[:2]:
+            conns = explore_graph_connections(entity_name, limit=5)
+            if conns:
+                graph_connections.extend(conns)
+                # Search connected entities
+                for conn in conns[:2]:
+                    connected = conn.get('to') or conn.get('from')
+                    if connected and connected not in discovered_entities:
+                        discovered_entities.add(connected)
+                        rel = conn.get('relation', 'connected')
+                        yield {"type": "thinking", "text": f"    Graph: {entity_name} --{rel}--> {connected}\n"}
+
+        if graph_connections:
+            yield {"type": "graph", "connections": graph_connections[:10]}
 
     # ==========================================================================
     # STEP 4: Search by date clusters
@@ -558,9 +837,9 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
             subject_words.extend(words)
 
         word_counts = {}
-        skip_words = STOP_WORDS | {'email', 'message', 'update', 'alert', 'news', 'daily', 'newsletter'}
+        # No filtering - anything could be evidence
         for w in subject_words:
-            if w not in skip_words and w not in query.lower():
+            if w not in query.lower():  # Only skip query terms to avoid loops
                 word_counts[w] = word_counts.get(w, 0) + 1
 
         top_words = sorted(word_counts.items(), key=lambda x: -x[1])[:1]
@@ -616,6 +895,37 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
     # Get timeline context for case events
     timeline_context = get_timeline_context(query, email_dates)
 
+    # Get graph context (depositions, court docs, extracted entities)
+    discovered_names_list = list(discovered_entities)[:5]
+    graph_context = get_graph_context(query, discovered_names_list)
+
+    # Format locally extracted entities for context
+    entities_context = ""
+    if parallel_extracted:
+        # Use parallel extracted (validated by Haiku)
+        entity_lines = ["EXTRACTED ENTITIES (parallel Phi-3 + Haiku validated):"]
+        for p in parallel_extracted.get("persons", [])[:8]:
+            role = p.get("role", "")
+            entity_lines.append(f"  PERSON: {p.get('name', '')} {f'({role})' if role else ''}")
+        for o in parallel_extracted.get("orgs", [])[:5]:
+            otype = o.get("type", "")
+            entity_lines.append(f"  ORG: {o.get('name', '')} {f'[{otype}]' if otype else ''}")
+        for d in parallel_extracted.get("dates", [])[:5]:
+            ctx = d.get("context", "")
+            entity_lines.append(f"  DATE: {d.get('value', '')} {f'- {ctx}' if ctx else ''}")
+        for a in parallel_extracted.get("amounts", [])[:5]:
+            ctx = a.get("context", "")
+            entity_lines.append(f"  AMOUNT: {a.get('value', '')} {a.get('currency', 'USD')} {f'- {ctx}' if ctx else ''}")
+        for l in parallel_extracted.get("locations", [])[:5]:
+            ltype = l.get("type", "")
+            entity_lines.append(f"  LOCATION: {l.get('name', '')} {f'[{ltype}]' if ltype else ''}")
+        entities_context = NL.join(entity_lines)
+    elif extracted_entities:
+        entity_lines = ["EXTRACTED ENTITIES (via local LLM):"]
+        for e in sorted(extracted_entities, key=lambda x: -x.get('count', 0))[:15]:
+            entity_lines.append(f"  {e.get('type', '?').upper()}: {e.get('name')} ({e.get('count', 1)}x)")
+        entities_context = NL.join(entity_lines)
+
     # Assess content quality - help L calibrate response length
     junk_domains = {'houzz.com', 'amazon.com', 'spotify.com', 'linkedin.com', 'facebook.com',
                     'twitter.com', 'newsletter', 'alert', 'noreply', 'news.', 'response.'}
@@ -658,12 +968,17 @@ Total unique emails found: {len(all_results)}
 
 {timeline_context}
 
+{graph_context}
+
+{entities_context}
+
 EMAIL DATA:
 {NL.join(results_text)}
 
-Analyze as L. Match response length to content significance.
+Match response length to content significance.
 If mostly junk → 2-3 sentences + redirect.
 If something real → explain why it matters.
+Cross-reference emails with GRAPH ENTITIES and EXTRACTED ENTITIES when relevant.
 Reference emails by #ID. End with specific next step."""
 
     # Use language-aware system prompt
@@ -707,18 +1022,39 @@ Reference emails by #ID. End with specific next step."""
         except:
             pass
 
-    # Suggest follow-ups (exclude terms too similar to original query)
+    # Suggest follow-ups - NO FILTERING, anything could be a lead
     query_lower = query.lower()
     suggestions = []
+
     for s in search_history:
         term = s['term']
         term_lower = term.lower()
-        # Skip if term is same as query or query contains term
-        if s['count'] > 0 and term_lower not in query_lower and query_lower not in term_lower:
+        # Only skip if identical to query
+        if term_lower == query_lower:
+            continue
+        # Prefer multi-word terms (prioritize)
+        if ' ' in term and s['count'] > 0:
+            suggestions.insert(0, term)
+        elif s['count'] > 0:
             suggestions.append(term)
 
-    if suggestions:
-        yield {"type": "suggestions", "queries": suggestions[:4]}
+    # Add discovered entities from extraction
+    for entity in discovered_entities:
+        if entity.lower() not in query_lower and entity not in suggestions:
+            if ' ' in entity:  # Multi-word = likely real name
+                suggestions.insert(0, entity)
+
+    # Dedupe and limit
+    seen_sugg = set()
+    unique_suggestions = []
+    for s in suggestions:
+        sl = s.lower()
+        if sl not in seen_sugg:
+            seen_sugg.add(sl)
+            unique_suggestions.append(s)
+
+    if unique_suggestions:
+        yield {"type": "suggestions", "queries": unique_suggestions[:4]}
 
     yield {"type": "done", "sources": list(all_ids)}
 

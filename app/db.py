@@ -142,5 +142,10 @@ def init_databases():
             ON haiku_calls(created_at);
         """)
 
+        # Ensure defaults are set (migration for existing tables)
+        cursor.execute("ALTER TABLE conversations ALTER COLUMN created_at SET DEFAULT NOW()")
+        cursor.execute("ALTER TABLE conversations ALTER COLUMN updated_at SET DEFAULT NOW()")
+        cursor.execute("ALTER TABLE messages ALTER COLUMN created_at SET DEFAULT NOW()")
+
         conn.commit()
         cursor.close()
