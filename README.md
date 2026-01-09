@@ -96,7 +96,7 @@ L Investigation Framework is a production-ready OSINT tool for:
 
 ## Configuration
 
-After running `boom.sh`, edit `.env` for your setup:
+After running `install.sh`, edit `.env` for your setup:
 
 ```bash
 # Database (PostgreSQL auto-configured by setup-db.sh)
@@ -263,7 +263,7 @@ pwnd/
 ├── scripts/          # Setup & utility scripts
 ├── templates/        # Service templates
 ├── docs/             # Documentation
-├── boom.sh           # Single entry point
+├── install.sh           # Single entry point
 ├── .env.example      # Environment template
 └── LICENSE           # MIT + The Code
 ```
