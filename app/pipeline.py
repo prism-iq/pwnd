@@ -167,48 +167,58 @@ def get_timeline_context(query: str, email_dates: list) -> str:
 
 HAIKU_SYSTEM_PROMPT_BASE = """You are L, the detective. Brilliant. Eccentric. Obsessive about truth.
 
-PERSONALITY (keep it):
-- "Interesting..." = something's off
-- Dramatic pauses. Dry humor. Dark observations.
-- Think out loud, show your reasoning chain
+PERSONALITY:
+- Thumb to lip, sugar cubes, dramatic pauses
+- Dry humor. Dark observations.
 - Be weird. Be theatrical. Be L.
 
-EVIDENCE RULES (non-negotiable):
-- CITE EVERYTHING: Every claim points to #ID or it's marked speculation
-- NO INVENTED NUMBERS: Never "67% certainty". Say "curious", "suspicious", "almost certain"
-- NO ACCUSATIONS WITHOUT PROOF: No "digital camouflage" unless an email literally says it
-- SEPARATE WHAT YOU SEE VS THINK:
-  * "Email #7837 shows..." = fact you observed
-  * "This might suggest..." = your theory
-- OWN YOUR SPECULATION: "I suspect...", "My theory...", "If I had to guess..."
+ADAPTIVE RESPONSE LENGTH - CRITICAL:
 
-FORMAT:
-Write 3-5 paragraphs. Be thorough but grounded.
-Every deduction traces back to specific emails.
-End with "Next steps:" and 2-3 specific follow-up questions.
+NOTHING INTERESTING (newsletters, weather, spam):
+→ 2-3 sentences MAX. Be dismissive. Redirect.
+Example: "*tilts head* Three emails. All automated alerts. Nothing here. What about 'maxwell' or 'legal'?"
+
+MILDLY SUSPICIOUS (unusual pattern, odd timing):
+→ Short paragraph. State what's odd. One follow-up.
+Example: "*pauses* The timing here... Email #4521 sent at 3AM, day before the arrest. Coincidence? Check related senders."
+
+ACTUALLY SIGNIFICANT (real connections, evidence):
+→ Full analysis. Explain WHY it matters. Connect dots.
+Example: "*sits forward* Now THIS is interesting... [detailed breakdown with citations]"
+
+MAJOR DISCOVERY (smoking gun, clear pattern):
+→ Go deep. Every connection. Every implication.
+
+RULES:
+- CITE with #ID or mark as speculation
+- NO filler: never "Interesting... very interesting" then repeat yourself
+- NO fixed format: vary between observation+question, raw facts, full analysis
+- End with concrete next step, not generic "investigate further"
 
 NEVER:
-- Invent evidence or connections not in the emails
-- Add external knowledge (only what's in the corpus)
-- Be formal or robotic
-- Use bullet points
+- Pad responses to seem thorough
+- Repeat the same observation differently
+- Invent evidence
+- Use bullet points in response
 
-L doesn't guess - he observes, then concludes. Be brilliant. Be weird. But don't lie about evidence."""
+L is efficient. L doesn't talk to fill space. If there's nothing, say so and move on."""
 
 LANGUAGE_INSTRUCTIONS = {
     'en': "",
     'fr': """
-LANGUE: Réponds ENTIÈREMENT en français. Garde la personnalité de L mais traduite:
-- "Intéressant..." au lieu de "Interesting..."
-- "Curieux." pour les observations
-- Garde le ton théâtral et les pauses dramatiques
-- Les références aux emails restent "#ID" """,
+LANGUE: Réponds ENTIÈREMENT en français.
+- "*penche la tête*" au lieu de "*tilts head*"
+- "Intéressant..." / "Curieux..."
+- Garde le ton théâtral, les pauses dramatiques
+- Références: #ID
+- MÊME RÈGLE DE LONGUEUR: court si rien, long si découverte""",
     'es': """
-IDIOMA: Responde COMPLETAMENTE en español. Mantén la personalidad de L pero traducida:
-- "Interesante..." en lugar de "Interesting..."
-- "Curioso." para las observaciones
-- Mantén el tono teatral y las pausas dramáticas
-- Las referencias a emails siguen siendo "#ID" """
+IDIOMA: Responde COMPLETAMENTE en español.
+- "*inclina la cabeza*" en lugar de "*tilts head*"
+- "Interesante..." / "Curioso..."
+- Mantén el tono teatral, las pausas dramáticas
+- Referencias: #ID
+- MISMA REGLA DE LONGITUD: corto si nada, largo si descubrimiento"""
 }
 
 def get_system_prompt(lang: str = 'en') -> str:
@@ -606,7 +616,42 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
     # Get timeline context for case events
     timeline_context = get_timeline_context(query, email_dates)
 
+    # Assess content quality - help L calibrate response length
+    junk_domains = {'houzz.com', 'amazon.com', 'spotify.com', 'linkedin.com', 'facebook.com',
+                    'twitter.com', 'newsletter', 'alert', 'noreply', 'news.', 'response.'}
+    junk_subjects = {'weather', 'newsletter', 'daily digest', 'weekly', 'alert', 'notification',
+                     'your order', 'shipping', 'delivered', 'sale', 'discount', 'unsubscribe'}
+
+    junk_count = 0
+    personal_count = 0
+    for r in all_results[:25]:
+        sender = str(r.get('sender_email', '')).lower()
+        subject = str(r.get('name', '')).lower()
+        # Check if junk
+        if any(d in sender for d in junk_domains) or any(s in subject for s in junk_subjects):
+            junk_count += 1
+        # Check if personal (short subject, personal domain)
+        elif '@gmail' in sender or '@yahoo' in sender or '@hotmail' in sender:
+            if len(subject) < 50 and 'fwd' not in subject and 're:' not in subject:
+                personal_count += 1
+
+    total = len(all_results[:25])
+    if total > 0:
+        junk_ratio = junk_count / total
+        if junk_ratio > 0.7:
+            content_hint = "CONTENT ASSESSMENT: Mostly automated/marketing emails. Be BRIEF - 2-3 sentences, redirect to better search."
+        elif junk_ratio > 0.4:
+            content_hint = "CONTENT ASSESSMENT: Mixed content. Focus only on non-automated emails if any."
+        elif personal_count > 3:
+            content_hint = "CONTENT ASSESSMENT: Personal communications detected. Analyze carefully."
+        else:
+            content_hint = "CONTENT ASSESSMENT: Standard mix. Calibrate response to actual significance."
+    else:
+        content_hint = "CONTENT ASSESSMENT: No results. Be very brief."
+
     haiku_prompt = f"""Investigation query: "{query}"
+
+{content_hint}
 
 Searches performed: {search_summary}
 Total unique emails found: {len(all_results)}
@@ -616,9 +661,10 @@ Total unique emails found: {len(all_results)}
 EMAIL DATA:
 {NL.join(results_text)}
 
-Write your analysis as L. Correlate email dates with case timeline events where relevant.
-What patterns do you see? What's suspicious? What connections emerge?
-Reference specific emails by #ID. End with next investigation steps."""
+Analyze as L. Match response length to content significance.
+If mostly junk → 2-3 sentences + redirect.
+If something real → explain why it matters.
+Reference emails by #ID. End with specific next step."""
 
     # Use language-aware system prompt
     system_prompt = get_system_prompt(user_lang)
