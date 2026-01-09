@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licenses - L Investigation Framework</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .licenses-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .licenses-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .licenses-header h1 {
+            font-size: 2rem;
+            color: #e0e0e0;
+            margin-bottom: 0.5rem;
+        }
+
+        .licenses-header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .license-section {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .license-section h2 {
+            color: #4a9eff;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .license-section h3 {
+            color: #e0e0e0;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .license-section p {
+            color: #c0c0c0;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .license-section ul {
+            color: #c0c0c0;
+            line-height: 1.8;
+            margin-left: 1.5rem;
+        }
+
+        .license-section a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        .license-section a:hover {
+            text-decoration: underline;
+        }
+
+        .license-badge {
+            display: inline-block;
+            background: #2d3748;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            color: #a0aec0;
+        }
+
+        .license-badge.mit {
+            background: #22543d;
+            color: #9ae6b4;
+        }
+
+        .license-badge.apache {
+            background: #742a2a;
+            color: #fc8181;
+        }
+
+        .license-badge.public-domain {
+            background: #2c5282;
+            color: #90cdf4;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #4a9eff;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: #3a8eef;
+            text-decoration: none;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding: 2rem 1rem;
+            border-top: 1px solid #333;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 0.75rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="licenses-container">
+        <a href="/" class="back-button">← Back to Home</a>
+
+        <div class="licenses-header">
+            <h1>Licenses & Attributions</h1>
+            <p>L Investigation Framework uses open-source software and APIs</p>
+        </div>
+
+        <div class="license-section">
+            <h2>
+                <span class="license-badge mit">MIT License</span>
+                L Investigation Framework
+            </h2>
+            <p>
+                <strong>Author:</strong> Flow<br>
+                <strong>License:</strong> MIT<br>
+                <strong>Source:</strong> <a href="https://github.com/flowaicom/l-investigation" target="_blank">GitHub Repository</a>
+            </p>
+            <p>
+                Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+            </p>
+            <p>
+                The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+            </p>
+            <p>
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+            </p>
+        </div>
+
+        <div class="license-section">
+            <h2>Third-Party Components</h2>
+
+            <h3>
+                <span class="license-badge apache">Apache 2.0</span>
+                Mistral 7B Instruct v0.2
+            </h3>
+            <p>
+                <strong>Developer:</strong> Mistral AI<br>
+                <strong>License:</strong> Apache License 2.0<br>
+                <strong>Source:</strong> <a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2" target="_blank">Hugging Face</a>
+            </p>
+            <p>
+                Local language model used for intent parsing. Runs via llama.cpp.
+            </p>
+
+            <h3>
+                <span class="license-badge mit">MIT</span>
+                FastAPI
+            </h3>
+            <p>
+                <strong>Developer:</strong> Sebastián Ramírez<br>
+                <strong>License:</strong> MIT<br>
+                <strong>Source:</strong> <a href="https://github.com/tiangolo/fastapi" target="_blank">GitHub</a>
+            </p>
+            <p>
+                Modern Python web framework used for the API backend.
+            </p>
+
+            <h3>
+                <span class="license-badge public-domain">Public Domain</span>
+                SQLite
+            </h3>
+            <p>
+                <strong>Developer:</strong> D. Richard Hipp<br>
+                <strong>License:</strong> Public Domain<br>
+                <strong>Source:</strong> <a href="https://www.sqlite.org/" target="_blank">sqlite.org</a>
+            </p>
+            <p>
+                Embedded database engine used for email corpus, graph, and sessions.
+            </p>
+
+            <h3>
+                <span class="license-badge mit">MIT</span>
+                llama.cpp
+            </h3>
+            <p>
+                <strong>Developer:</strong> Georgi Gerganov<br>
+                <strong>License:</strong> MIT<br>
+                <strong>Source:</strong> <a href="https://github.com/ggerganov/llama.cpp" target="_blank">GitHub</a>
+            </p>
+            <p>
+                C/C++ library for running LLMs on CPU. Enables local Mistral inference.
+            </p>
+
+            <h3>
+                <span class="license-badge mit">MIT</span>
+                Caddy Web Server
+            </h3>
+            <p>
+                <strong>Developer:</strong> Matthew Holt<br>
+                <strong>License:</strong> Apache 2.0<br>
+                <strong>Source:</strong> <a href="https://caddyserver.com/" target="_blank">caddyserver.com</a>
+            </p>
+            <p>
+                Reverse proxy with automatic HTTPS. Serves static files and proxies API requests.
+            </p>
+
+            <h3>
+                <span class="license-badge mit">MIT</span>
+                Marked.js
+            </h3>
+            <p>
+                <strong>Developer:</strong> Christopher Jeffrey<br>
+                <strong>License:</strong> MIT<br>
+                <strong>Source:</strong> <a href="https://marked.js.org/" target="_blank">marked.js.org</a>
+            </p>
+            <p>
+                Markdown parser used for rendering AI-generated responses.
+            </p>
+
+            <h3>Claude Haiku API</h3>
+            <p>
+                <strong>Provider:</strong> Anthropic<br>
+                <strong>License:</strong> Commercial API (Terms of Service)<br>
+                <strong>Website:</strong> <a href="https://www.anthropic.com/" target="_blank">anthropic.com</a>
+            </p>
+            <p>
+                Cloud API used for deep email analysis and query synthesis. See <a href="https://www.anthropic.com/legal/consumer-terms" target="_blank">Anthropic Terms</a> for usage terms.
+            </p>
+        </div>
+
+        <div class="license-section">
+            <h2>Python Dependencies</h2>
+            <p>Full list of Python packages used by this project:</p>
+            <ul>
+                <li><strong>fastapi</strong> (MIT) - Web framework</li>
+                <li><strong>uvicorn</strong> (BSD-3-Clause) - ASGI server</li>
+                <li><strong>python-multipart</strong> (Apache 2.0) - Form parsing</li>
+                <li><strong>httpx</strong> (BSD-3-Clause) - Async HTTP client</li>
+                <li><strong>aiosqlite</strong> (MIT) - Async SQLite driver</li>
+                <li><strong>pydantic</strong> (MIT) - Data validation</li>
+                <li><strong>pydantic-settings</strong> (MIT) - Settings management</li>
+                <li><strong>python-jose</strong> (MIT) - JWT handling</li>
+                <li><strong>python-dotenv</strong> (BSD-3-Clause) - Environment config</li>
+                <li><strong>anthropic</strong> (MIT) - Anthropic API client</li>
+            </ul>
+            <p>
+                Full dependency list available in <code>requirements.txt</code>
+            </p>
+        </div>
+
+        <div class="license-section">
+            <h2>Data Sources</h2>
+            <p>
+                This application does not include any email data. Users must provide their own email corpus in compliance with applicable laws and regulations.
+            </p>
+            <p>
+                <strong>Important:</strong> Users are responsible for ensuring they have legal rights to analyze any data imported into this system.
+            </p>
+        </div>
+
+        <div class="license-section">
+            <h2>Privacy & Data Processing</h2>
+            <p>
+                <strong>Local Processing:</strong> Query intent parsing is performed locally using Mistral 7B. No user queries are sent to external services during this step.
+            </p>
+            <p>
+                <strong>API Processing:</strong> Final analysis uses Claude Haiku API (Anthropic). Search results (not raw emails) are sent to Anthropic for synthesis. See <a href="https://www.anthropic.com/legal/privacy" target="_blank">Anthropic Privacy Policy</a>.
+            </p>
+            <p>
+                <strong>No Telemetry:</strong> This application does not collect analytics, usage statistics, or telemetry data.
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <div>&copy; 2025 Flow - L Investigation Framework</div>
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/licenses.html">Licenses</a>
+            <a href="https://github.com/flowaicom/l-investigation" target="_blank">GitHub</a>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Claude Ignore - Optimize Context
+
+# Archive files (don't read unless debugging history)
+BUILD_ITERATION_*.md
+OPTIMIZATION_COMPLETE_REPORT.md
+POSTGRES_MIGRATION_COMPLETE.md
+DIAGNOSTIC_REPORT.md
+FINALIZATION_REPORT.md
+FIXES_APPLIED.md
+WORK_COMPLETE.md
+SECURITY_AUDIT.md
+VIOLATION_FIXES_*.md
+
+# Test/migration scripts (not core system)
+auto_migrate.py
+fast_migrate.py
+migrate_to_postgres.py
+test_*.py
+benchmark_*.sh
+monitor_*.sh
+wait_for_*.sh
+dump_to_postgres.sh
+*.json
+*.txt
+
+# Don't read these unless specifically debugging
+DEBUG_CHEATSHEET.md
+METHODOLOGY_PROMPT.md
+METHODOLOGY_README.md
+PROMPT_READY_TO_USE.txt
+
+# Standard ignores
+__pycache__/
+*.pyc
+*.db
+*.db-*
+venv/
+.git/
+backup/
+
+# Read ONLY these core files:
+# - IDENTITY.md (15 lines)
+# - MASTER_CONTEXT.md (first 100 lines)
+# - BUILD_LATEST.md (auto-generated)
+# - PROMPTING_SYSTEM.md (this optimization guide)

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Upload Manager - L Investigation Framework</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            color: #00aa00;
+            font-size: 0.9em;
+        }
+
+        .section {
+            background: rgba(0, 255, 0, 0.03);
+            border: 1px solid #004400;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .section h2 {
+            color: #00ff00;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #004400;
+            font-size: 1.3em;
+        }
+
+        .upload-zone {
+            border: 2px dashed #00ff00;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 255, 0, 0.02);
+        }
+
+        .upload-zone:hover {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: #00ff88;
+        }
+
+        .upload-zone.drag-over {
+            background: rgba(0, 255, 0, 0.15);
+            border-color: #00ffff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button {
+            background: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .file-item {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid #004400;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item.success {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .file-item.error {
+            border-color: #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff6666;
+        }
+
+        .file-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .file-name {
+            font-weight: bold;
+        }
+
+        .file-size {
+            color: #00aa00;
+            font-size: 0.9em;
+        }
+
+        .file-status {
+            font-size: 0.9em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #002200;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid #004400;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #00aa00;
+            font-size: 0.9em;
+        }
+
+        .log {
+            background: #000;
+            border: 1px solid #004400;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85em;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px;
+        }
+
+        .log-success { color: #00ff00; }
+        .log-error { color: #ff6666; }
+        .log-info { color: #00aaaa; }
+
+        .current-files {
+            margin-top: 15px;
+        }
+
+        .current-file {
+            background: rgba(0, 255, 0, 0.03);
+            border-left: 3px solid #00ff00;
+            padding: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timestamp {
+            color: #00aa00;
+            font-size: 0.8em;
+        }
+
+        a {
+            color: #00ff00;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Frontend Upload Manager</h1>
+            <p class="subtitle">L Investigation Framework - Hot Deploy System</p>
+            <p class="subtitle">"Update the frontend without rebuilding anything"</p>
+        </header>
+
+        <!-- Upload Section -->
+        <div class="section">
+            <h2>📤 Upload Files (AJAX Chain)</h2>
+
+            <div class="upload-zone" id="uploadZone">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">
+                    🎯 Drag & Drop Files Here
+                </p>
+                <p style="color: #00aa00;">
+                    Or click to select files
+                </p>
+                <p style="font-size: 0.8em; color: #007700; margin-top: 15px;">
+                    Supported: HTML, CSS, JS, JSON, SVG, PNG, JPG, GIF, ICO, TXT, MD
+                </p>
+            </div>
+
+            <input type="file" id="fileInput" multiple accept=".html,.css,.js,.json,.svg,.png,.jpg,.jpeg,.gif,.ico,.txt,.md">
+
+            <div class="actions" style="margin-top: 15px;">
+                <button id="selectBtn">📁 Select Files</button>
+                <button id="uploadBtn" disabled>🚀 Upload All</button>
+                <button id="clearBtn">🗑️ Clear Queue</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="queueCount">0</div>
+                    <div class="stat-label">Files in Queue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uploadedCount">0</div>
+                    <div class="stat-label">Uploaded</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="failedCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <ul class="file-list" id="fileList"></ul>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Current Files -->
+        <div class="section">
+            <h2>📂 Current Frontend Files</h2>
+            <button id="refreshBtn">🔄 Refresh List</button>
+            <div id="currentFiles" class="current-files">
+                <p style="color: #00aa00;">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="section">
+            <h2>📝 Upload Log</h2>
+            <button id="clearLogBtn">🗑️ Clear Log</button>
+            <div class="log" id="log">
+                <div class="log-entry log-info">[INFO] Upload manager ready</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+            <h2>🔧 Quick Actions</h2>
+            <div class="actions">
+                <button onclick="location.href='/'">🏠 Home</button>
+                <button onclick="location.href='/api/frontend/backups'">💾 View Backups</button>
+                <button onclick="testAPI()">🧪 Test API</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fileQueue = [];
+        let uploadedCount = 0;
+        let failedCount = 0;
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectBtn = document.getElementById('selectBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const fileList = document.getElementById('fileList');
+        const progressFill = document.getElementById('progressFill');
+        const log = document.getElementById('log');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+
+        // Drag & Drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        // Click to select
+        uploadZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        selectBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            handleFiles(fileInput.files);
+        });
+
+        // Handle file selection
+        function handleFiles(files) {
+            for (let file of files) {
+                if (!fileQueue.find(f => f.name === file.name)) {
+                    fileQueue.push(file);
+                    addFileToList(file);
+                }
+            }
+            updateStats();
+        }
+
+        // Add file to visual list
+        function addFileToList(file) {
+            const li = document.createElement('li');
+            li.className = 'file-item';
+            li.id = `file-${fileQueue.length - 1}`;
+
+            const sizeKB = (file.size / 1024).toFixed(2);
+
+            li.innerHTML = `
+                <div class="file-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${sizeKB} KB</span>
+                    <span class="file-status">⏳ Queued</span>
+                </div>
+                <button onclick="removeFile(${fileQueue.length - 1})">✕</button>
+            `;
+
+            fileList.appendChild(li);
+        }
+
+        // Remove file from queue
+        function removeFile(index) {
+            fileQueue.splice(index, 1);
+            fileList.innerHTML = '';
+            fileQueue.forEach(addFileToList);
+            updateStats();
+        }
+
+        // Clear queue
+        clearBtn.addEventListener('click', () => {
+            fileQueue = [];
+            fileList.innerHTML = '';
+            updateStats();
+            addLog('Queue cleared', 'info');
+        });
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('queueCount').textContent = fileQueue.length;
+            document.getElementById('uploadedCount').textContent = uploadedCount;
+            document.getElementById('failedCount').textContent = failedCount;
+            uploadBtn.disabled = fileQueue.length === 0;
+        }
+
+        // Upload all files (chain)
+        uploadBtn.addEventListener('click', async () => {
+            if (fileQueue.length === 0) return;
+
+            uploadBtn.disabled = true;
+            clearBtn.disabled = true;
+            addLog(`Starting upload chain: ${fileQueue.length} files`, 'info');
+
+            for (let i = 0; i < fileQueue.length; i++) {
+                const file = fileQueue[i];
+                const fileItem = document.getElementById(`file-${i}`);
+
+                try {
+                    // Update UI
+                    const status = fileItem.querySelector('.file-status');
+                    status.textContent = `⏫ Uploading... (${i + 1}/${fileQueue.length})`;
+                    progressFill.style.width = `${((i + 1) / fileQueue.length) * 100}%`;
+
+                    // Upload file
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch('/api/frontend/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        fileItem.classList.add('success');
+                        status.textContent = `✓ Uploaded (${(result.size / 1024).toFixed(2)} KB)`;
+                        uploadedCount++;
+                        addLog(`✓ ${file.name} uploaded successfully`, 'success');
+                    } else {
+                        throw new Error(result.detail || 'Upload failed');
+                    }
+
+                } catch (error) {
+                    const status = fileItem.querySelector('.file-status');
+                    fileItem.classList.add('error');
+                    status.textContent = `✗ Failed: ${error.message}`;
+                    failedCount++;
+                    addLog(`✗ ${file.name} failed: ${error.message}`, 'error');
+                }
+
+                updateStats();
+            }
+
+            addLog(`Upload chain complete: ${uploadedCount} success, ${failedCount} failed`, 'info');
+            uploadBtn.disabled = false;
+            clearBtn.disabled = false;
+
+            // Reload current files list
+            loadCurrentFiles();
+
+            // Auto-clear queue if all successful
+            if (failedCount === 0) {
+                setTimeout(() => {
+                    fileQueue = [];
+                    fileList.innerHTML = '';
+                    uploadedCount = 0;
+                    failedCount = 0;
+                    updateStats();
+                    progressFill.style.width = '0%';
+                }, 2000);
+            }
+        });
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Clear log
+        clearLogBtn.addEventListener('click', () => {
+            log.innerHTML = '<div class="log-entry log-info">[INFO] Log cleared</div>';
+        });
+
+        // Load current files
+        async function loadCurrentFiles() {
+            try {
+                const response = await fetch('/api/frontend/files');
+                const data = await response.json();
+
+                const container = document.getElementById('currentFiles');
+
+                if (data.files.length === 0) {
+                    container.innerHTML = '<p style="color: #007700;">No files found</p>';
+                    return;
+                }
+
+                container.innerHTML = data.files.map(file => `
+                    <div class="current-file">
+                        <div>
+                            <strong>${file.name}</strong>
+                            <span style="color: #007700; margin-left: 10px;">${(file.size / 1024).toFixed(2)} KB</span>
+                            <span class="timestamp">Modified: ${new Date(file.modified).toLocaleString()}</span>
+                        </div>
+                        <a href="/${file.path}" target="_blank">View</a>
+                    </div>
+                `).join('');
+
+                addLog(`Loaded ${data.files.length} files from server`, 'info');
+
+            } catch (error) {
+                addLog(`Failed to load files: ${error.message}`, 'error');
+            }
+        }
+
+        // Refresh button
+        refreshBtn.addEventListener('click', () => {
+            loadCurrentFiles();
+        });
+
+        // Test API
+        async function testAPI() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                addLog(`API test: ${JSON.stringify(data)}`, 'success');
+                alert('API is working! ✓');
+            } catch (error) {
+                addLog(`API test failed: ${error.message}`, 'error');
+                alert('API test failed: ' + error.message);
+            }
+        }
+
+        // Load files on page load
+        loadCurrentFiles();
+    </script>
+</body>
+</html>

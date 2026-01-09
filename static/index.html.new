@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pwnd.icu - dig deeper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- Mobile menu overlay -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h1 class="site-title">pwnd.icu</h1>
+            <p class="tagline">dig deeper</p>
+            <button id="newChatBtn" class="new-chat-btn">
+                <span class="icon">+</span> New Chat
+            </button>
+        </div>
+
+        <div id="conversationList" class="conversation-list">
+            <!-- Conversations loaded here -->
+        </div>
+
+        <div class="sidebar-footer">
+            <button id="settingsBtn" class="footer-btn">
+                <span class="icon">⚙</span> Settings
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main chat area -->
+    <main class="main-content">
+        <!-- Mobile header -->
+        <div class="mobile-header">
+            <button id="mobileMenuBtn" class="mobile-menu-btn">
+                <span class="hamburger"></span>
+            </button>
+            <span class="mobile-title">pwnd.icu</span>
+        </div>
+
+        <!-- Messages container -->
+        <div id="messages" class="messages-container">
+            <div class="welcome-screen">
+                <h1 class="welcome-title">pwnd.icu</h1>
+                <p class="welcome-subtitle">Professional OSINT investigation framework • 13,009 emails • Graph-powered analysis</p>
+                <div class="welcome-examples">
+                    <p class="examples-label">Start investigating</p>
+                    <button class="example-btn">Who is Jeffrey Epstein?</button>
+                    <button class="example-btn">Search for Trump connections</button>
+                    <button class="example-btn">Find patterns in payments</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input area -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea
+                    id="messageInput"
+                    placeholder="Message L..."
+                    rows="1"
+                    maxlength="10000"
+                ></textarea>
+                <button id="sendBtn" class="send-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">
+                <span class="model-indicator">L (Mistral 7B)</span>
+                <label class="auto-investigate-toggle">
+                    <input type="checkbox" id="autoInvestigate">
+                    <span>Auto-investigate</span>
+                </label>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeSettings()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label>Theme</label>
+                    <select id="themeSetting">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Language</label>
+                    <select id="languageSetting">
+                        <option value="fr">Français</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Max auto-queries</label>
+                    <input type="number" id="maxAutoQueries" min="1" max="50" value="20">
+                </div>
+                <div class="setting-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="showConfidence" checked>
+                        Show confidence scores
+                    </label>
+                </div>
+                <div class="setting-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="showSources" checked>
+                        Show sources
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button class="btn-primary" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

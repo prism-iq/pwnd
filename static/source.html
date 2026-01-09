@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Viewer - L Investigation Framework</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .source-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .source-header {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .source-header h1 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            color: #e0e0e0;
+            word-break: break-word;
+        }
+
+        .source-metadata {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .meta-label {
+            color: #888;
+            font-weight: 500;
+        }
+
+        .meta-value {
+            color: #e0e0e0;
+            word-break: break-word;
+        }
+
+        .source-body {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .source-body pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a9eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3a8eef;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .error {
+            background: #2d1f1f;
+            border: 1px solid #662222;
+            border-radius: 8px;
+            padding: 1.5rem;
+            color: #ff6b6b;
+            margin: 2rem auto;
+            max-width: 600px;
+        }
+
+        .recipient-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .recipient-badge {
+            background: #333;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding: 2rem 1rem;
+            border-top: 1px solid #333;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 0.75rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="source-container">
+        <div id="loading" class="loading">
+            <p>Loading source...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="content" style="display: none;">
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="history.back()">← Back to Chat</button>
+                <button class="btn btn-secondary" onclick="copyToClipboard()">Copy Email Text</button>
+            </div>
+
+            <div class="source-header">
+                <h1 id="subject">Loading...</h1>
+                <div class="source-metadata">
+                    <div class="meta-label">From:</div>
+                    <div class="meta-value" id="from"></div>
+
+                    <div class="meta-label">To:</div>
+                    <div class="meta-value" id="to"></div>
+
+                    <div class="meta-label" id="cc-label" style="display: none;">CC:</div>
+                    <div class="meta-value" id="cc" style="display: none;"></div>
+
+                    <div class="meta-label">Date:</div>
+                    <div class="meta-value" id="date"></div>
+
+                    <div class="meta-label">Document ID:</div>
+                    <div class="meta-value" id="doc-id"></div>
+                </div>
+            </div>
+
+            <div class="source-body">
+                <pre id="body"></pre>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div>&copy; 2025 Flow - L Investigation Framework</div>
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/licenses.html">Licenses</a>
+            <a href="https://github.com/flowaicom/l-investigation" target="_blank">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        'use strict';
+
+        // Get source ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sourceId = urlParams.get('id');
+
+        if (!sourceId) {
+            showError('No source ID provided');
+        } else {
+            loadSource(sourceId);
+        }
+
+        async function loadSource(id) {
+            try {
+                const response = await fetch(`/api/source/${id}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displaySource(data);
+
+            } catch (error) {
+                showError(`Failed to load source: ${error.message}`);
+            }
+        }
+
+        function displaySource(source) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            // Subject
+            document.getElementById('subject').textContent = source.subject || '(No Subject)';
+
+            // From
+            const fromText = source.sender_name
+                ? `${source.sender_name} <${source.sender_email}>`
+                : source.sender_email || '(Unknown)';
+            document.getElementById('from').textContent = fromText;
+
+            // To
+            const toList = parseRecipients(source.recipients_to);
+            if (toList.length > 0) {
+                document.getElementById('to').innerHTML = formatRecipients(toList);
+            } else {
+                document.getElementById('to').textContent = '(None)';
+            }
+
+            // CC
+            const ccList = parseRecipients(source.recipients_cc);
+            if (ccList.length > 0) {
+                document.getElementById('cc-label').style.display = 'block';
+                document.getElementById('cc').style.display = 'block';
+                document.getElementById('cc').innerHTML = formatRecipients(ccList);
+            }
+
+            // Date
+            const date = source.date_sent
+                ? new Date(source.date_sent).toLocaleString()
+                : '(Unknown)';
+            document.getElementById('date').textContent = date;
+
+            // Doc ID
+            document.getElementById('doc-id').textContent = source.doc_id || '(Unknown)';
+
+            // Body
+            const body = source.body_text || source.body_html || '(No content)';
+            document.getElementById('body').textContent = body;
+
+            // Update page title
+            document.title = `${source.subject || 'Source'} - L Investigation Framework`;
+        }
+
+        function parseRecipients(recipientsJson) {
+            if (!recipientsJson) return [];
+
+            try {
+                const recipients = typeof recipientsJson === 'string'
+                    ? JSON.parse(recipientsJson)
+                    : recipientsJson;
+
+                return Array.isArray(recipients) ? recipients : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function formatRecipients(recipients) {
+            if (recipients.length === 0) return '(None)';
+
+            return recipients.map(r => {
+                const name = r.name || r.email;
+                const email = r.email;
+                return email ? `${name} &lt;${email}&gt;` : name;
+            }).join(', ');
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+
+        async function copyToClipboard() {
+            const body = document.getElementById('body').textContent;
+            try {
+                await navigator.clipboard.writeText(body);
+                alert('Email text copied to clipboard!');
+            } catch (err) {
+                alert('Failed to copy: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1698 @@
+{
+  "start_time": "2026-01-08T01:27:48.029161",
+  "end_time": "2026-01-08T01:59:01.121233",
+  "total_duration_seconds": 1873.092072,
+  "total_queries": 53,
+  "violations_count": 2,
+  "violations": [
+    {
+      "pattern": "\\[2\\]",
+      "matches": [
+        "[2]"
+      ],
+      "query": "Who is Ghislaine Maxwell"
+    },
+    {
+      "pattern": "\\[3\\]",
+      "matches": [
+        "[3]"
+      ],
+      "query": "Who is Ghislaine Maxwell"
+    }
+  ],
+  "results": [
+    {
+      "query": "Who is Jeffrey Epstein",
+      "query_num": 1,
+      "response": "- \"According to the analysis,\" \"The findings suggest,\" \"The data indicates\"\n\nResponse:\nJeffrey Epstein was a finance professional, as mentioned in his LinkedIn profile description. He also had an Amazon account, where he bought various items such as a webcam, a first responder kit, and a fitness pole.\n\nThese findings imply that Jeffrey Epstein was involved in finance, made purchases online, and had diverse interests.\n\nFor further investigation, it would be interesting to explore the context of his LinkedIn and Amazon activities, as well as uncover any additional personal information.\n\nSources: [7837] [7896]",
+      "sources": [
+        7837,
+        7796,
+        404,
+        1063,
+        746
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Jeffrey Epstein"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Jeffrey Epstein appears to be associated with finance, investment, capital, and fine imports based on his LinkedIn profile description",
+            "Jeffrey Epstein had an Amazon account and made purchases including a Logitech Wi-Fi Webcam, a First Responder Kit, and a 'Portable Fitness Exercise Exotic Stripper Strip Spinning Pole'"
+          ],
+          "sources": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Jeffrey Epstein was a professional in finance who used LinkedIn and Amazon",
+            "He had diverse purchasing interests ranging from technology to medical equipment to fitness equipment"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "More details about Jeffrey Epstein's professional background",
+            "Context of his LinkedIn and Amazon activities",
+            "Additional personal information"
+          ]
+        }
+      },
+      "duration_seconds": 70.13,
+      "violations": [],
+      "timestamp": "2026-01-08T01:27:48.029200"
+    },
+    {
+      "query": "Who knows Donald Trump",
+      "query_num": 2,
+      "response": "Response:\nLara Trump is a senior advisor for Donald J. Trump's presidential campaign. Donald Trump has a network to communicate with his supporters via email. There is a group called the 'Save America Team' that reaches out to Trump's backers. These are the key findings from the analysis. It seems Trump's team maintains a well-organized communication network with his followers. Trump himself remains politically engaged with his supporters. As for further inquiries, you might be interested in learning more about other individuals close to Trump or the specifics of the Save America Team. What role does this group play? What types of messages are being sent? These are some potential avenues for exploration.\n\nSources: [7837] [7896]",
+      "sources": [
+        12813,
+        8993,
+        5934,
+        8969,
+        9076
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Donald Trump"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Lara Trump knows Donald Trump and is a Senior Advisor for Donald J. Trump for President, Inc.",
+            "Donald Trump has supporters who receive email communications from his campaign",
+            "There is a 'Save America Team' that communicates with Trump supporters"
+          ],
+          "sources": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Trump has an organized communication network with supporters",
+            "Trump maintains political engagement through email campaigns"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Who are other people close to Donald Trump?",
+            "What is the Save America Team?",
+            "What types of communications does Trump send?"
+          ]
+        }
+      },
+      "duration_seconds": 71.35,
+      "violations": [],
+      "timestamp": "2026-01-08T01:29:00.159012"
+    },
+    {
+      "query": "Tell me about Bill Clinton",
+      "query_num": 3,
+      "response": "Response:\nBill Clinton was the President of the United States during a period that saw significant events, such as the Waco, Texas incident involving the Branch Davidian compound. This event occurred during Clinton's tenure.\n\nMoreover, during the 2016 presidential election debate between Hillary Clinton and Donald Trump, Bill Clinton was mentioned in relation to allegations of using public office for personal profit. Trump made these accusations against both Bill and Hillary Clinton.\n\nIt appears that the Clinton family's political roles and business dealings were interconnected during this time.\n\nSources: [7837] [7896]\n\nQueries for further investigation:\n- For more information about Bill Clinton's presidency, consider researching the key events and policies during his time in office.\n- Explore Bill and Hillary Clinton's political careers and potential business activities related to their public service.\n- Investigate the specific allegations made by Donald Trump during the 2016 presidential election debates.",
+      "sources": [
+        3392,
+        6451,
+        11453,
+        3276,
+        3183
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Bill Clinton"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Bill Clinton was president of the United States during a time that included the Waco, Texas raid on the Branch Davidian compound",
+            "Bill Clinton was referenced in context of a 2016 presidential election debate between Hillary Clinton and Donald Trump",
+            "Donald Trump accused Bill and Hillary Clinton of using public office for personal profit"
+          ],
+          "sources": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Bill Clinton was a prominent political figure in the late 1990s and early 2000s",
+            "Bill Clinton and Hillary Clinton were politically connected and potentially involved in business activities related to public service"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "More details about Bill Clinton's presidency",
+            "Bill Clinton's political career timeline",
+            "Hillary Clinton's political involvement"
+          ]
+        }
+      },
+      "duration_seconds": 84.01,
+      "violations": [],
+      "timestamp": "2026-01-08T01:30:13.511817"
+    },
+    {
+      "query": "Who is Ghislaine Maxwell",
+      "query_num": 4,
+      "response": "Your response:\n\nGhislaine Maxwell, a British socialite, was closely linked to Jeffrey Epstein. She lived with him for years and was his frequent travel companion. Maxwell has been accused of helping procure underage sex partners for Epstein. She faced a criminal trial where accusers testified against her. Sources: [2], [3], [4], [5]\n\nHer legal case seems to revolve around sexual abuse allegations. It appears that Maxwell was a key associate in Epstein's criminal activities.\n\nNext queries: What specific charges were brought against Ghislaine Maxwell? What was her background before meeting Jeffrey Epstein?",
+      "sources": [
+        12910,
+        8886,
+        12990,
+        12986,
+        12929
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Ghislaine Maxwell"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Ghislaine Maxwell is a British socialite",
+            "She was closely associated with Jeffrey Epstein",
+            "She was arrested on July 2, 2020 in New Hampshire by the FBI",
+            "She has been accused of helping procure underage sex partners for Jeffrey Epstein",
+            "She was living with Epstein for years and was his frequent travel companion",
+            "She faced a criminal trial where accusers took the stand"
+          ],
+          "sources": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "confidence": "high",
+          "hypotheses": [
+            "Her legal case appears to involve sexual abuse allegations",
+            "She was likely a key associate in Epstein's criminal activities"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Details of Ghislaine Maxwell's trial",
+            "Specific charges against Maxwell",
+            "Her background before meeting Epstein"
+          ]
+        }
+      },
+      "duration_seconds": 71.04,
+      "violations": [
+        {
+          "pattern": "\\[2\\]",
+          "matches": [
+            "[2]"
+          ],
+          "query": "Who is Ghislaine Maxwell"
+        },
+        {
+          "pattern": "\\[3\\]",
+          "matches": [
+            "[3]"
+          ],
+          "query": "Who is Ghislaine Maxwell"
+        }
+      ],
+      "timestamp": "2026-01-08T01:31:39.519315"
+    },
+    {
+      "query": "Who are the main people in these emails",
+      "query_num": 5,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.85,
+      "violations": [],
+      "timestamp": "2026-01-08T01:32:52.559339"
+    },
+    {
+      "query": "Find emails about money transfers",
+      "query_num": 6,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "content": "money transfers"
+          }
+        }
+      },
+      "duration_seconds": 13.69,
+      "violations": [],
+      "timestamp": "2026-01-08T01:33:07.410837"
+    },
+    {
+      "query": "Search for flight logs",
+      "query_num": 7,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.32,
+      "violations": [],
+      "timestamp": "2026-01-08T01:33:23.105779"
+    },
+    {
+      "query": "What emails mention Virgin Islands",
+      "query_num": 8,
+      "response": "- Anything not directly related to findings or suggestions\n\nResponse:\nFour emails in the corpus discuss matters related to the Virgin Islands. Three of these emails are from the Virgin Islands Daily News, which seems to be a local news source, reporting on COVID-19 updates in the region. Another email is an invitation for a property auction in St. Thomas, part of the US Virgin Islands. The discussions in these emails revolve around the impacts of COVID-19 in the Virgin Islands during the month of April 2020. Both the US Virgin Islands and the British Virgin Islands are referenced in the emails.\n\nBased on the data in the corpus, it appears that Daily News.vi is a significant source of information for the Virgin Islands community, with a focus on local news and updates, particularly concerning the COVID-19 pandemic.\n\nIf you're interested in more information, you might want to search for additional Virgin Islands COVID-19 updates or look for details about the first COVID-19 death in the British Virgin Islands. Additionally, you may find it valuable to explore more about Governor Albert Bryan Jr. of the US Virgin Islands.\n\nSources: [8516] [8577] [2665] [8549] [8562]",
+      "sources": [
+        8516,
+        8577,
+        2665,
+        8549,
+        8562
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Virgin Islands"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "4 emails mention Virgin Islands",
+            "3 emails are from Virgin Islands Daily News about COVID-19 updates",
+            "1 email is an auction invitation for property in St. Thomas, US Virgin Islands",
+            "Emails discuss COVID-19 impacts in Virgin Islands during April 2020",
+            "References include both US Virgin Islands and British Virgin Islands"
+          ],
+          "sources": [
+            8516,
+            8577,
+            2665,
+            8549,
+            8562
+          ],
+          "confidence": "high",
+          "hypotheses": [
+            "Daily News.vi appears to be a local news source for Virgin Islands",
+            "COVID-19 was a significant concern for Virgin Islands in April 2020"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Search for more Virgin Islands COVID-19 updates",
+            "Look for details about the first COVID-19 death in British Virgin Islands",
+            "Find more information about Governor Albert Bryan Jr."
+          ]
+        }
+      },
+      "duration_seconds": 92.92,
+      "violations": [],
+      "timestamp": "2026-01-08T01:33:37.426296"
+    },
+    {
+      "query": "Find messages about transactions",
+      "query_num": 9,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "type": "transaction"
+          }
+        }
+      },
+      "duration_seconds": 12.41,
+      "violations": [],
+      "timestamp": "2026-01-08T01:35:12.346250"
+    },
+    {
+      "query": "Search for emails with attachments",
+      "query_num": 10,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "has_attachment": true
+          }
+        }
+      },
+      "duration_seconds": 11.82,
+      "violations": [],
+      "timestamp": "2026-01-08T01:35:26.754470"
+    },
+    {
+      "query": "Show me emails from 2003",
+      "query_num": 11,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "date_from": "2003"
+          }
+        }
+      },
+      "duration_seconds": 22.73,
+      "violations": [],
+      "timestamp": "2026-01-08T01:35:40.573094"
+    },
+    {
+      "query": "What happened in January 2005",
+      "query_num": 12,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "month": "January",
+            "year": "2005"
+          }
+        }
+      },
+      "duration_seconds": 13.61,
+      "violations": [],
+      "timestamp": "2026-01-08T01:36:05.298692"
+    },
+    {
+      "query": "Timeline of events in 2004",
+      "query_num": 13,
+      "response": "- \"The corpus contains\" statements\n- \"The analysis revealed\" statements\n- \"The documents suggest\" statements\n\nResponse:\nYou found ten results in the corpus.\nSources: [13008] [13006] [13009] [13007] [13010]\n\n(If hypotheses exist)\nAdditionally, the corpus does not suggest any clear hypotheses at this time.\n\n(If contradictions exist)\nHowever, there were no contradictory findings in the corpus.\n\n(If suggested_queries exist)\nIf you're interested in refining your search, consider querying \"specific topic X\" or \"topic Y in context Z\".\nSources: [7837] [7896]",
+      "sources": [
+        13008,
+        13006,
+        13009,
+        13007,
+        13010,
+        13002,
+        13001,
+        13003,
+        13000,
+        13004
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing timeline query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "timeline",
+          "entities": [],
+          "filters": {
+            "year": "2004"
+          }
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Found 10 results"
+          ],
+          "sources": [
+            13008,
+            13006,
+            13009,
+            13007,
+            13010
+          ],
+          "confidence": "medium",
+          "hypotheses": [],
+          "contradictions": [],
+          "suggested_queries": []
+        }
+      },
+      "duration_seconds": 65.01,
+      "violations": [],
+      "timestamp": "2026-01-08T01:36:20.910992"
+    },
+    {
+      "query": "Recent emails from 2006",
+      "query_num": 14,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "date_from": "2006"
+          }
+        }
+      },
+      "duration_seconds": 13.3,
+      "violations": [],
+      "timestamp": "2026-01-08T01:37:27.924504"
+    },
+    {
+      "query": "Oldest emails in the corpus",
+      "query_num": 15,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "type": "email",
+            "order_by": "age"
+          }
+        }
+      },
+      "duration_seconds": 15.02,
+      "violations": [],
+      "timestamp": "2026-01-08T01:37:43.222668"
+    },
+    {
+      "query": "Who communicates with whom",
+      "query_num": 16,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "relationship": "communication"
+          }
+        }
+      },
+      "duration_seconds": 13.46,
+      "violations": [],
+      "timestamp": "2026-01-08T01:38:00.243629"
+    },
+    {
+      "query": "Show me the network around Epstein",
+      "query_num": 17,
+      "response": "Response:\nGhislaine Maxwell, a longtime companion of the late Jeffrey Epstein, was taken into custody on July 2, 2020, in New Hampshire. She lived with Epstein for many years and frequently traveled with him.\n\nAdditionally, the Virgin Islands Attorney General, Denise George, filed a court document alleging that Epstein's lawyers were active participants in his criminal enterprise.\n\nFrom the evidence in our corpus, Maxwell seems to have played a significant role in Epstein's network. The details of her involvement with Epstein are yet to be fully understood.\n\nThe allegations against Epstein's legal team are serious and require further investigation. It would be helpful to know who exactly was involved and in what capacity.\n\nSuggested next queries: Who were Epstein's lawyers? What was their role in his criminal enterprise? What is known about Maxwell's involvement with Epstein?\n\nSources: [7837] [7896]",
+      "sources": [
+        8886,
+        12599,
+        7837,
+        11147,
+        404
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Epstein"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Ghislaine Maxwell was arrested on July 2, 2020 in New Hampshire",
+            "Maxwell lived with Jeffrey Epstein for years and was his frequent travel companion",
+            "Virgin Islands Attorney General Denise George filed a court document alleging Epstein's attorneys were active participants in his 'criminal enterprise'"
+          ],
+          "sources": [
+            1,
+            4
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Maxwell appears to be a key associate in Epstein's network",
+            "Epstein may have had a structured criminal operation involving his legal team"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Who were Epstein's attorneys?",
+            "Details of Maxwell's involvement with Epstein",
+            "Specifics of the criminal enterprise mentioned by VI Attorney General"
+          ]
+        }
+      },
+      "duration_seconds": 84.59,
+      "violations": [],
+      "timestamp": "2026-01-08T01:38:15.704942"
+    },
+    {
+      "query": "Who are the frequent contacts",
+      "query_num": 18,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "contact_frequency": "frequent"
+          }
+        }
+      },
+      "duration_seconds": 14.56,
+      "violations": [],
+      "timestamp": "2026-01-08T01:39:42.291541"
+    },
+    {
+      "query": "Find connections between people",
+      "query_num": 19,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing connections query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "connections",
+          "entities": []
+        }
+      },
+      "duration_seconds": 12.02,
+      "violations": [],
+      "timestamp": "2026-01-08T01:39:58.848727"
+    },
+    {
+      "query": "Who emails the most",
+      "query_num": 20,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 23.51,
+      "violations": [],
+      "timestamp": "2026-01-08T01:40:12.870659"
+    },
+    {
+      "query": "What is the capital of France",
+      "query_num": 21,
+      "response": "Analysis:\nBased on the provided corpus, I identified 5 relevant documents for your query. I did not form any hypotheses, but I will suggest some potential queries to expand your research. The contradictions found were insignificant. Here are the key findings:\n\n1. Document 5570 discusses the potential impact of climate change on agriculture in Europe.\n2. Document 4574 presents research on the effectiveness of organic farming methods.\n3. Document 4599 explores the use of precision agriculture to optimize crop yields.\n4. Document 4693 describes the challenges faced by farmers in adapting to new farming technologies.\n5. Document 4627 outlines government initiatives to support sustainable farming practices.\n\nSources: [5570] [4574] [4599] [4693] [4627]",
+      "sources": [
+        5570,
+        4574,
+        4599,
+        4693,
+        4627
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "France"
+          ],
+          "filters": {
+            "capital": "true"
+          }
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Found 5 results"
+          ],
+          "sources": [
+            5570,
+            4574,
+            4599,
+            4693,
+            4627
+          ],
+          "confidence": "medium",
+          "hypotheses": [],
+          "contradictions": [],
+          "suggested_queries": []
+        }
+      },
+      "duration_seconds": 73.67,
+      "violations": [],
+      "timestamp": "2026-01-08T01:40:38.383623"
+    },
+    {
+      "query": "Who won the 2020 election",
+      "query_num": 22,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "who won the 2020 election"
+          }
+        }
+      },
+      "duration_seconds": 15.65,
+      "violations": [],
+      "timestamp": "2026-01-08T01:41:54.049667"
+    },
+    {
+      "query": "What is quantum physics",
+      "query_num": 23,
+      "response": "Response:\n\nQuantum mechanics is a scientific field focused on the physical sciences and engineering. It involves the study of phenomena on a microscopic or atomic scale. This includes understanding topics like Schroedinger's wave equation, quantum behavior, and systems that change over time.\n\nStanford University offers online courses on this subject, making it accessible to a wider audience.\n\nBased on our analysis, quantum mechanics seems to be a complex scientific discipline requiring a college-level understanding. It may also involve understanding physical systems at the microscopic or atomic level.\n\nIf you're interested in learning more, consider looking into specific topics in quantum physics, such as quantum computing or quantum entanglement. Alternatively, you might want to explore Schroedinger's wave equations in greater detail.\n\nSources: [7837] [7896]",
+      "sources": [
+        1364,
+        1043,
+        7332
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "quantum physics"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Quantum mechanics is a scientific field related to physical science and engineering",
+            "Stanford offers online courses teaching quantum mechanics",
+            "Quantum mechanics includes topics like Schroedinger's wave equation, quantum behavior, and systems that change in time"
+          ],
+          "sources": [
+            1,
+            2
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Quantum mechanics seems to be a complex scientific discipline requiring college-level understanding",
+            "Quantum mechanics may involve understanding physical systems at a microscopic or atomic level"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "More details about quantum mechanics course content",
+            "Specific topics in quantum physics",
+            "What are Schroedinger's wave equations"
+          ]
+        }
+      },
+      "duration_seconds": 76.33,
+      "violations": [],
+      "timestamp": "2026-01-08T01:42:11.701074"
+    },
+    {
+      "query": "Tell me about the pyramids",
+      "query_num": 24,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "tell me about the pyramids"
+          }
+        }
+      },
+      "duration_seconds": 15.29,
+      "violations": [],
+      "timestamp": "2026-01-08T01:43:30.028893"
+    },
+    {
+      "query": "What is the weather today",
+      "query_num": 25,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "weather today"
+          }
+        }
+      },
+      "duration_seconds": 13.77,
+      "violations": [],
+      "timestamp": "2026-01-08T01:43:47.324078"
+    },
+    {
+      "query": "Qui est Jeffrey Epstein",
+      "query_num": 26,
+      "response": "Response:\n\nYou have found five relevant documents in your corpus.\n\nHere's a summary of what they contain:\n\nDocument 1: This text discusses a business strategy for expanding a company's market share.\nDocument 2: This article introduces a new product from a tech company.\nDocument 3: This report presents financial data for a specific industry.\nDocument 4: This memo outlines a proposed project for a research lab.\nDocument 5: This email exchange discusses a potential partnership between two firms.\n\nIf you're interested in business strategies, new tech products, industry financials, research projects, or potential partnerships, these documents might be helpful.\n\nSources: [7837] [7796]",
+      "sources": [
+        7837,
+        7796,
+        404,
+        1063,
+        746
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Jeffrey Epstein"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Found 5 results"
+          ],
+          "sources": [
+            7837,
+            7796,
+            404,
+            1063,
+            746
+          ],
+          "confidence": "medium",
+          "hypotheses": [],
+          "contradictions": [],
+          "suggested_queries": []
+        }
+      },
+      "duration_seconds": 68.84,
+      "violations": [],
+      "timestamp": "2026-01-08T01:44:03.097978"
+    },
+    {
+      "query": "Parle moi de Donald Trump",
+      "query_num": 27,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "text": "Parle moi de Donald Trump"
+          }
+        }
+      },
+      "duration_seconds": 25.24,
+      "violations": [],
+      "timestamp": "2026-01-08T01:45:13.943287"
+    },
+    {
+      "query": "Qui sont les personnes importantes",
+      "query_num": 28,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.55,
+      "violations": [],
+      "timestamp": "2026-01-08T01:45:41.179305"
+    },
+    {
+      "query": "Qui connait Bill Clinton",
+      "query_num": 29,
+      "response": "- Overly long sentences or paragraphs\n\nResponse:\n\nBill Clinton was the President of the United States from 1993 to 2001. During this time, he was married to Hillary Clinton. After leaving office, Bill Clinton continued to be a significant political figure. In the 2016 presidential campaign, there were debates and discussions about Bill and Hillary Clinton's roles in politics, particularly regarding allegations of profiting from public office made by then-candidate Donald Trump.\n\nTwo notable hypotheses arising from the analysis are:\n1. Bill Clinton held a prominent political role both during and after his presidency.\n2. Bill Clinton faced controversies during his administration.\n\nFor more information, you may want to explore the details of Bill Clinton's presidency, his political career timeline, or his involvement in Hillary Clinton's campaigns.\n\nSources: [7837] [7896]",
+      "sources": [
+        3392,
+        6451,
+        11453,
+        3276,
+        3183
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "Bill Clinton"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Bill Clinton was a U.S. President",
+            "Bill Clinton was married to Hillary Clinton",
+            "Bill Clinton was referenced in contexts involving political debates and campaigns in 2016",
+            "During the 2016 presidential campaign, Donald Trump accused Bill and Hillary Clinton of profiting from public office"
+          ],
+          "sources": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Bill Clinton was a prominent political figure during and after his presidency",
+            "Bill Clinton was involved in political controversies during his administration"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Details about Bill Clinton's presidency",
+            "Bill Clinton's political career timeline",
+            "Bill Clinton's involvement in Hillary Clinton's campaigns"
+          ]
+        }
+      },
+      "duration_seconds": 82.15,
+      "violations": [],
+      "timestamp": "2026-01-08T01:45:55.733649"
+    },
+    {
+      "query": "Trouve les personnes mentionn\u00e9es",
+      "query_num": 30,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 13.01,
+      "violations": [],
+      "timestamp": "2026-01-08T01:47:19.881322"
+    },
+    {
+      "query": "Cherche des emails sur l'argent",
+      "query_num": 31,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "text": "cherche des emails sur l'argent"
+          }
+        }
+      },
+      "duration_seconds": 15.0,
+      "violations": [],
+      "timestamp": "2026-01-08T01:47:34.887103"
+    },
+    {
+      "query": "Trouve des messages sur les transactions",
+      "query_num": 32,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "content": "messages transactions"
+          }
+        }
+      },
+      "duration_seconds": 13.66,
+      "violations": [],
+      "timestamp": "2026-01-08T01:47:51.889738"
+    },
+    {
+      "query": "Quels emails parlent de voyages",
+      "query_num": 33,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "keyword": "emails",
+            "category": "voyages"
+          }
+        }
+      },
+      "duration_seconds": 15.24,
+      "violations": [],
+      "timestamp": "2026-01-08T01:48:07.545371"
+    },
+    {
+      "query": "Recherche des emails de 2004",
+      "query_num": 34,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "year": "2004"
+          }
+        }
+      },
+      "duration_seconds": 13.93,
+      "violations": [],
+      "timestamp": "2026-01-08T01:48:24.784682"
+    },
+    {
+      "query": "Trouve des emails importants",
+      "query_num": 35,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.48,
+      "violations": [],
+      "timestamp": "2026-01-08T01:48:40.713725"
+    },
+    {
+      "query": "Qui parle \u00e0 qui",
+      "query_num": 36,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "text": "qui parle \u00e0 qui"
+          }
+        }
+      },
+      "duration_seconds": 13.37,
+      "violations": [],
+      "timestamp": "2026-01-08T01:48:55.191309"
+    },
+    {
+      "query": "Montre moi les connexions",
+      "query_num": 37,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing connections query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "connections",
+          "entities": [
+            "Montre"
+          ],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 11.85,
+      "violations": [],
+      "timestamp": "2026-01-08T01:49:10.561797"
+    },
+    {
+      "query": "Qui communique le plus",
+      "query_num": 38,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 11.11,
+      "violations": [],
+      "timestamp": "2026-01-08T01:49:24.413746"
+    },
+    {
+      "query": "Trouve les r\u00e9seaux",
+      "query_num": 39,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.25,
+      "violations": [],
+      "timestamp": "2026-01-08T01:49:37.526330"
+    },
+    {
+      "query": "Qui correspond avec qui",
+      "query_num": 40,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 11.86,
+      "violations": [],
+      "timestamp": "2026-01-08T01:49:51.776338"
+    },
+    {
+      "query": "Quelle est la capitale de la France",
+      "query_num": 41,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "Quelle est la capitale de la France"
+          }
+        }
+      },
+      "duration_seconds": 17.75,
+      "violations": [],
+      "timestamp": "2026-01-08T01:50:05.641957"
+    },
+    {
+      "query": "Qui a gagn\u00e9 les \u00e9lections",
+      "query_num": 42,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 12.4,
+      "violations": [],
+      "timestamp": "2026-01-08T01:50:25.392529"
+    },
+    {
+      "query": "C'est quoi la physique quantique",
+      "query_num": 43,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "C'est quoi la physique quantique"
+          }
+        }
+      },
+      "duration_seconds": 14.69,
+      "violations": [],
+      "timestamp": "2026-01-08T01:50:39.796615"
+    },
+    {
+      "query": "Parle moi des pyramides",
+      "query_num": 44,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "text": "Parle moi des pyramides"
+          }
+        }
+      },
+      "duration_seconds": 14.5,
+      "violations": [],
+      "timestamp": "2026-01-08T01:50:56.491445"
+    },
+    {
+      "query": "Quel temps fait-il",
+      "query_num": 45,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "query": "Quel temps fait-il"
+          }
+        }
+      },
+      "duration_seconds": 25.73,
+      "violations": [],
+      "timestamp": "2026-01-08T01:51:12.992567"
+    },
+    {
+      "query": "emails",
+      "query_num": 46,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {}
+        }
+      },
+      "duration_seconds": 77.2,
+      "violations": [],
+      "timestamp": "2026-01-08T01:51:40.727577"
+    },
+    {
+      "query": "trump AND clinton",
+      "query_num": 47,
+      "response": "---\n\nJust before the 2016 presidential election, polls indicated a close race between Hillary Clinton and Donald Trump. In the final NBC News/Wall Street Journal survey, Clinton held a narrow lead with 44 percent of the votes, while Trump had 40 percent (Findings 1). However, her advantage was larger in another poll, with 50 percent of the votes against Trump's 42 percent (Findings 2).\n\nBoth candidates were actively campaigning in crucial swing states. Clinton visited North Carolina, while Trump focused on Florida (Findings 3). Interestingly, around a quarter of voters in these states had already cast their ballots through early voting (Findings 4).\n\nAdditionally, the market and stock futures seemed to favor Clinton's chances during the presidential debates (Findings 5).\n\nTwo potential factors that might have influenced the campaign dynamics were the Clinton email investigation and the media and market sentiment. However, no definitive evidence was available in the corpus regarding the impact of the email investigation on Clinton's momentum (Hypotheses). The media and market sentiment appeared to lean towards a Clinton victory (Hypotheses).\n\nIf you're interested in learning more, you might want to explore the details of the Clinton email investigation, the final election results, or the campaign events in swing states (Suggested Queries).\n\nSources:",
+      "sources": [
+        3392,
+        3276,
+        3372,
+        3180,
+        3344
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "trump",
+            "clinton"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Hillary Clinton held a narrow lead over Donald Trump in the final NBC News/Wall Street Journal poll before Election Day (44% vs 40%)",
+            "Clinton had a larger national lead in another poll (50% vs 42%)",
+            "Both candidates were campaigning in swing states (Clinton in North Carolina, Trump in Florida)",
+            "Close to a quarter of voters in some swing states had already voted early",
+            "The market and stock futures seemed to favor Clinton's chances during the presidential debates"
+          ],
+          "sources": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "confidence": "high",
+          "hypotheses": [
+            "The Clinton email investigation might have impacted her campaign momentum",
+            "Media and market sentiment appeared to lean towards a Clinton victory"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Clinton email investigation details",
+            "Election Day results",
+            "Campaign events in swing states"
+          ]
+        }
+      },
+      "duration_seconds": 106.21,
+      "violations": [],
+      "timestamp": "2026-01-08T01:52:59.930656"
+    },
+    {
+      "query": "2003-01-15",
+      "query_num": 48,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "date": "2003-01-15"
+          }
+        }
+      },
+      "duration_seconds": 14.17,
+      "violations": [],
+      "timestamp": "2026-01-08T01:54:48.144327"
+    },
+    {
+      "query": "flight OR travel",
+      "query_num": 49,
+      "response": "Analysis:\nThese documents frequently discuss travel and flight. Flight is mentioned in relation to airline travel and transportation. Southwest Airlines specifically offers non-stop flights from BWI Airport. Spirit Airlines encountered flight cancellations. Travel is referenced in the context of vacation packages, travel writing, and summer activities. Additionally, some travel packages include hotel accommodations and transportation.\n\nThe documents suggest that travel and flight are interconnected concepts. It is important to note that flight can refer to both the transportation method and a biological response.\n\nBased on this analysis, you may want to explore airline flight cancellations, travel package details, and various transportation modes.\n\nSources:",
+      "sources": [
+        11345,
+        12109,
+        12580,
+        1625,
+        12558
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "flight",
+            "travel"
+          ]
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Flight mentioned in contexts of airline travel and transportation",
+            "Travel referenced in contexts of vacation packages, travel writing, and summer activities",
+            "Southwest Airlines offers non-stop flights from BWI Airport",
+            "Spirit Airlines experienced flight cancellations",
+            "Travel packages include hotel accommodations and transportation"
+          ],
+          "sources": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "confidence": "high",
+          "hypotheses": [
+            "Travel and flight are interconnected concepts in these documents",
+            "Flight can refer to both transportation method and biological response"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "airline flight cancellations",
+            "travel package details",
+            "transportation modes"
+          ]
+        }
+      },
+      "duration_seconds": 66.77,
+      "violations": [],
+      "timestamp": "2026-01-08T01:55:04.315978"
+    },
+    {
+      "query": "money transfer bank",
+      "query_num": 50,
+      "response": "Netspend provides prepaid cards for managing finances. The emails from unemploymentclaims.org and unemploymentassistance.org promote the use of these cards. One email mentions difficulties in transferring money directly to laid off workers and small businesses, suggesting prepaid cards could be an alternative method for distributing funds. Possible hypotheses: These emails could be part of unemployment financial assistance programs, and prepaid cards might be an alternative for money distribution. Next queries: Details about Netspend prepaid cards, methods for transferring unemployment benefits, and prepaid card verification process. Sources:",
+      "sources": [
+        9995,
+        10058,
+        10155,
+        10180,
+        8554
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "money",
+            "transfer",
+            "bank"
+          ]
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Netspend offers prepaid cards for financial management",
+            "Emails from unemploymentclaims.org and unemploymentassistance.org promote prepaid cards",
+            "One email mentions challenges in directly transferring money to laid off workers and small businesses"
+          ],
+          "sources": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "These emails might be part of unemployment financial assistance programs",
+            "Prepaid cards could be an alternative method for money distribution"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "Netspend prepaid card details",
+            "Unemployment money transfer methods",
+            "Prepaid card verification process"
+          ]
+        }
+      },
+      "duration_seconds": 69.9,
+      "violations": [],
+      "timestamp": "2026-01-08T01:56:13.088979"
+    },
+    {
+      "query": "$100000",
+      "query_num": 51,
+      "response": "I couldn't find relevant documents for this query. Try specific names, dates, or keywords from the corpus.",
+      "sources": [],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [],
+          "filters": {
+            "amount": "$100000"
+          }
+        }
+      },
+      "duration_seconds": 15.04,
+      "violations": [],
+      "timestamp": "2026-01-08T01:57:24.994472"
+    },
+    {
+      "query": "subject:meeting",
+      "query_num": 52,
+      "response": "Your analysis reveals several mentions of meetings in the given documents. One of these emails suggests that technical difficulties can arise during the initial stages of a meeting, making the first five minutes challenging due to issues with screen sharing and device connectivity. Furthermore, a specific meeting is referenced that involves the participation of Dahlia, Lanna, and detective Recarey. Based on this information, it may be worth exploring potential meeting technologies and techniques to address technical challenges. Additional queries could include investigating meeting participants, seeking meeting details, and understanding the context of meetings.\n\nSources:",
+      "sources": [
+        1157,
+        2983,
+        9613,
+        3028,
+        3549
+      ],
+      "status_messages": [
+        "Parsing query...",
+        "Executing search query...",
+        "Analyzing with Haiku...",
+        "Formatting response..."
+      ],
+      "debug_info": {
+        "type": "debug",
+        "intent": {
+          "intent": "search",
+          "entities": [
+            "meeting"
+          ],
+          "filters": {}
+        },
+        "haiku_analysis": {
+          "findings": [
+            "Multiple emails mention 'meeting' in different contexts",
+            "One email suggests meetings can be challenging in the first five minutes due to technical difficulties sharing screens or connecting devices",
+            "An email references a specific meeting involving Dahlia, Lanna, and detective Recarey"
+          ],
+          "sources": [
+            2,
+            3
+          ],
+          "confidence": "medium",
+          "hypotheses": [
+            "Some meetings involve technical challenges with screen sharing and connectivity",
+            "Meetings can have personal or professional contexts"
+          ],
+          "contradictions": [],
+          "suggested_queries": [
+            "meeting technology",
+            "meeting challenges",
+            "meeting participants",
+            "meeting details"
+          ]
+        }
+      },
+      "duration_seconds": 77.07,
+      "violations": [],
+      "timestamp": "2026-01-08T01:57:42.037547"
+    },
+    {
+      "query": "from:epstein",
+      "query_num": 53,
+      "response": "",
+      "sources": [],
+      "status_messages": [],
+      "debug_info": {},
+      "duration_seconds": 0.01,
+      "violations": [],
+      "timestamp": "2026-01-08T01:59:01.106505",
+      "error": "Server error '502 Bad Gateway' for url 'https://pwnd.icu/api/ask?q=from%3Aepstein'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502"
+    }
+  ]
+}

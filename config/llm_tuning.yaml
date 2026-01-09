@@ -1,0 +1,84 @@
+# LLM Performance Tuning Configuration
+# Optimized for 8-core CPU Intel/AMD systems
+# Target: Reduce query time from ~57s to <10s
+
+# Mistral 7B (llama.cpp backend on localhost:8001)
+mistral:
+  # Model settings
+  model_path: "/opt/rag/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+  model_alias: "mistral-7b-instruct"
+
+  # Context and generation
+  n_ctx: 1024                # Context window (reduced from 2048 for intent parsing)
+  n_predict: 128             # Max tokens to generate (was max_tokens=100)
+  temperature: 0.0           # Deterministic for intent parsing
+  top_p: 0.95
+  top_k: 40
+  repeat_penalty: 1.1
+
+  # CPU optimization
+  n_threads: 6               # Leave 2 cores for FastAPI/Caddy (auto-detect - 2)
+  n_batch: 256               # Batch size (reduced from 512 for lower latency)
+  n_gpu_layers: 0            # CPU only (no GPU)
+
+  # Memory management
+  use_mlock: true            # Lock model in RAM (prevent swap thrashing)
+  use_mmap: true             # Memory-map model file (faster load)
+  numa: false                # Disable NUMA unless multi-socket system
+
+  # Server settings (llama.cpp server)
+  host: "127.0.0.1"
+  port: 8001
+  timeout: 30                # Request timeout (seconds)
+  cache_prompt: true         # Enable prompt caching for repeated prefixes
+
+# Alternative: Faster 3-bit quantized model (experimental)
+mistral_fast:
+  model_path: "/opt/rag/models/mistral-7b-instruct-v0.2.Q3_K_S.gguf"
+  model_alias: "mistral-7b-instruct-fast"
+  n_ctx: 1024
+  n_predict: 128
+  temperature: 0.0
+  n_threads: 6
+  n_batch: 512               # Larger batch for faster throughput
+  use_mlock: true
+  use_mmap: true
+
+  # Note: Q3_K_S is ~30% faster but may reduce intent parsing quality
+  # Download: wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q3_K_S.gguf
+
+# Claude Haiku (Anthropic API)
+haiku:
+  model: "claude-haiku-4-20250115"
+  max_tokens: 500            # Analysis output
+  temperature: 0.3           # Slightly creative for analysis
+  cache_ttl: 300             # Cache identical queries for 5 min (in-memory)
+  timeout: 30                # API request timeout (seconds)
+
+  # Rate limiting (Tier 1: 50 req/min = 1.2s between requests)
+  rate_limit:
+    requests_per_minute: 50
+    min_delay_ms: 1200
+
+# Response caching (optional - requires Redis or in-memory cache)
+cache:
+  enabled: false             # Enable after installing Redis
+  backend: "memory"          # "memory" or "redis"
+  redis_url: "redis://localhost:6379/0"
+  ttl: 300                   # Cache TTL in seconds
+  max_size: 1000             # Max cached queries (memory backend only)
+
+# Performance targets
+targets:
+  total_query_time: 10       # Target: <10s per query
+  breakdown:
+    mistral_intent: 1.0      # Mistral intent parsing (currently 2-3s)
+    sql_execution: 0.5       # SQL queries (currently 1-2s)
+    haiku_analysis: 3.0      # Haiku analysis (currently 3-5s)
+    formatting: 0.5          # Response formatting
+
+# Monitoring
+monitoring:
+  enable_timing: true        # Log timing for each step
+  log_level: "INFO"          # DEBUG, INFO, WARNING, ERROR
+  metrics_file: "/opt/rag/logs/performance.json"
