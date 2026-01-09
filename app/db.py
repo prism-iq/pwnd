@@ -5,8 +5,10 @@ import psycopg2.extras
 from contextlib import contextmanager
 from typing import Optional, List, Dict, Any
 
-# Get PostgreSQL connection from environment
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://lframework:changeme@localhost:5432/ldb')
+# Get PostgreSQL connection from environment (required)
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is required")
 
 @contextmanager
 def get_db(db_name: str = None):

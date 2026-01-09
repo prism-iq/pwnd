@@ -24,10 +24,10 @@ ph = PasswordHasher(
 
 def get_db_connection():
     """Get database connection"""
-    return psycopg2.connect(
-        os.getenv("DATABASE_URL", "postgresql://lframework:PASSWORD@localhost:5432/ldb"),
-        cursor_factory=RealDictCursor
-    )
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL environment variable is required")
+    return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
 
 def hash_password(password: str) -> str:
     """Hash password with Argon2id"""

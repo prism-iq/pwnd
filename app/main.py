@@ -18,12 +18,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS (restrictive - only localhost)
+# CORS - production + localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1", "http://localhost"],
+    allow_origins=[
+        "https://pwnd.icu",
+        "http://localhost",
+        "http://127.0.0.1",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
 

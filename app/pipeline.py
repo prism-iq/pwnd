@@ -1,10 +1,9 @@
 """Query processing pipeline - Multi-step investigation with streaming"""
-import json
 import re
 import random
 from typing import AsyncGenerator, Dict, Any, List
-from app.llm_client import call_mistral, call_haiku
-from app.db import execute_query, execute_insert, execute_update
+from app.llm_client import call_haiku
+from app.db import execute_query, execute_insert
 from app.search import search_corpus_scored
 
 NL = chr(10)
