@@ -143,7 +143,7 @@ def format_results_for_llm(results: List[Dict], search_term: str) -> str:
 # =============================================================================
 
 async def process_query(query: str, conversation_id: str = None, is_auto: bool = False) -> AsyncGenerator[Dict[str, Any], None]:
-    """Multi-step investigation pipeline"""
+    """Multi-step investigation pipeline - deep local search, single API call"""
 
     # Save user message
     if conversation_id:
@@ -159,143 +159,219 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
     all_results = []
     all_ids = set()
     search_history = []
+    discovered_entities = set()  # Track entities we find
 
     # ==========================================================================
-    # STEP 1: Initial search
+    # STEP 1: Initial broad search
     # ==========================================================================
     yield {"type": "status", "msg": "Analyzing query..."}
-    yield {"type": "thinking", "text": f"Query received: \"{query}\"\n"}
+    yield {"type": "thinking", "text": f"Query: \"{query}\"\n"}
 
     initial_terms = extract_search_terms(query)
     if not initial_terms:
         initial_terms = [query]
 
-    yield {"type": "thinking", "text": f"Search terms identified: {', '.join(initial_terms)}\n\n"}
+    yield {"type": "thinking", "text": f"Terms: {', '.join(initial_terms)}\n\n"}
 
-    # First search
+    # First search - broad
     search_term = ' '.join(initial_terms[:3])
-    yield {"type": "status", "msg": f"Searching: {search_term}..."}
-    yield {"type": "thinking", "text": f"[Search 1] \"{search_term}\"\n"}
+    yield {"type": "status", "msg": f"[1/5] {search_term}..."}
+    yield {"type": "thinking", "text": f"[1] \"{search_term}\"\n"}
 
-    results1 = search_corpus(search_term, limit=10)
+    results1 = search_corpus(search_term, limit=15)
     search_history.append({"term": search_term, "count": len(results1)})
 
     if results1:
         all_results.extend(results1)
         for r in results1:
             all_ids.add(r.get('id'))
-        yield {"type": "thinking", "text": f"  → {len(results1)} emails found\n"}
-
-        # Show what we found
-        senders = list(set(r.get('sender_email', '') for r in results1 if r.get('sender_email')))[:3]
-        if senders:
-            yield {"type": "thinking", "text": f"  → Key senders: {', '.join(senders)}\n"}
+        yield {"type": "thinking", "text": f"    → {len(results1)} emails\n"}
     else:
-        yield {"type": "thinking", "text": f"  → No results. Trying variations...\n"}
         # Try individual terms
-        for term in initial_terms[:2]:
-            results1 = search_corpus(term, limit=5)
-            if results1:
-                all_results.extend(results1)
-                for r in results1:
-                    all_ids.add(r.get('id'))
-                yield {"type": "thinking", "text": f"  → '{term}': {len(results1)} emails\n"}
-                break
+        for term in initial_terms[:3]:
+            res = search_corpus(term, limit=10)
+            if res:
+                for r in res:
+                    if r.get('id') not in all_ids:
+                        all_results.append(r)
+                        all_ids.add(r.get('id'))
+                yield {"type": "thinking", "text": f"    → '{term}': {len(res)} emails\n"}
+                search_history.append({"term": term, "count": len(res)})
 
     yield {"type": "sources", "ids": list(all_ids)}
 
     # ==========================================================================
-    # STEP 2: Follow-up search based on findings
+    # STEP 2: Extract entities and search by sender domains
     # ==========================================================================
     if all_results:
-        yield {"type": "thinking", "text": f"\nAnalyzing patterns...\n"}
-        yield {"type": "status", "msg": "Analyzing patterns..."}
+        yield {"type": "thinking", "text": f"\nExtracting patterns...\n"}
 
-        # Extract entities from results for follow-up
+        # Collect all senders
         all_senders = [r.get('sender_email', '') for r in all_results if r.get('sender_email')]
-        all_recipients = []
-        for r in all_results:
-            recip = r.get('recipients_to', '')
-            if recip:
-                if isinstance(recip, list):
-                    all_recipients.extend(recip[:2])
-                elif isinstance(recip, str):
-                    all_recipients.extend(recip.split(',')[:2])
 
-        # Find most common domain
-        domains = [s.split('@')[1] if '@' in s else '' for s in all_senders]
+        # Find interesting domains (not generic)
         domain_counts = {}
-        for d in domains:
-            if d and d not in ['gmail.com', 'yahoo.com', 'hotmail.com']:
-                domain_counts[d] = domain_counts.get(d, 0) + 1
+        for s in all_senders:
+            if '@' in s:
+                domain = s.split('@')[1]
+                if domain not in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com']:
+                    domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
-        # Generate follow-up search
-        followup_term = None
+        # Search top 2 domains
+        sorted_domains = sorted(domain_counts.items(), key=lambda x: -x[1])[:2]
+        for domain, count in sorted_domains:
+            domain_term = domain.split('.')[0]
+            if domain_term.lower() not in [t.lower() for t in initial_terms] and len(domain_term) > 3:
+                discovered_entities.add(domain)
+                yield {"type": "status", "msg": f"[2/5] Domain: {domain}..."}
+                yield {"type": "thinking", "text": f"[2] Domain \"{domain}\" ({count}x)\n"}
 
-        if domain_counts:
-            top_domain = max(domain_counts.items(), key=lambda x: x[1])[0]
-            followup_term = top_domain.split('.')[0]  # Use domain name
-            yield {"type": "thinking", "text": f"  Interesting domain pattern: {top_domain}\n"}
-        elif all_recipients:
-            # Search for a recipient
-            recip = all_recipients[0].strip()
-            if '@' in recip:
-                followup_term = recip.split('@')[0]
-                yield {"type": "thinking", "text": f"  Following recipient trail: {recip}\n"}
-
-        if followup_term and followup_term.lower() not in [t.lower() for t in initial_terms]:
-            yield {"type": "thinking", "text": f"\n[Search 2] \"{followup_term}\"\n"}
-            yield {"type": "status", "msg": f"Searching: {followup_term}..."}
-
-            results2 = search_corpus(followup_term, limit=8)
-            search_history.append({"term": followup_term, "count": len(results2)})
-
-            if results2:
+                res = search_corpus(domain_term, limit=12)
+                search_history.append({"term": domain_term, "count": len(res)})
                 new_count = 0
-                for r in results2:
+                for r in res:
                     if r.get('id') not in all_ids:
                         all_results.append(r)
                         all_ids.add(r.get('id'))
                         new_count += 1
-                yield {"type": "thinking", "text": f"  → {len(results2)} emails ({new_count} new)\n"}
-                yield {"type": "sources", "ids": list(all_ids)}
+                if new_count > 0:
+                    yield {"type": "thinking", "text": f"    → +{new_count} new emails\n"}
+                    yield {"type": "sources", "ids": list(all_ids)}
+                break
 
     # ==========================================================================
-    # STEP 3: One more targeted search
+    # STEP 3: Extract and search names from content
     # ==========================================================================
-    if len(all_results) > 3:
-        # Look for connections - find names in snippets
-        name_pattern = r'\b([A-Z][a-z]+ [A-Z][a-z]+)\b'
+    if len(all_results) > 2:
+        name_pattern = r'\b([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\b'
         all_names = []
-        for r in all_results[:5]:
-            snippet = r.get('snippet', '')
+        for r in all_results[:12]:
+            snippet = str(r.get('snippet', '')) + ' ' + str(r.get('name', ''))
             names = re.findall(name_pattern, snippet)
             all_names.extend(names)
 
-        # Filter out common false positives
-        filtered_names = [n for n in all_names if n.lower() not in ['new york', 'los angeles', 'united states']]
+        # Count and filter names
+        name_counts = {}
+        skip_names = {'new york', 'los angeles', 'united states', 'virgin islands', 'prime minister'}
+        for n in all_names:
+            nl = n.lower()
+            if nl not in skip_names and nl not in query.lower():
+                name_counts[n] = name_counts.get(n, 0) + 1
 
-        if filtered_names:
-            # Find a name not in original query
-            for name in filtered_names[:3]:
-                if name.lower() not in query.lower():
-                    yield {"type": "thinking", "text": f"\n[Search 3] Connection: \"{name}\"\n"}
-                    yield {"type": "status", "msg": f"Checking connection: {name}..."}
+        # Search top 2 names
+        top_names = sorted(name_counts.items(), key=lambda x: -x[1])[:2]
+        for name, count in top_names:
+            if count >= 2 and name not in discovered_entities:
+                discovered_entities.add(name)
+                yield {"type": "status", "msg": f"[3/5] Person: {name}..."}
+                yield {"type": "thinking", "text": f"[3] Person \"{name}\" ({count}x)\n"}
 
-                    results3 = search_corpus(name, limit=6)
-                    search_history.append({"term": name, "count": len(results3)})
+                res = search_corpus(name, limit=10)
+                search_history.append({"term": name, "count": len(res)})
+                new_count = 0
+                for r in res:
+                    if r.get('id') not in all_ids:
+                        all_results.append(r)
+                        all_ids.add(r.get('id'))
+                        new_count += 1
+                if new_count > 0:
+                    yield {"type": "thinking", "text": f"    → +{new_count} new emails\n"}
+                    yield {"type": "sources", "ids": list(all_ids)}
+                break
 
-                    if results3:
-                        new_count = 0
-                        for r in results3:
-                            if r.get('id') not in all_ids:
-                                all_results.append(r)
-                                all_ids.add(r.get('id'))
-                                new_count += 1
-                        yield {"type": "thinking", "text": f"  → {len(results3)} emails ({new_count} new)\n"}
-                        if new_count > 0:
-                            yield {"type": "sources", "ids": list(all_ids)}
-                    break
+    # ==========================================================================
+    # STEP 4: Search by date clusters
+    # ==========================================================================
+    if len(all_results) > 5:
+        # Find date clusters
+        dates = [str(r.get('date', ''))[:7] for r in all_results if r.get('date')]
+        date_counts = {}
+        for d in dates:
+            if d and len(d) >= 7:
+                date_counts[d] = date_counts.get(d, 0) + 1
+
+        if date_counts:
+            # Find peak month
+            peak_month = max(date_counts.items(), key=lambda x: x[1])
+            if peak_month[1] >= 3:
+                yield {"type": "thinking", "text": f"[4] Timeline spike: {peak_month[0]} ({peak_month[1]} emails)\n"}
+
+    # ==========================================================================
+    # STEP 5: Search recipients trail
+    # ==========================================================================
+    if len(all_results) > 3:
+        all_recipients = []
+        for r in all_results[:10]:
+            recip = r.get('recipients_to', '')
+            if isinstance(recip, list):
+                all_recipients.extend([x for x in recip if x])
+            elif isinstance(recip, str) and recip:
+                all_recipients.extend([x.strip() for x in recip.split(',') if x.strip()])
+
+        # Find interesting recipients
+        recip_counts = {}
+        for rec in all_recipients:
+            if '@' in rec:
+                local = rec.split('@')[0].lower()
+                if len(local) > 3 and local not in ['info', 'admin', 'support', 'contact', 'noreply']:
+                    recip_counts[rec] = recip_counts.get(rec, 0) + 1
+
+        top_recips = sorted(recip_counts.items(), key=lambda x: -x[1])[:1]
+        for recip, count in top_recips:
+            if count >= 2:
+                local_part = recip.split('@')[0]
+                if local_part not in discovered_entities and local_part.lower() not in query.lower():
+                    discovered_entities.add(local_part)
+                    yield {"type": "status", "msg": f"[4/5] Recipient: {local_part}..."}
+                    yield {"type": "thinking", "text": f"[5] Recipient \"{recip}\" ({count}x)\n"}
+
+                    res = search_corpus(local_part, limit=8)
+                    search_history.append({"term": local_part, "count": len(res)})
+                    new_count = 0
+                    for r in res:
+                        if r.get('id') not in all_ids:
+                            all_results.append(r)
+                            all_ids.add(r.get('id'))
+                            new_count += 1
+                    if new_count > 0:
+                        yield {"type": "thinking", "text": f"    → +{new_count} new emails\n"}
+                        yield {"type": "sources", "ids": list(all_ids)}
+
+    # ==========================================================================
+    # STEP 6: One more keyword from subjects
+    # ==========================================================================
+    if len(all_results) > 5:
+        subject_words = []
+        for r in all_results[:15]:
+            subj = str(r.get('name', '')).lower()
+            words = re.findall(r'\b([a-z]{5,15})\b', subj)
+            subject_words.extend(words)
+
+        word_counts = {}
+        skip_words = STOP_WORDS | {'email', 'message', 'update', 'alert', 'news', 'daily', 'newsletter'}
+        for w in subject_words:
+            if w not in skip_words and w not in query.lower():
+                word_counts[w] = word_counts.get(w, 0) + 1
+
+        top_words = sorted(word_counts.items(), key=lambda x: -x[1])[:1]
+        for word, count in top_words:
+            if count >= 3 and word not in discovered_entities:
+                yield {"type": "status", "msg": f"[5/5] Keyword: {word}..."}
+                yield {"type": "thinking", "text": f"[6] Keyword \"{word}\" ({count}x in subjects)\n"}
+
+                res = search_corpus(word, limit=8)
+                search_history.append({"term": word, "count": len(res)})
+                new_count = 0
+                for r in res:
+                    if r.get('id') not in all_ids:
+                        all_results.append(r)
+                        all_ids.add(r.get('id'))
+                        new_count += 1
+                if new_count > 0:
+                    yield {"type": "thinking", "text": f"    → +{new_count} new emails\n"}
+                    yield {"type": "sources", "ids": list(all_ids)}
+
+    yield {"type": "thinking", "text": f"\n━━━ {len(all_results)} emails collected ━━━\n"}
 
     # ==========================================================================
     # STEP 4: Synthesize with Haiku (1 API call)
@@ -309,9 +385,9 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
         yield {"type": "done", "sources": []}
         return
 
-    # Prepare data for Haiku
+    # Prepare data for Haiku - send more context
     results_text = []
-    for r in all_results[:15]:  # Limit to 15 most relevant
+    for r in all_results[:25]:  # Send up to 25 emails for richer analysis
         results_text.append(
             f"Email #{r.get('id')}:\n"
             f"  Subject: {r.get('name', 'No subject')}\n"
@@ -334,7 +410,7 @@ EMAIL DATA:
 Write your analysis as L. What patterns do you see? What's suspicious? What connections emerge?
 Reference specific emails by #ID. End with next investigation steps."""
 
-    haiku_response = await call_haiku(haiku_prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=1000)
+    haiku_response = await call_haiku(haiku_prompt, system=HAIKU_SYSTEM_PROMPT, max_tokens=1500)
 
     if "error" in haiku_response:
         # Fallback to basic response
