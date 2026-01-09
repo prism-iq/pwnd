@@ -76,6 +76,7 @@ class SearchResult(BaseModel):
     name: str
     snippet: str
     score: float = 0.0
+    metadata: Optional[Dict[str, Any]] = None
 
 class QueryRequest(BaseModel):
     q: str = Field(..., max_length=10000)

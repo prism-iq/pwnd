@@ -5,6 +5,7 @@ import random
 from typing import AsyncGenerator, Dict, Any, List
 from app.llm_client import call_mistral, call_haiku
 from app.db import execute_query, execute_insert, execute_update
+from app.search import search_corpus_scored
 
 NL = chr(10)
 
@@ -103,29 +104,8 @@ def extract_search_terms(query: str) -> List[str]:
 
 
 def search_corpus(search_term: str, limit: int = 10) -> List[Dict[str, Any]]:
-    """Search emails in corpus"""
-    if not search_term or not search_term.strip():
-        return []
-
-    try:
-        email_query = """
-            SELECT
-                doc_id as id,
-                subject as name,
-                sender_email,
-                recipients_to,
-                date_sent as date,
-                ts_headline('english', COALESCE(body_text, subject), plainto_tsquery('english', %s),
-                    'StartSel=<mark>, StopSel=</mark>, MaxWords=35, MinWords=10') as snippet,
-                ts_rank(tsv, plainto_tsquery('english', %s)) as rank
-            FROM emails
-            WHERE tsv @@ plainto_tsquery('english', %s)
-            ORDER BY rank DESC
-            LIMIT %s
-        """
-        return execute_query("sources", email_query, (search_term, search_term, search_term, limit))
-    except Exception:
-        return []
+    """Search emails in corpus with score enhancement"""
+    return search_corpus_scored(search_term, limit)
 
 
 def format_results_for_llm(results: List[Dict], search_term: str) -> str:
@@ -135,7 +115,10 @@ def format_results_for_llm(results: List[Dict], search_term: str) -> str:
 
     lines = [f"[Search '{search_term}': {len(results)} results]"]
     for r in results[:8]:
-        lines.append(f"  #{r.get('id')}: {r.get('name', 'No subject')[:60]}")
+        # Show suspicion indicator if high
+        sus = r.get('suspicion', 0)
+        sus_marker = " [!]" if sus >= 30 else ""
+        lines.append(f"  #{r.get('id')}{sus_marker}: {r.get('name', 'No subject')[:60]}")
         lines.append(f"    From: {r.get('sender_email', '?')} | Date: {str(r.get('date', '?'))[:10]}")
         snippet = r.get('snippet', '')
         if snippet:
