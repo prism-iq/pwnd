@@ -12,12 +12,12 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/l-investigation-framework.git
-cd l-investigation-framework
-sudo ./boom.sh
+git clone https://github.com/prism-iq/pwnd.git
+cd pwnd
+sudo ./install.sh
 ```
 
-That's it. The `boom.sh` script handles everything:
+That's it. The `install.sh` script handles everything:
 - ✓ Detects your OS (Arch, Debian, Ubuntu, Fedora)
 - ✓ Installs dependencies (PostgreSQL, Python, Caddy)
 - ✓ Downloads Phi-3-Mini LLM model
