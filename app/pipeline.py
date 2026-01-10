@@ -29,7 +29,7 @@ from typing import AsyncGenerator, Dict, Any, List
 from functools import lru_cache
 from collections import OrderedDict
 
-from app.llm_client import call_haiku
+from app.llm_client import call_local
 from app.db import execute_query, execute_insert, execute_update
 from app.search import search_corpus_scored, search_nodes, search_go_sync, auto_score_result
 
@@ -1536,15 +1536,24 @@ Found: {len(all_results)} emails
 
 Analyze briefly. Cite #IDs. Suggest next step."""
 
-    # Call Haiku for synthesis (fast, ~3s)
-    system_prompt = get_system_prompt(user_lang)
-    haiku_response = await call_haiku(haiku_prompt, system=system_prompt, max_tokens=800)
+    # Local Phi-3 synthesis - no external API
+    phi3_prompt = f"""<|system|>
+{get_system_prompt(user_lang)}
+<|end|>
 
-    if "error" in haiku_response:
+<|user|>
+{haiku_prompt}
+<|end|>
+
+<|assistant|>"""
+
+    local_response = await call_local(phi3_prompt, max_tokens=800, temperature=0.3)
+
+    if local_response and len(local_response) > 30:
+        response = local_response
+    else:
         # Smart fallback - use curated document content directly
         response = build_smart_response(query, all_results, parallel_extracted)
-    else:
-        response = haiku_response.get("text", "Analysis complete.")
 
     yield {"type": "chunk", "text": response}
 

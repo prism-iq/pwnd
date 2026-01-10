@@ -24,16 +24,20 @@ if not DATABASE_URL:
 # Connection pool - min 2 connections, max 10
 _pool = None
 
+# Pool configuration - optimized for concurrent access
+POOL_MIN_CONN = int(os.getenv('DB_POOL_MIN', 5))
+POOL_MAX_CONN = int(os.getenv('DB_POOL_MAX', 30))
+
 def _get_pool():
     """Get or create the connection pool (lazy initialization)"""
     global _pool
     if _pool is None:
         _pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn=2,
-            maxconn=10,
+            minconn=POOL_MIN_CONN,
+            maxconn=POOL_MAX_CONN,
             dsn=DATABASE_URL
         )
-        log.info("PostgreSQL connection pool initialized (2-10 connections)")
+        log.info(f"PostgreSQL connection pool initialized ({POOL_MIN_CONN}-{POOL_MAX_CONN} connections)")
     return _pool
 
 @contextmanager
@@ -115,6 +119,16 @@ def init_databases():
                 model TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             );
+        """)
+
+        # Performance indexes
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messages_conversation_id
+            ON messages(conversation_id);
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messages_created_at
+            ON messages(created_at DESC);
         """)
 
         # Auto sessions table

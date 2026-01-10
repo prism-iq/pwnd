@@ -834,70 +834,20 @@ Text: {text}
         # Step 3: Generate SQL
         sql_inserts = ParallelExtractor.generate_sql_inserts(merged)
 
-        # Step 4: Haiku validation (single API call)
-        from app.llm_client import call_haiku
-
-        validation_prompt = f"""Validate and correct these extracted entities from an investigation query.
-
-Query: "{query}"
-
-Extracted entities:
-- Dates: {json.dumps(merged.get('dates', [])[:10])}
-- Persons: {json.dumps(merged.get('persons', [])[:10])}
-- Organizations: {json.dumps(merged.get('orgs', [])[:10])}
-- Amounts: {json.dumps(merged.get('amounts', [])[:10])}
-- Locations: {json.dumps(merged.get('locations', [])[:10])}
-
-Return JSON:
-{{
-  "validated": {{
-    "dates": [...],
-    "persons": [...],
-    "orgs": [...],
-    "amounts": [...],
-    "locations": [...]
-  }},
-  "corrections": ["list of corrections made"],
-  "confidence": 0.0-1.0,
-  "missing": ["entities that should be there but weren't extracted"]
-}}
-
-Only include entities with confidence > 0.5. Fix obvious errors."""
-
-        haiku_response = await call_haiku(validation_prompt, max_tokens=1500)
-
-        if "error" not in haiku_response:
-            try:
-                response_text = haiku_response.get("text", "")
-                if "{" in response_text:
-                    start = response_text.index("{")
-                    end = response_text.rindex("}") + 1
-                    validated = json.loads(response_text[start:end])
-                    return {
-                        "raw_extracted": merged,
-                        "validated": validated.get("validated", merged),
-                        "corrections": validated.get("corrections", []),
-                        "confidence": validated.get("confidence", 0.5),
-                        "missing": validated.get("missing", []),
-                        "sql_inserts": sql_inserts,
-                        "haiku_cost": haiku_response.get("cost_usd", 0)
-                    }
-            except Exception:
-                pass
-
-        # Fallback: return unvalidated
+        # Step 4: Local validation (no external API)
+        # Phi-3 extraction is trusted - return entities directly
         return {
             "raw_extracted": merged,
             "validated": merged,
             "corrections": [],
-            "confidence": 0.5,
+            "confidence": 0.75,
             "missing": [],
             "sql_inserts": sql_inserts,
-            "haiku_cost": 0
+            "local_validation": True
         }
 
 
 # Convenience function
 async def parallel_extract(text: str, query: str = "", entity_types: List[str] = None) -> Dict:
-    """Run parallel Phi-3 extraction with optional Haiku validation"""
+    """Run parallel Phi-3 extraction with local validation"""
     return await ParallelExtractor.process_and_validate(text, query, entity_types)

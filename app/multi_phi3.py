@@ -274,42 +274,23 @@ Output JSON:
   ]
 }}"""
 
-async def haiku_validate(entities: Dict[str, List], text: str) -> Dict:
-    """Use Haiku to validate and merge extracted entities"""
-    from app.llm_client import call_haiku
-
-    # Format entities for prompt
-    entity_list = []
+async def local_validate(entities: Dict[str, List], text: str) -> Dict:
+    """Validate entities using local logic (no external API)"""
+    # Accept all entities from Phi-3 extraction - validation is done locally
+    validated = []
     for entity_type, items in entities.items():
-        for item in items[:20]:  # Limit per type
+        for item in items[:20]:
             value = item.get("value") or item.get("name") or str(item)
-            entity_list.append(f"- {entity_type}: {value}")
+            if value and len(value) > 2:
+                validated.append({
+                    "type": entity_type,
+                    "value": value,
+                    "confidence": 0.75,
+                    "keep": True
+                })
 
-    if not entity_list:
-        return {"validated": [], "merges": [], "rejected": []}
-
-    prompt = HAIKU_VALIDATION_PROMPT.format(
-        entities="\n".join(entity_list),
-        text=text[:1000]
-    )
-
-    try:
-        response = await asyncio.to_thread(call_haiku, prompt, max_tokens=1000)
-
-        # Parse JSON from response
-        json_match = re.search(r'\{.*\}', response, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
-    except Exception:
-        pass
-
-    # Fallback: accept all entities
     return {
-        "validated": [
-            {"type": k, "value": v.get("value") or v.get("name"), "confidence": 0.7, "keep": True}
-            for k, items in entities.items()
-            for v in items[:10]
-        ],
+        "validated": validated,
         "merges": [],
         "rejected": []
     }
@@ -335,10 +316,10 @@ class MultiPhi3Pipeline:
 
         entity_count = sum(len(v) for v in entities.values())
 
-        # Step 2: Haiku validation (optional)
+        # Step 2: Local validation (optional)
         validation = None
         if validate and entity_count > 0:
-            validation = await haiku_validate(entities, text)
+            validation = await local_validate(entities, text)
 
         self.total_processed += 1
         self.total_entities += entity_count

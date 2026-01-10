@@ -27,8 +27,10 @@ async def call_local(prompt: str, max_tokens: int = 512, temperature: float = 0.
         job = await worker_pool.get_result(job_id, timeout=60)
         if job and job.result:
             return job.result
+        log.debug("LLM job returned no result")
         return ""
     except Exception as e:
+        log.debug(f"Local LLM call failed: {e}")
         return ""
 
 

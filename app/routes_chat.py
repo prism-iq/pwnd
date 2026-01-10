@@ -251,7 +251,7 @@ Answer based on the documents above. Cite sources using [1], [2], etc.
 
 <|assistant|>"""
 
-    # Try local Phi-3 first
+    # Local Phi-3 only - no external API
     try:
         from app.llm_client import call_local
         response = await call_local(prompt, max_tokens=800, temperature=0.3)
@@ -260,22 +260,7 @@ Answer based on the documents above. Cite sources using [1], [2], etc.
     except Exception as e:
         log.warning(f"Local LLM failed: {e}")
 
-    # Fallback to Haiku if local fails
-    try:
-        from app.llm_client import call_haiku
-        result = await call_haiku(
-            prompt=f"DOCUMENTS:\n{context}\n\nQUESTION: {query}\n\nAnswer based on documents, cite using [1], [2], etc.",
-            system=SYSTEM_PROMPT,
-            max_tokens=1000
-        )
-        if "text" in result:
-            return result["text"]
-        elif "error" in result:
-            log.warning(f"Haiku error: {result['error']}")
-    except Exception as e:
-        log.warning(f"Haiku failed: {e}")
-
-    # Final fallback - basic search summary
+    # Fallback - basic search summary
     return _generate_fallback_response(query, context)
 
 

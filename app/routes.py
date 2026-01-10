@@ -368,7 +368,8 @@ async def query_post(request: QueryRequest):
     loop = asyncio.get_event_loop()
     try:
         results = await loop.run_in_executor(None, lambda: _search_documents_sync(q, 30))
-    except Exception:
+    except Exception as e:
+        log.warning(f"Search failed for query '{q}': {e}")
         results = []
 
     # Build context from results
