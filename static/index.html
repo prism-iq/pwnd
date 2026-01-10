@@ -550,7 +550,12 @@
                 <div class="search-box">
                     <input type="text" class="search-input" id="search-input" placeholder="Search documents, emails, entities...">
                     <button class="search-btn" onclick="doSearch()">Search</button>
+                    <div class="search-engine-toggle" style="display:flex;gap:5px;margin-left:10px;">
+                        <button class="filter-btn active" id="engine-pg" onclick="setSearchEngine('pg')">PostgreSQL</button>
+                        <button class="filter-btn" id="engine-blood" onclick="setSearchEngine('blood')">Blood (C++)</button>
+                    </div>
                 </div>
+                <div id="search-stats" style="font-size:12px;color:#888;margin-bottom:10px;"></div>
                 <div class="results" id="search-results">
                     <div class="loading">Enter a search query</div>
                 </div>
@@ -847,6 +852,15 @@
         };
 
         // Search
+        let searchEngine = 'pg'; // 'pg' or 'blood'
+
+        function setSearchEngine(engine) {
+            searchEngine = engine;
+            document.getElementById('engine-pg').classList.toggle('active', engine === 'pg');
+            document.getElementById('engine-blood').classList.toggle('active', engine === 'blood');
+            document.getElementById('search-stats').textContent = '';
+        }
+
         document.getElementById('search-input').onkeydown = e => {
             if (e.key === 'Enter') doSearch();
         };
@@ -856,25 +870,50 @@
             if (!q) return;
 
             const results = document.getElementById('search-results');
+            const stats = document.getElementById('search-stats');
             results.innerHTML = '<div class="loading">Searching...</div>';
+            stats.textContent = '';
+
+            const startTime = performance.now();
 
             try {
-                const data = await fetch(`${API}/search?q=${encodeURIComponent(q)}&limit=30`).then(r => r.json());
-                if (!data.length) {
+                let data, items;
+                if (searchEngine === 'blood') {
+                    // Use C++ Blood server
+                    const resp = await fetch(`${API}/search/blood?q=${encodeURIComponent(q)}&limit=30`);
+                    data = await resp.json();
+                    items = data.results || [];
+                } else {
+                    // Use PostgreSQL
+                    data = await fetch(`${API}/search?q=${encodeURIComponent(q)}&limit=30`).then(r => r.json());
+                    items = data;
+                }
+
+                const elapsed = (performance.now() - startTime).toFixed(0);
+                stats.textContent = `${items.length} results in ${elapsed}ms (${searchEngine === 'blood' ? 'Blood C++' : 'PostgreSQL'})`;
+
+                if (!items.length) {
                     results.innerHTML = '<div class="loading">No results found</div>';
                     return;
                 }
-                results.innerHTML = data.map(r => `
-                    <div class="result" onclick="showSource(${r.id}, '${r.type}')">
+
+                results.innerHTML = items.map(r => {
+                    const id = r.doc_id || r.id;
+                    const type = r.doc_type || r.type || 'document';
+                    const title = r.title || 'Untitled';
+                    const snippet = r.snippet || '';
+                    const score = r.score ? ` (${r.score.toFixed(2)})` : '';
+                    return `
+                    <div class="result" onclick="showSource(${id}, '${type}')">
                         <div class="result-header">
-                            <span class="result-type ${r.type}">${r.type}</span>
-                            <span class="result-title">${escapeHtml(r.title || 'Untitled')}</span>
+                            <span class="result-type ${type}">${type}${score}</span>
+                            <span class="result-title">${escapeHtml(title)}</span>
                         </div>
-                        <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 200))}...</div>
+                        <div class="result-snippet">${escapeHtml(snippet.substring(0, 250))}...</div>
                     </div>
-                `).join('');
+                `}).join('');
             } catch (e) {
-                results.innerHTML = '<div class="loading">Search error</div>';
+                results.innerHTML = '<div class="loading">Search error: ' + e.message + '</div>';
             }
         }
 

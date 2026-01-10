@@ -29,6 +29,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
+
+        # Skip rate limiting for local requests
+        if client_ip in ("127.0.0.1", "localhost", "::1"):
+            return await call_next(request)
+
         now = time.time()
 
         # Clean old requests
@@ -111,7 +116,7 @@ app = FastAPI(
 
 # Security middleware (order matters - first added = last executed)
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=300)
 
 # CORS - production + localhost
 app.add_middleware(

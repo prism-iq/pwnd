@@ -191,6 +191,34 @@ async def search_nodes_endpoint(q: str = Query(..., max_length=1000), limit: int
     """Search nodes only"""
     return search_nodes(q, limit)
 
+@router.get("/api/search/blood")
+async def search_blood(q: str = Query(..., max_length=1000), limit: int = Query(30, ge=1, le=100)):
+    """Fast search via C++ Blood server (TF-IDF)"""
+    import requests
+    try:
+        resp = requests.post(
+            "http://127.0.0.1:9003/search",
+            json={"query": q, "limit": limit},
+            timeout=5.0
+        )
+        data = resp.json()
+        # Convert Blood format to SearchResult format
+        results = []
+        for r in data.get("results", []):
+            results.append({
+                "doc_id": r["id"],
+                "title": r["title"],
+                "snippet": r["snippet"],
+                "score": r["score"],
+                "doc_type": "blood"
+            })
+        return {"results": results, "total": len(results), "engine": "blood"}
+    except Exception as e:
+        log.error(f"Blood search error: {e}")
+        import traceback
+        log.error(traceback.format_exc())
+        raise HTTPException(status_code=503, detail=f"Blood server unavailable: {str(e)}")
+
 # Document Viewer (with alias for /api/email/)
 @router.get("/api/email/{doc_id}")
 async def get_email_alias(doc_id: int):
