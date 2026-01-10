@@ -15,6 +15,7 @@ from app.models import (
 from app.search import search_all, search_emails, search_nodes
 from app.db import execute_query, execute_insert, execute_update
 from app.pipeline import process_query, auto_investigate
+from app.config import STATIC_DIR, MIND_DIR, DATA_DIR
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ router = APIRouter()
 async def get_version():
     """Get frontend version for hot-reload"""
     try:
-        stat = os.stat("/opt/rag/static/index.html")
+        stat = os.stat(STATIC_DIR / "index.html")
         return {"v": int(stat.st_mtime)}
     except OSError:
         return {"v": 0}
@@ -78,7 +79,7 @@ async def stats():
     }
 
 # Live Thoughts Stream
-THOUGHTS_FILE = "/opt/rag/mind/thoughts.md"
+THOUGHTS_FILE = MIND_DIR / "thoughts.md"
 
 @router.get("/api/thoughts")
 async def get_thoughts(stream: bool = False, last_n: int = 10):
@@ -172,7 +173,7 @@ async def add_thought(thought: dict):
 async def thoughts_page():
     """Serve thoughts page at /thoughts"""
     from fastapi.responses import FileResponse
-    return FileResponse("/opt/rag/static/thoughts.html", media_type="text/html")
+    return FileResponse(STATIC_DIR / "thoughts.html", media_type="text/html")
 
 # Search
 @router.get("/api/search", response_model=List[SearchResult])
@@ -586,8 +587,7 @@ async def ingest_files(source: str = "inbox_upload"):
 @router.get("/api/ingest/status")
 async def ingest_status():
     """Get inbox status"""
-    from pathlib import Path
-    inbox = Path("/opt/rag/data/inbox")
+    inbox = DATA_DIR / "inbox"
     inbox.mkdir(parents=True, exist_ok=True)
 
     txt_files = list(inbox.rglob('*.txt'))

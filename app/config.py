@@ -3,7 +3,14 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-BASE_DIR = Path("/opt/rag")
+# Base directory - can be overridden by environment variable
+BASE_DIR = Path(os.environ.get("RAG_BASE_DIR", "/opt/rag"))
+
+# Derived paths
+STATIC_DIR = BASE_DIR / "static"
+MIND_DIR = BASE_DIR / "mind"
+DATA_DIR = BASE_DIR / "data"
+LLM_DIR = BASE_DIR / "llm"
 
 # Load .env file
 load_dotenv(BASE_DIR / ".env")

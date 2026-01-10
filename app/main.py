@@ -121,9 +121,9 @@ app.include_router(router)
 app.include_router(auth_router)
 
 # Serve static files
-static_dir = Path("/opt/rag/static")
-if static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+from app.config import STATIC_DIR
+if STATIC_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

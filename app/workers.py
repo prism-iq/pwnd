@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Callable
 from collections import OrderedDict
+
+from app.config import LLM_DIR
 from concurrent.futures import ThreadPoolExecutor, Future
 import threading
 
@@ -594,7 +596,8 @@ worker_pool = WorkerPool()
 
 async def init_workers():
     """Initialize the global worker pool"""
-    model_path = os.getenv("PHI3_MODEL_PATH", "/opt/rag/llm/Phi-3-mini-4k-instruct-q4.gguf")
+    default_model = str(LLM_DIR / "Phi-3-mini-4k-instruct-q4.gguf")
+    model_path = os.getenv("PHI3_MODEL_PATH", default_model)
     await worker_pool.start(model_path)
 
 

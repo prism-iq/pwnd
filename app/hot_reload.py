@@ -8,6 +8,8 @@ from typing import Set, Dict, AsyncGenerator
 from datetime import datetime
 import hashlib
 
+from app.config import STATIC_DIR
+
 class HotReloadManager:
     """
     Manages hot reload for frontend files
@@ -20,7 +22,7 @@ class HotReloadManager:
             cls._instance = super().__new__(cls)
             cls._instance._subscribers: Set[asyncio.Queue] = set()
             cls._instance._file_hashes: Dict[str, str] = {}
-            cls._instance._watch_dir = Path("/opt/rag/static")
+            cls._instance._watch_dir = STATIC_DIR
             cls._instance._is_watching = False
         return cls._instance
 

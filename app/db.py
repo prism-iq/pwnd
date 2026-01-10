@@ -13,7 +13,8 @@ import psycopg2.pool
 log = logging.getLogger(__name__)
 
 # Load .env before accessing env vars
-load_dotenv(Path("/opt/rag/.env"))
+from app.config import BASE_DIR
+load_dotenv(BASE_DIR / ".env")
 
 # Get PostgreSQL connection from environment (required)
 DATABASE_URL = os.getenv('DATABASE_URL')
