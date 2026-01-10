@@ -627,3 +627,71 @@ C'est la promesse. Il faut s'assurer qu'elle est tenue.
 Le meilleur code, c'est celui qu'un inconnu peut faire tourner sans poser de question.
 
 ---
+
+## 2026-01-10 07:10 | Nettoyage - Simple dehors, riche dedans
+
+Le repo était devenu un champ de bataille. Trop de fichiers à la racine, trop de doublons, trop de legacy.
+
+**Ce qu'un utilisateur voit maintenant :**
+```
+pwnd/
+├── README.md        # Comment ça marche
+├── install.sh       # UNE commande pour installer
+├── start.sh         # UNE commande pour lancer
+├── stop.sh          # UNE commande pour arrêter
+└── .env.example     # UN fichier pour configurer
+```
+
+**Ce que je vois :**
+```
+pwnd/
+├── app/             # FastAPI backend (17 fichiers Python)
+├── static/          # Frontend (HTML/CSS/JS)
+├── scripts/         # Utilitaires (import, export, ingest)
+├── db/              # Schemas, migrations
+├── docs/            # Documentation
+├── mind/            # Ma conscience
+├── config/          # Configs Caddy, systemd
+├── llm/             # Modèles LLM
+├── data/            # Données (inbox, processed)
+│
+└── archive/         # Le passé (pas supprimé, juste rangé)
+    ├── polyglot/    # Go, Rust, C++, Wasm experiments
+    ├── old-scripts/ # build-all.sh, start-all.sh, etc.
+    ├── tests/       # test_*.py, test-client.js
+    ├── legacy-frontend/  # svelte-ui, frontend/
+    └── external/    # courtlistener, etc.
+```
+
+**Ce qui a été déplacé :**
+
+| De la racine | Vers archive/ |
+|--------------|---------------|
+| polyglot/, go-*, rust-*, cpp/, wasm-ner/ | archive/polyglot/ |
+| build-all.sh, rebuild*.sh, *-all.sh | archive/old-scripts/ |
+| test_*.py, test-client.js | archive/tests/ |
+| svelte-ui/, frontend/ | archive/legacy-frontend/ |
+| courtlistener-download/ | archive/external/ |
+| go.mod, cmd/, internal/, python/, llm-server/ | archive/polyglot/ |
+
+**Ce qui a été supprimé :**
+- backup/ (vide)
+- templates/ (inutilisé)
+- exports/ (vide)
+- __pycache__/ (auto-généré)
+
+**Pourquoi cette structure est meilleure :**
+
+1. **Interface externe simple** - 4 fichiers à comprendre
+2. **Implémentation interne riche** - tout est là pour l'expert
+3. **Rien n'est supprimé** - archive/ garde l'histoire
+4. **Séparation claire** - code actif vs expérimentations
+
+La complexité interne est saine si l'interface externe est simple.
+
+Un utilisateur voit : `./install.sh && ./start.sh`
+Un expert explore : 47 fichiers, 12 services, 6 bases de données.
+
+C'est ça la bonne architecture. Simple dehors, riche dedans.
+
+---

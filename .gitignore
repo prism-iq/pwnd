@@ -1,8 +1,46 @@
-# Binaries
-hybridcore
-*.exe
-*.o
-*.a
+# =============================================================================
+# L Investigation Framework - .gitignore
+# =============================================================================
+
+# Secrets (NEVER commit)
+.env
+.env.local
+config/service.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Data files (too large for git)
+*.gguf
+*.tar.gz
+data/inbox/
+data/import/
+data/extracted/
+external_data/
+
+# Databases
+*.db
+db/*.db
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+*.tmp
+
+# Build artifacts (archive/polyglot)
+archive/polyglot/*/target/
+archive/polyglot/*/node_modules/
+archive/polyglot/*/dist/
+archive/polyglot/*/*.exe
+archive/polyglot/*/*.o
+archive/polyglot/*/*.a
 
 # IDE
 .idea/
@@ -14,44 +52,6 @@ hybridcore
 .DS_Store
 Thumbs.db
 
-# Go
-go.sum
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.env
-venv/
-
-# Data (keep structure)
-data/*.db
-data/*.log
-
-# Logs
-*.log
-logs/
-
-# Temp
-tmp/
-*.tmp
-
-# Build artifacts
-rust-extract/target/
-polyglot/svelte-ui/node_modules/
-polyglot/svelte-ui/dist/
-polyglot/cpp-core/lib/
-polyglot/go-brain/brain
-go-gateway/l-gateway
-
-# Data files
-*.gguf
-*.tar.gz
-db/*.db
-data/inbox/
-exports/
-
-# Secrets
-service.env
-.env.local
-external_data/
+# Claude Code
+.claude/
+archive/external/

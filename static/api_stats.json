@@ -1,0 +1,19 @@
+{
+  "updated": "2026-01-10T04:38:32.063074",
+  "system": {
+    "nodes": 49731,
+    "edges": 4291,
+    "sources": 13029,
+    "cache_hit_rate": 41.1
+  },
+  "quality": {
+    "score": 76.0,
+    "queries_tested": 20,
+    "curated_coverage": 0,
+    "avg_curated": 0
+  },
+  "ingestion": {
+    "pending": 0,
+    "processed_today": 0
+  }
+}
