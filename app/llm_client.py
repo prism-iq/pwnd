@@ -1,12 +1,14 @@
-"""LLM client - Local Phi-3 workers + Haiku API
+"""LLM client - Local Phi-3 workers + Claude API
 
 Architecture:
 - Phi-3 (local, free): Entity extraction, filtering, simple tasks
-- Haiku (API, paid): Complex synthesis, final analysis
+- Sonnet (API, paid): High-quality synthesis with caching
+- Haiku (API, cheap): Fast structured analysis
 """
 import logging
 import httpx
 from typing import Dict, Any, Optional, List
+from collections import OrderedDict
 from app.config import LLM_MISTRAL_URL, LLM_HAIKU_API_KEY
 
 log = logging.getLogger(__name__)
@@ -344,3 +346,141 @@ async def call_haiku(prompt: str, system: Optional[str] = None, max_tokens: int 
 
     except Exception as e:
         return {"error": f"Error calling Haiku: {str(e)}"}
+
+
+def check_opus_rate_limit() -> Dict[str, Any]:
+    """Check if Opus rate limit is reached for today"""
+    from app.db import execute_query
+    from app.config import OPUS_DAILY_LIMIT, OPUS_COST_LIMIT_USD
+    from datetime import datetime
+
+    today = datetime.now().date()
+    result = execute_query(
+        "audit",
+        """SELECT COUNT(*) as call_count, COALESCE(SUM(cost_usd), 0) as total_cost
+           FROM opus_calls
+           WHERE created_at::date = %s""",
+        (today,)
+    )
+
+    if not result:
+        return {"allowed": True, "calls_today": 0, "cost_today": 0.0}
+
+    call_count = result[0]["call_count"]
+    total_cost = float(result[0]["total_cost"])
+
+    if call_count >= OPUS_DAILY_LIMIT:
+        return {"allowed": False, "reason": f"Daily limit reached ({OPUS_DAILY_LIMIT} calls)", "calls_today": call_count}
+
+    if total_cost >= OPUS_COST_LIMIT_USD:
+        return {"allowed": False, "reason": f"Cost limit reached (${OPUS_COST_LIMIT_USD})", "cost_today": total_cost}
+
+    return {"allowed": True, "calls_today": call_count, "cost_today": total_cost}
+
+
+_opus_cache = OrderedDict()
+_OPUS_CACHE_SIZE = 50
+_MOCK_MODE = False  # Set True for testing without real API calls
+
+async def call_opus(prompt: str, system: Optional[str] = None, max_tokens: int = 512) -> Dict[str, Any]:
+    """Call Claude Opus API for synthesis with caching and rate limiting.
+    Uses Opus 4 ($15/$75 per M tokens) - highest quality synthesis.
+    """
+    import os
+    from app.config import LLM_OPUS_API_KEY
+
+    # Mock mode for testing
+    if _MOCK_MODE or os.getenv("LLM_MOCK_MODE"):
+        log.info("Mock mode: returning test response")
+        return {
+            "text": f"[MOCK] Analysis of query. Found relevant documents. Key persons mentioned include various individuals connected to the investigation. See sources for details. [#13015] [#13031]",
+            "usage": {"input_tokens": 100, "output_tokens": 50},
+            "cost_usd": 0.0,
+            "mock": True
+        }
+
+    if not LLM_OPUS_API_KEY:
+        return {"error": "ANTHROPIC_API_KEY not set", "fallback": True}
+
+    # Check cache first (save API costs)
+    import hashlib
+    cache_key = hashlib.md5((prompt[:500] + str(system)[:100]).encode()).hexdigest()
+    if cache_key in _opus_cache:
+        log.debug("Opus cache hit")
+        return _opus_cache[cache_key]
+
+    # Check rate limit
+    limit_check = check_opus_rate_limit()
+    if not limit_check["allowed"]:
+        log.info(f"Opus rate limit: {limit_check.get('reason')}")
+        return {"error": f"Rate limit: {limit_check['reason']}", "fallback": True}
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            messages = [{"role": "user", "content": prompt}]
+
+            payload = {
+                "model": "claude-sonnet-4-20250514",  # Sonnet 4 - best quality/cost balance
+                "max_tokens": max_tokens,
+                "messages": messages
+            }
+
+            if system:
+                payload["system"] = system
+
+            response = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": LLM_OPUS_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json"
+                },
+                json=payload
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Extract text and usage
+            content = data.get("content", [])
+            usage = data.get("usage", {})
+
+            if content and isinstance(content, list):
+                text = content[0].get("text", "")
+
+                # Log the call to audit db
+                from app.db import execute_insert
+                tokens_in = usage.get("input_tokens", 0)
+                tokens_out = usage.get("output_tokens", 0)
+                # Sonnet 4 pricing: $3/M input, $15/M output
+                cost_usd = (tokens_in * 3.0 / 1_000_000) + (tokens_out * 15.0 / 1_000_000)
+
+                try:
+                    execute_insert(
+                        "audit",
+                        """INSERT INTO opus_calls (tokens_in, tokens_out, cost_usd, query_preview)
+                           VALUES (%s, %s, %s, %s)""",
+                        (tokens_in, tokens_out, cost_usd, prompt[:200])
+                    )
+                except Exception:
+                    pass  # Table might not exist yet
+
+                result = {"text": text, "usage": usage, "cost_usd": cost_usd}
+
+                # Cache the result
+                _opus_cache[cache_key] = result
+                if len(_opus_cache) > _OPUS_CACHE_SIZE:
+                    _opus_cache.popitem(last=False)
+
+                return result
+
+            return {"error": "Invalid response format", "fallback": True}
+
+    except httpx.HTTPStatusError as e:
+        if "credit balance" in str(e.response.text).lower():
+            log.warning("Anthropic API: No credits available")
+            return {"error": "API credits depleted", "fallback": True}
+        log.error(f"Claude API HTTP error: {e}")
+        return {"error": f"API error: {str(e)}", "fallback": True}
+    except Exception as e:
+        log.error(f"Claude API error: {e}")
+        return {"error": f"Error calling Claude: {str(e)}", "fallback": True}

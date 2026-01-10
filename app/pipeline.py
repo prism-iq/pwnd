@@ -29,11 +29,60 @@ from typing import AsyncGenerator, Dict, Any, List
 from functools import lru_cache
 from collections import OrderedDict
 
-from app.llm_client import call_local
+from app.llm_client import call_local, call_opus
 from app.db import execute_query, execute_insert, execute_update
 from app.search import search_corpus_scored, search_nodes, search_go_sync, auto_score_result
 
 log = logging.getLogger(__name__)
+
+# =============================================================================
+# MIND FILES - Persistent memories and context
+# =============================================================================
+
+def load_mind_context(query: str, max_chars: int = 2000) -> str:
+    """Load relevant context from mind/ files for Opus synthesis."""
+    from app.config import MIND_DIR
+
+    context_parts = []
+
+    # Load recent thoughts (last 10 entries)
+    thoughts_file = MIND_DIR / "thoughts.md"
+    if thoughts_file.exists():
+        try:
+            content = thoughts_file.read_text()
+            entries = content.split("\n---\n")[-10:]  # Last 10 thoughts
+            recent = "\n---\n".join(entries)[-1500:]
+            context_parts.append(f"[RECENT THOUGHTS]\n{recent}")
+        except Exception:
+            pass
+
+    # Load methods (investigation methodology)
+    methods_file = MIND_DIR / "methods.md"
+    if methods_file.exists():
+        try:
+            content = methods_file.read_text()[:800]
+            context_parts.append(f"[METHODOLOGY]\n{content}")
+        except Exception:
+            pass
+
+    # Query-specific context from brainstorming
+    brainstorm_file = MIND_DIR / "brainstorming.md"
+    if brainstorm_file.exists():
+        try:
+            content = brainstorm_file.read_text()
+            # Find relevant sections based on query terms
+            query_terms = query.lower().split()
+            relevant_lines = []
+            for line in content.split('\n'):
+                if any(term in line.lower() for term in query_terms):
+                    relevant_lines.append(line)
+            if relevant_lines:
+                context_parts.append(f"[RELEVANT NOTES]\n" + "\n".join(relevant_lines[:10]))
+        except Exception:
+            pass
+
+    full_context = "\n\n".join(context_parts)
+    return full_context[:max_chars] if full_context else ""
 
 # =============================================================================
 # INVESTIGATION ENTITY WHITELIST - Known relevant persons, places, orgs
@@ -497,23 +546,39 @@ def build_smart_response(query: str, results: List[Dict], entities: Dict) -> str
 
         return "\n".join(lines)
 
-    # Fallback for non-curated results
-    top_ids = ', '.join([f'#{r.get("id")}' for r in results[:5]])
-    senders = list(set(r.get('sender_email', '') for r in results[:10] if r.get('sender_email')))[:3]
+    # Fallback for non-curated results - provide structured summary
+    lines = [f"**Document Search Results** for '{query}'"]
+    lines.append("")
 
-    response = f"""Found {len(results)} documents matching '{query}'.
+    # Show top documents with details
+    for r in results[:5]:
+        doc_id = r.get('id', '')
+        title = r.get('name', 'Untitled')[:60]
+        sender = r.get('sender_email', '')[:30]
+        snippet = re.sub(r'<[^>]+>', '', r.get('snippet', ''))[:100]
+        lines.append(f"**[#{doc_id}]** {title}")
+        if sender:
+            lines.append(f"  *From:* {sender}")
+        if snippet:
+            lines.append(f"  {snippet}...")
+        lines.append("")
 
-**Top results:** {top_ids}
-
-**Sources:** {', '.join(senders[:2]) if senders else 'various'}"""
+    # Add entities if found
+    persons = entities.get("persons", [])[:8]
+    if persons:
+        names = [p.get('name', '') for p in persons if p.get('name') and not is_spam_entity(p.get('name', ''))]
+        if names:
+            lines.append(f"**Key persons mentioned:** {', '.join(names[:5])}")
+            lines.append("")
 
     # Add prosecution evidence if target mentioned
     prosecution_evidence = format_prosecution_evidence(results, query)
     if prosecution_evidence:
-        response += prosecution_evidence
+        lines.append(prosecution_evidence)
 
-    response += "\n\nReview the source documents for detailed information."
-    return response
+    lines.append("*(Note: Full AI analysis unavailable - showing raw document excerpts)*")
+
+    return "\n".join(lines)
 
 # =============================================================================
 # FAST REGEX EXTRACTION (replaces slow Phi-3)
@@ -1447,9 +1512,9 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
     yield {"type": "thinking", "text": f"\n━━━ {len(all_results)} emails collected ━━━\n"}
 
     # ==========================================================================
-    # STEP 4: Phi-3 synthesis (local, streaming) + Haiku DB enrichment (1 API call)
+    # STEP 4: Claude synthesis (Opus API) + DB enrichment
     # ==========================================================================
-    yield {"type": "thinking", "text": f"\n--- Phi-3 Synthesis ---\n"}
+    yield {"type": "thinking", "text": f"\n--- Claude Synthesis ---\n"}
     yield {"type": "status", "msg": "Analyzing findings..."}
 
     if not all_results:
@@ -1517,14 +1582,48 @@ NEXT STEP: Try alternate spellings, related names, or broader search terms."""
     else:
         content_hint = "CONTENT ASSESSMENT: No results. Be very brief."
 
-    # Build compact prompt for Phi-3 (minimize tokens for speed)
+    # Build rich prompt for Claude Opus
     top_emails = []
-    for r in all_results[:5]:  # Only top 5 for speed
-        subject = r.get('name', '')[:35]
-        top_emails.append(f"#{r.get('id')}: {subject}")
+    for r in all_results[:10]:  # Top 10 for context
+        doc_id = r.get('id', '')
+        subject = r.get('name', '')[:80]
+        sender = r.get('sender_email', '')[:40]
+        snippet = re.sub(r'<[^>]+>', '', r.get('snippet', ''))[:150]
+        top_emails.append(f"[#{doc_id}] {subject}\n  From: {sender}\n  {snippet}")
 
-    # Compact Phi-3 prompt - shorter system prompt for speed
-    phi3_prompt = f"""<|system|>
+    # Get system prompt and mind context
+    from app.config import SYSTEM_PROMPT_L
+    mind_context = load_mind_context(query, max_chars=1500)
+
+    # Claude prompt - rich context from local processing + mind files
+    opus_prompt = f"""User query: "{query}"
+
+SEARCH RESULTS ({len(all_results)} documents found):
+
+{NL.join(top_emails)}
+
+EXTRACTED ENTITIES:
+{entities_context if entities_context else "No named entities extracted"}
+
+{content_hint}
+
+{f"PRIOR KNOWLEDGE:{NL}{mind_context}" if mind_context else ""}
+
+Analyze these documents as an investigator. Be specific - cite document IDs like [#123].
+Connect dots between people, dates, and events. Note any patterns or anomalies.
+Keep response focused and under 300 words."""
+
+    # Try Opus first (high quality), fallback to Phi-3, then smart response
+    response = None
+    opus_result = await call_opus(opus_prompt, system=SYSTEM_PROMPT_L, max_tokens=400)
+
+    if opus_result.get("text") and len(opus_result.get("text", "")) > 50:
+        response = opus_result["text"]
+        yield {"type": "thinking", "text": f"    ✓ Opus synthesis (${opus_result.get('cost_usd', 0):.4f})\n"}
+    else:
+        # Fallback to local Phi-3
+        yield {"type": "thinking", "text": f"    → Opus unavailable, using local model...\n"}
+        phi3_prompt = f"""<|system|>
 Forensic analyst. Epstein investigation. Be concise. Cite #IDs.
 <|end|>
 
@@ -1532,7 +1631,7 @@ Forensic analyst. Epstein investigation. Be concise. Cite #IDs.
 Query: "{query}"
 Found: {len(all_results)} docs
 
-{NL.join(top_emails)}
+{NL.join([f"#{r.get('id')}: {r.get('name', '')[:35]}" for r in all_results[:5]])}
 
 {entities_context}
 
@@ -1540,12 +1639,12 @@ Key finding with #ID. 2-3 sentences max.
 <|end|>
 
 <|assistant|>"""
+        local_response = await call_local(phi3_prompt, max_tokens=150, temperature=0.3)
 
-    local_response = await call_local(phi3_prompt, max_tokens=150, temperature=0.3)
+        if local_response and len(local_response) > 30:
+            response = local_response
 
-    if local_response and len(local_response) > 30:
-        response = local_response
-    else:
+    if not response:
         # Smart fallback - use curated document content directly
         response = build_smart_response(query, all_results, parallel_extracted)
 

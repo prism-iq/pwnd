@@ -181,6 +181,23 @@ def init_databases():
             ON haiku_calls(created_at);
         """)
 
+        # Opus/Sonnet calls tracking
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS opus_calls (
+                id SERIAL PRIMARY KEY,
+                tokens_in INTEGER,
+                tokens_out INTEGER,
+                cost_usd DECIMAL(10,6),
+                query_preview TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_opus_calls_date
+            ON opus_calls(created_at);
+        """)
+
         conn.commit()
         cursor.close()
         log.info("Database tables initialized")

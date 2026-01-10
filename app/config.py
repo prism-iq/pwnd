@@ -32,6 +32,11 @@ LLM_HAIKU_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 HAIKU_DAILY_LIMIT = 100  # max 100 calls/day
 HAIKU_COST_LIMIT_USD = 1.0  # max $1/day
 
+# Opus settings (primary synthesis model)
+LLM_OPUS_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+OPUS_DAILY_LIMIT = 50  # max 50 calls/day (more expensive)
+OPUS_COST_LIMIT_USD = 5.0  # max $5/day
+
 # API settings
 API_HOST = "127.0.0.1"
 API_PORT = 8002
