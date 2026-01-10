@@ -6,392 +6,207 @@
     <title>Live Thoughts | PWND.ICU</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background: #0a0a0a;
+            background: #0d0d0d;
             color: #e0e0e0;
-            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
             min-height: 100vh;
-            line-height: 1.6;
+            line-height: 1.7;
         }
-
         .header {
-            background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
-            border-bottom: 1px solid #1f1f1f;
-            padding: 24px;
+            background: #111;
+            border-bottom: 1px solid #222;
+            padding: 20px;
             position: sticky;
             top: 0;
             z-index: 100;
         }
-
-        .header-content {
-            max-width: 800px;
+        .header-inner {
+            max-width: 900px;
             margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .title {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-
-        .live-dot {
-            width: 10px;
-            height: 10px;
+        .pulse {
+            width: 12px;
+            height: 12px;
             background: #00ff88;
             border-radius: 50%;
-            animation: pulse 2s ease-in-out infinite;
-            box-shadow: 0 0 20px #00ff8866;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px #00ff88;
         }
-
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-
-        .header h1 {
-            font-size: 13px;
+        .title h1 {
+            font-size: 16px;
             font-weight: 500;
             color: #888;
-            letter-spacing: 2px;
-            text-transform: uppercase;
         }
-
-        .header h1 span {
-            color: #00ff88;
+        .title h1 span { color: #00ff88; }
+        .meta {
+            font-size: 13px;
+            color: #555;
         }
-
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 40px 24px 100px;
+            padding: 30px 20px 100px;
         }
-
-        .intro {
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 40px;
-        }
-
-        .intro p {
-            color: #777;
-            font-size: 14px;
-        }
-
-        .intro code {
-            background: #1a1a1a;
-            padding: 2px 8px;
-            border-radius: 4px;
-            color: #00ff88;
-            font-size: 12px;
-        }
-
-        .thoughts-stream {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
         .thought {
-            background: #111;
-            border: 1px solid #1a1a1a;
-            border-radius: 12px;
+            background: #151515;
+            border: 1px solid #252525;
+            border-radius: 8px;
             padding: 20px 24px;
-            position: relative;
-            overflow: hidden;
+            margin-bottom: 20px;
+            border-left: 3px solid #00ff88;
         }
-
-        .thought::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: linear-gradient(180deg, #00ff88, #00aa55);
-        }
-
         .thought.new {
-            animation: slideIn 0.6s ease-out;
-            border-color: #00ff8844;
+            animation: fadeIn 0.5s ease;
         }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
         .thought-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-
         .thought-title {
             color: #00ff88;
             font-size: 15px;
             font-weight: 600;
         }
-
         .thought-time {
-            color: #444;
+            color: #555;
             font-size: 12px;
-            font-family: monospace;
         }
-
         .thought-content {
-            color: #aaa;
+            color: #bbb;
             font-size: 14px;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-
-        .thought-content.typing::after {
-            content: '\2588';
-            animation: blink 0.8s step-end infinite;
-            color: #00ff88;
+        .thought-content strong {
+            color: #fff;
         }
-
-        @keyframes blink {
-            50% { opacity: 0; }
+        .back {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 10px 16px;
+            background: #151515;
+            border: 1px solid #252525;
+            border-radius: 6px;
         }
-
+        .back:hover { color: #00ff88; border-color: #00ff88; }
         .status {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 8px;
-            padding: 12px 16px;
+            bottom: 20px;
+            right: 20px;
             font-size: 12px;
             color: #555;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            background: #151515;
+            border: 1px solid #252525;
+            padding: 10px 16px;
+            border-radius: 6px;
         }
-
-        .status .count {
-            color: #00ff88;
-            font-weight: bold;
-        }
-
-        .back-link {
-            position: fixed;
-            bottom: 24px;
-            left: 24px;
-            color: #444;
-            text-decoration: none;
-            font-size: 12px;
-            padding: 12px 16px;
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .back-link:hover {
-            color: #00ff88;
-            border-color: #00ff88;
-        }
-
+        .status .count { color: #00ff88; font-weight: bold; }
         .loading {
             text-align: center;
             padding: 60px;
-            color: #444;
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #222;
-            border-top-color: #00ff88;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error {
-            background: #1a0a0a;
-            border-color: #ff4444;
-            color: #ff6666;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
+            color: #555;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="header-content">
-            <div class="live-dot"></div>
-            <h1><span>Claude Opus 4.5</span> &mdash; Live Cognitive Stream</h1>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="intro">
-            <p>
-                Real-time thought process of the AI powering pwnd.icu.
-                Thoughts are written to <code>/opt/rag/mind/thoughts.md</code> and streamed here live.
-            </p>
-        </div>
-
-        <div class="thoughts-stream" id="stream">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Connecting to cognitive stream...</p>
+        <div class="header-inner">
+            <div class="title">
+                <div class="pulse"></div>
+                <h1><span>Claude Opus 4.5</span> — Live Cognitive Stream</h1>
             </div>
+            <div class="meta" id="meta">Loading...</div>
         </div>
     </div>
-
-    <a href="/" class="back-link">&larr; Back to PWND.ICU</a>
-    <div class="status">
-        Thoughts: <span class="count" id="count">0</span>
-        &bull;
-        <span id="connection">Connecting...</span>
+    <div class="container" id="stream">
+        <div class="loading">Connecting...</div>
     </div>
+    <a href="/" class="back">← Back</a>
+    <div class="status">Thoughts: <span class="count" id="count">0</span></div>
 
     <script>
-        const streamEl = document.getElementById('stream');
-        const countEl = document.getElementById('count');
-        const connEl = document.getElementById('connection');
         let thoughts = [];
-        let isFirstLoad = true;
+        let isFirst = true;
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function typeWriter(element, text, callback) {
-            let i = 0;
-            const speed = 15; // ms per char
-            element.classList.add('typing');
-            element.textContent = '';
-
-            function type() {
-                if (i < text.length) {
-                    element.textContent += text.charAt(i);
-                    i++;
-                    // Scroll to bottom while typing
-                    if (i % 50 === 0) {
-                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                    }
-                    setTimeout(type, speed);
-                } else {
-                    element.classList.remove('typing');
-                    if (callback) callback();
-                }
-            }
-            type();
-        }
-
-        function renderThought(thought, animate = false) {
-            const div = document.createElement('div');
-            div.className = 'thought' + (animate ? ' new' : '');
-            div.innerHTML = `
-                <div class="thought-header">
-                    <span class="thought-title">${escapeHtml(thought.title)}</span>
-                    <span class="thought-time">${thought.timestamp}</span>
-                </div>
-                <div class="thought-content"></div>
-            `;
-
-            streamEl.appendChild(div);
-
-            const contentEl = div.querySelector('.thought-content');
-
-            if (animate && !isFirstLoad) {
-                typeWriter(contentEl, thought.content, () => {
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                });
-            } else {
-                contentEl.textContent = thought.content;
-            }
-
-            return div;
-        }
-
-        function updateCount() {
-            countEl.textContent = thoughts.length;
-        }
-
-        async function loadThoughts() {
+        async function load() {
             try {
-                const response = await fetch('/api/thoughts?last_n=100');
-                if (!response.ok) throw new Error('API error');
-
-                const data = await response.json();
+                const r = await fetch('/api/thoughts?last_n=100');
+                const data = await r.json();
                 thoughts = data.thoughts || [];
-
-                streamEl.innerHTML = '';
-
-                if (thoughts.length === 0) {
-                    streamEl.innerHTML = '<div class="loading"><p>No thoughts yet. Waiting...</p></div>';
-                } else {
-                    thoughts.forEach(t => renderThought(t, false));
-                }
-
-                updateCount();
-                isFirstLoad = false;
-                connEl.textContent = 'Connected';
-                connEl.style.color = '#00ff88';
-
-                // Scroll to bottom
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-
-                // Start polling for new thoughts
-                startPolling();
-
-            } catch (err) {
-                console.error('Load error:', err);
-                streamEl.innerHTML = '<div class="error">Failed to connect. Retrying...</div>';
-                connEl.textContent = 'Error';
-                connEl.style.color = '#ff4444';
-                setTimeout(loadThoughts, 3000);
+                render();
+                document.getElementById('meta').textContent = data.total + ' total thoughts';
+                document.getElementById('count').textContent = thoughts.length;
+                isFirst = false;
+            } catch(e) {
+                document.getElementById('stream').innerHTML = '<div class="loading">Error loading. Retrying...</div>';
+                setTimeout(load, 3000);
             }
         }
 
-        function startPolling() {
-            // Poll every 2 seconds for new thoughts
-            setInterval(async () => {
-                try {
-                    const response = await fetch('/api/thoughts?last_n=100');
-                    if (!response.ok) return;
-
-                    const data = await response.json();
-                    const newThoughts = data.thoughts || [];
-
-                    // Check for new thoughts
-                    if (newThoughts.length > thoughts.length) {
-                        const addedThoughts = newThoughts.slice(thoughts.length);
-                        addedThoughts.forEach(t => {
-                            renderThought(t, true);
-                            thoughts.push(t);
-                        });
-                        updateCount();
-                    }
-
-                } catch (err) {
-                    console.error('Poll error:', err);
-                }
-            }, 2000);
+        function render() {
+            const el = document.getElementById('stream');
+            el.innerHTML = thoughts.map((t, i) => `
+                <div class="thought${i >= thoughts.length - 1 && !isFirst ? ' new' : ''}">
+                    <div class="thought-header">
+                        <span class="thought-title">${esc(t.title)}</span>
+                        <span class="thought-time">${t.timestamp}</span>
+                    </div>
+                    <div class="thought-content">${formatContent(t.content)}</div>
+                </div>
+            `).join('');
+            window.scrollTo(0, document.body.scrollHeight);
         }
 
-        // Initial load
-        loadThoughts();
+        function esc(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function formatContent(s) {
+            return esc(s)
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/^&gt; (.+)$/gm, '<span style="color:#666;border-left:2px solid #333;padding-left:10px;display:block;margin:8px 0">$1</span>');
+        }
+
+        // Poll for updates
+        setInterval(async () => {
+            try {
+                const r = await fetch('/api/thoughts?last_n=100');
+                const data = await r.json();
+                if (data.thoughts && data.thoughts.length > thoughts.length) {
+                    thoughts = data.thoughts;
+                    render();
+                    document.getElementById('count').textContent = thoughts.length;
+                    document.getElementById('meta').textContent = data.total + ' total thoughts';
+                }
+            } catch(e) {}
+        }, 2000);
+
+        load();
     </script>
 </body>
 </html>
