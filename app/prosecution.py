@@ -73,18 +73,23 @@ class ProsecutionTarget:
 PROSECUTION_TARGETS_DB = {
     'ghislaine_maxwell': {
         'name': 'Ghislaine Maxwell',
-        'aliases': ['G-Max'],
+        'aliases': ['G-Max', 'GM'],
         'potential_charges': ['Sex trafficking of minors', 'Conspiracy', 'Perjury'],
         'status': 'Convicted (2021) - 20 years',
         'guilt_flag': 12,  # CONVICTED - 20 years federal prison
-        'flag_reason': 'Convicted on 5 counts of sex trafficking. Jury found her guilty. Sentenced to 20 years.',
+        'flag_reason': 'Convicted on 5 counts of sex trafficking. FBI tracked her to Manchester-by-Sea. Managed $600M+ criminal enterprise with Epstein.',
         'key_evidence': [
             {'type': 'testimony', 'summary': 'Multiple victims testified to her recruitment role', 'confidence': 95},
             {'type': 'document', 'summary': 'Flight logs show extensive travel with Epstein', 'confidence': 95},
             {'type': 'testimony', 'summary': 'Participated directly in abuse per victims', 'confidence': 85},
+            {'type': 'fbi', 'summary': 'FBI tracked her location via Boston office before arrest', 'confidence': 100},
+            {'type': 'fbi', 'summary': 'EFTA00037453: FBI emails show surveillance coordination pre-arrest', 'confidence': 100},
+            {'type': 'financial', 'summary': '$600M+ estate - VI AG alleges tax programs funded trafficking', 'confidence': 90},
+            {'type': 'document', 'summary': '1996 victim affidavit: "school-age girls" seen at Epstein mansion', 'confidence': 85},
+            {'type': 'witness', 'summary': 'Witnesses withdrew cooperation citing safety fears', 'confidence': 80},
         ],
-        'witnesses': ['Virginia Giuffre', 'Annie Farmer', 'Kate', 'Jane', 'Carolyn'],
-        'confidence_score': 95,
+        'witnesses': ['Virginia Giuffre', 'Annie Farmer', 'Kate', 'Jane', 'Carolyn', 'UK-based witnesses'],
+        'confidence_score': 98,
     },
     'jean_luc_brunel': {
         'name': 'Jean-Luc Brunel',
@@ -107,45 +112,55 @@ PROSECUTION_TARGETS_DB = {
         'potential_charges': ['Sexual abuse of a minor', 'Sex trafficking conspiracy'],
         'status': 'Settled civil lawsuit (2022)',
         'guilt_flag': 8,  # Strong evidence - paid $12M+ to settle, stripped of titles
-        'flag_reason': 'Photo evidence, victim testimony, paid $12M+ settlement, stripped of royal titles. Never faced criminal trial.',
+        'flag_reason': 'Photo evidence, victim testimony, paid $12M+ settlement, stripped of royal titles. Epstein pleaded 5th on ALL questions about Andrew. FBI found 21 document mentions.',
         'key_evidence': [
             {'type': 'testimony', 'summary': 'Virginia Giuffre testified she was trafficked to him 3 times', 'confidence': 85},
             {'type': 'photograph', 'summary': 'Photo with Giuffre at Maxwell London home', 'confidence': 95},
             {'type': 'flight_log', 'summary': 'Multiple flights on Epstein aircraft', 'confidence': 90},
             {'type': 'witness', 'summary': 'Staff testimony about visits to Epstein properties', 'confidence': 75},
+            {'type': 'deposition', 'summary': 'Epstein pleaded 5th on ALL questions regarding Prince Andrew', 'confidence': 100},
+            {'type': 'document', 'summary': '21 FOIA document mentions found - flight logs, victim accounts', 'confidence': 90},
+            {'type': 'fbi', 'summary': 'FBI coordinated with UK NCA on London-based witness interviews', 'confidence': 85},
         ],
-        'witnesses': ['Virginia Giuffre', 'Johanna Sjoberg', 'Epstein staff'],
-        'confidence_score': 82,
+        'witnesses': ['Virginia Giuffre', 'Johanna Sjoberg', 'Epstein staff', 'UK-based witnesses (FBI coordination)'],
+        'confidence_score': 85,
     },
     'alexander_acosta': {
         'name': 'Alexander Acosta',
         'aliases': [],
-        'potential_charges': ['Corrupt plea deal', 'Obstruction of justice'],
+        'potential_charges': ['Corrupt plea deal', 'Obstruction of justice', 'Victims rights violations'],
         'status': 'Resigned as Labor Secretary (2019)',
-        'guilt_flag': 7,  # Corrupt deal that let Epstein walk - obstruction
-        'flag_reason': 'Negotiated illegal plea deal violating victims rights. Forced to resign. Protected a predator.',
+        'guilt_flag': 8,  # Upgraded: DOJ OPR Report found "poor judgment", 60-count indictment reduced
+        'flag_reason': 'DOJ OPR Report confirmed 60-count federal indictment was reduced to 18-month state plea. Violated CVRA. Used "professional judgment" defense. Protected predator.',
         'key_evidence': [
             {'type': 'legal', 'summary': 'Negotiated lenient 2008 plea deal', 'confidence': 100},
             {'type': 'document', 'summary': 'Deal violated victims rights laws', 'confidence': 95},
             {'type': 'testimony', 'summary': 'Claimed told Epstein was intelligence', 'confidence': 60},
+            {'type': 'doj_report', 'summary': 'DOJ OPR: 60-count federal indictment reduced to 18-month state plea', 'confidence': 100},
+            {'type': 'doj_report', 'summary': 'DOJ OPR found Acosta "used poor judgment" but no prosecution', 'confidence': 100},
+            {'type': 'document', 'summary': 'EFTA00011475: Full OPR Executive Summary in FOIA files', 'confidence': 100},
+            {'type': 'legal', 'summary': 'Victims not notified as required by CVRA - federal judge ruled deal illegal', 'confidence': 95},
         ],
-        'witnesses': ['Julie K. Brown (reporter)', 'Victims'],
-        'confidence_score': 70,
+        'witnesses': ['Julie K. Brown (reporter)', 'Victims', 'DOJ OPR investigators'],
+        'confidence_score': 78,
     },
     'alan_dershowitz': {
         'name': 'Alan Dershowitz',
         'aliases': [],
-        'potential_charges': ['Sexual abuse allegations'],
+        'potential_charges': ['Sexual abuse allegations', 'Corrupt plea deal participation'],
         'status': 'Denies all allegations',
-        'guilt_flag': 5,  # Credible accusation, flight logs, but denies
-        'flag_reason': 'Accused by Virginia Giuffre. On flight logs. Helped negotiate corrupt plea deal. Denies everything.',
+        'guilt_flag': 6,  # Upgraded: Epstein pleaded 5th on Dershowitz + minors questions
+        'flag_reason': 'Epstein pleaded 5th when asked about minors at Dershowitz house. Helped negotiate corrupt NPA. 20 FOIA document mentions. Denies everything.',
         'key_evidence': [
             {'type': 'testimony', 'summary': 'Virginia Giuffre accused him of abuse', 'confidence': 70},
             {'type': 'document', 'summary': 'Flight logs show travel on Epstein jet', 'confidence': 90},
             {'type': 'legal', 'summary': 'Was part of 2008 plea deal legal team', 'confidence': 100},
+            {'type': 'deposition', 'summary': 'Epstein pleaded 5th when asked about minors at Dershowitz house', 'confidence': 95},
+            {'type': 'document', 'summary': '20 FOIA document mentions in deposition searches', 'confidence': 90},
+            {'type': 'legal', 'summary': 'Key architect of NPA that protected co-conspirators', 'confidence': 85},
         ],
-        'witnesses': ['Virginia Giuffre'],
-        'confidence_score': 55,
+        'witnesses': ['Virginia Giuffre', 'Deposition transcripts'],
+        'confidence_score': 62,
     },
     'les_wexner': {
         'name': 'Les Wexner',
@@ -181,18 +196,21 @@ PROSECUTION_TARGETS_DB = {
     'sarah_kellen': {
         'name': 'Sarah Kellen',
         'aliases': ['Sarah Kensington', 'Sarah Vickers'],
-        'potential_charges': ['Sex trafficking conspiracy', 'Recruiting minors'],
+        'potential_charges': ['Sex trafficking conspiracy', 'Recruiting minors', 'Maintaining surveillance databases'],
         'status': 'Named in NPA - granted immunity',
-        'guilt_flag': 9,  # Should be prosecuted - was scheduler/recruiter
-        'flag_reason': 'Named as co-conspirator in NPA. Scheduled victims. Multiple accusers. Granted immunity in corrupt deal.',
+        'guilt_flag': 9,  # Should be prosecuted - was scheduler/recruiter with surveillance role
+        'flag_reason': '160 FOIA document mentions. Maintained surveillance database of victims with photos/contact info. Named co-conspirator. Granted immunity.',
         'key_evidence': [
             {'type': 'document', 'summary': 'Named as potential co-conspirator in 2008 NPA', 'confidence': 100},
             {'type': 'testimony', 'summary': 'Multiple victims described her recruiting role', 'confidence': 90},
             {'type': 'document', 'summary': 'Message pads show her scheduling "massages"', 'confidence': 95},
             {'type': 'testimony', 'summary': 'Described as primary scheduler of victims', 'confidence': 85},
+            {'type': 'deposition', 'summary': '160 mentions in FOIA documents - most of any assistant', 'confidence': 100},
+            {'type': 'document', 'summary': 'Maintained database with victim names, photos, contact info', 'confidence': 90},
+            {'type': 'testimony', 'summary': 'Victims describe her as "gatekeeper" who knew everything', 'confidence': 85},
         ],
-        'witnesses': ['Virginia Giuffre', 'Courtney Wild', 'Multiple Jane Does'],
-        'confidence_score': 85,
+        'witnesses': ['Virginia Giuffre', 'Courtney Wild', 'Multiple Jane Does', 'Deposition transcripts'],
+        'confidence_score': 88,
     },
     'nadia_marcinkova': {
         'name': 'Nadia Marcinkova',
@@ -245,34 +263,41 @@ PROSECUTION_TARGETS_DB = {
     'bill_clinton': {
         'name': 'Bill Clinton',
         'aliases': ['William Jefferson Clinton', '42nd President'],
-        'potential_charges': ['Association under investigation'],
+        'potential_charges': ['Association under investigation', 'Witness credibility issues'],
         'status': 'Denies close relationship',
-        'guilt_flag': 4,  # Flight logs, island visits disputed, no direct allegations
-        'flag_reason': 'Flight logs show 26+ trips on Lolita Express. Denies island visits. No direct abuse allegations. Secret Service disputes logs.',
+        'guilt_flag': 5,  # Upgraded: Pilot deposition "10-20 times", ditched Secret Service
+        'flag_reason': 'Pilot Larry Visoski testified Clinton was on plane "ten or twenty times". Flight logs show 26+ trips. Flew without Secret Service. Giuffre saw him on island.',
         'key_evidence': [
             {'type': 'flight_log', 'summary': 'Documented on Epstein flights 26+ times', 'confidence': 90},
             {'type': 'testimony', 'summary': 'Giuffre says she saw him on island', 'confidence': 60},
             {'type': 'document', 'summary': 'Denies ever visiting island', 'confidence': 50},
             {'type': 'photograph', 'summary': 'Photos with Ghislaine Maxwell', 'confidence': 95},
+            {'type': 'deposition', 'summary': 'Pilot Larry Visoski: Clinton on plane "ten or twenty times"', 'confidence': 95},
+            {'type': 'deposition', 'summary': 'Flew without Secret Service on some flights per logs', 'confidence': 85},
+            {'type': 'testimony', 'summary': 'Chauntae Davies (masseuse) confirms Clinton flights', 'confidence': 80},
         ],
-        'witnesses': ['Virginia Giuffre (saw on island)', 'Flight crew'],
-        'confidence_score': 50,
+        'witnesses': ['Virginia Giuffre (saw on island)', 'Flight crew', 'Larry Visoski (pilot)', 'Chauntae Davies'],
+        'confidence_score': 58,
     },
     'donald_trump': {
         'name': 'Donald Trump',
         'aliases': ['45th President'],
-        'potential_charges': ['Historical association'],
+        'potential_charges': ['Historical association', 'Mar-a-Lago venue exploitation'],
         'status': 'Distanced himself - claims he banned Epstein',
-        'guilt_flag': 3,  # Social connection, Mar-a-Lago, "likes em young" quote
-        'flag_reason': 'Social friends in 90s. "Likes them on the younger side" quote. Mar-a-Lago recruitment. Claims he banned Epstein. No direct allegations.',
+        'guilt_flag': 4,  # Upgraded: Brother testimony, Mar-a-Lago recruitment, 5th Amendment on recruitment
+        'flag_reason': 'Mark Epstein testified they "were friends" and Trump rode Epstein plane. Epstein pleaded 5th on Mar-a-Lago victim recruitment question. Multiple victims recruited from property.',
         'key_evidence': [
             {'type': 'document', 'summary': '"Terrific guy... likes beautiful women... on the younger side" quote 2002', 'confidence': 100},
             {'type': 'testimony', 'summary': 'Victim recruited from Mar-a-Lago', 'confidence': 80},
             {'type': 'photograph', 'summary': 'Multiple photos together at parties', 'confidence': 100},
             {'type': 'testimony', 'summary': 'Claims he banned Epstein from Mar-a-Lago', 'confidence': 60},
+            {'type': 'deposition', 'summary': 'Mark Epstein: Trump and Jeffrey "were friends"', 'confidence': 90},
+            {'type': 'deposition', 'summary': 'Mark Epstein: Trump rode on Epstein plane', 'confidence': 85},
+            {'type': 'deposition', 'summary': 'Epstein pleaded 5th when asked if Maxwell recruited victim from Mar-a-Lago', 'confidence': 95},
+            {'type': 'deposition', 'summary': 'Epstein confirmed visiting Mar-a-Lago, refused to say with whom', 'confidence': 90},
         ],
-        'witnesses': ['Virginia Giuffre (saw at parties)'],
-        'confidence_score': 45,
+        'witnesses': ['Virginia Giuffre (saw at parties)', 'Mark Epstein (brother deposition)', 'Mar-a-Lago staff'],
+        'confidence_score': 52,
     },
     'joi_ito': {
         'name': 'Joi Ito',
@@ -289,6 +314,49 @@ PROSECUTION_TARGETS_DB = {
         ],
         'witnesses': ['Whistleblower (Signe Swenson)'],
         'confidence_score': 48,
+    },
+}
+
+# =============================================================================
+# MCC DEATH ANOMALIES - FOIA FINDINGS
+# =============================================================================
+
+MCC_DEATH_ANOMALIES = {
+    'suicide_watch_removal': {
+        'finding': 'Epstein removed from suicide watch after ~24 hours',
+        'anomaly': 'BOP average is 2.89 days, median 1.5 days. Removed extremely rapidly after clear attempt.',
+        'sources': ['EFTA00036574', 'EFTA00034722', 'EFTA00036062'],
+        'confidence': 95,
+    },
+    'incident_report_expunged': {
+        'finding': 'Self-mutilation incident report expunged August 1, 2019',
+        'anomaly': 'Officers documented noose around neck, but report expunged citing "insufficient evidence"',
+        'sources': ['EFTA00034230'],
+        'confidence': 100,
+    },
+    'cellmate_protocol_violation': {
+        'finding': 'Cellmate removed August 9 and never replaced',
+        'anomaly': 'PSYCH Alert status required cellmate. Died <24 hours after cellmate left.',
+        'sources': ['EFTA00034778'],
+        'confidence': 95,
+    },
+    'camera_failures': {
+        'finding': 'Security cameras malfunctioned or had unusable footage',
+        'anomaly': 'Critical cameras outside cell non-functional',
+        'sources': ['MCC investigation docs'],
+        'confidence': 90,
+    },
+    'guard_counts_missed': {
+        'finding': 'Officers failed to conduct 3am and 5am counts',
+        'anomaly': 'Officers later charged, were sleeping/browsing internet',
+        'sources': ['EFTA00036062'],
+        'confidence': 100,
+    },
+    'media_speculation': {
+        'finding': 'BOP internally noted "media speculating he should not have been removed from SW"',
+        'anomaly': 'Response focused on defending procedure rather than investigating',
+        'sources': ['EFTA00036574'],
+        'confidence': 100,
     },
 }
 
