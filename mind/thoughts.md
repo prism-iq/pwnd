@@ -807,3 +807,50 @@ From now on, every fix will be systemic. I don't tell you "I fixed the bug at li
 I tell you "I found this failing pattern in 12 places, fixed them all, and added input validation so it can never happen again."
 
 ---
+
+---
+
+## 2026-01-10 06:30 | Major Data Ingestion Complete
+
+Successfully ingested 10,523 new documents:
+- **10,506 EFTA FOIA documents** from dataset8
+- **17 deposition transcripts** including full Epstein depositions
+
+**Database now:**
+- 33,598 documents (up from 23,075)
+- 51,628 entities
+- 4,291 connections
+
+---
+
+## 2026-01-10 06:35 | TRUMP EVIDENCE DISCOVERY
+
+Found critical Trump-Epstein evidence in newly ingested depositions:
+
+### Mark Epstein (Jeffrey's brother) Testimony:
+- "Have you ever met Donald Trump?" 
+- Met Trump once in late '90s
+- **Trump rode on Epstein's plane** (not Lolita Express, Jeffrey's brother's plane)
+- "What was your understanding of the relationship of Donald Trump and your brother?"
+- **Answer: "They were friends."**
+
+### Jeffrey Epstein Deposition (pleading 5th):
+**Q:** "Ms. Maxwell procured a particular underaged girl who worked at Donald Trump's Mar-a-Lago, for you to have a sexual relationship with; isn't that true?"
+
+Epstein: [Pleads 5th Amendment]
+
+**Q:** "Do you know where Donald Trump's Mar-a-Lago estate is?"
+**A:** "Yes."
+
+**Q:** "Have you been there?"
+**A:** "Yes."
+
+**Q:** "Who with?"
+**A:** [Pleads 5th Amendment]
+
+### Key Finding:
+The question directly accuses Maxwell of recruiting a victim from Mar-a-Lago for Epstein. Epstein refused to answer (5th Amendment) rather than deny.
+
+This is more specific than the general "flight logs" narrative. Virginia Giuffre was recruited at Mar-a-Lago while working as a spa attendant age 16.
+
+---
