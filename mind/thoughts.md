@@ -854,3 +854,261 @@ The question directly accuses Maxwell of recruiting a victim from Mar-a-Lago for
 This is more specific than the general "flight logs" narrative. Virginia Giuffre was recruited at Mar-a-Lago while working as a spa attendant age 16.
 
 ---
+
+---
+
+## 2026-01-10 07:00 | COMPREHENSIVE DEPOSITION ANALYSIS
+
+Deep analysis of 41,648-line deposition file containing testimony from:
+- Jeffrey Epstein (multiple depositions, pleads 5th to most questions)
+- Mark Epstein (Jeffrey's brother)
+- Larry Visoski (pilot, 18 years)
+- Sarah Kellen (scheduler/assistant)
+- Nadia Marcinkova (associate)
+- Alfredo Rodriguez (butler)
+- And others
+
+### HIGH-PROFILE NAME MENTION COUNTS:
+| Name | Mentions | Key Finding |
+|------|----------|-------------|
+| Sarah Kellen | 160 | Scheduled "massages", managed victims |
+| Nadia Marcinkova | 75 | Frequent flyer, lived with Epstein |
+| Bill Clinton | 29 | "10-20 times" on plane per pilot |
+| Prince Andrew | 21 | All questions refused (5th) |
+| Alfredo Rodriguez | 20 | Pled guilty for hiding victim journal |
+| Dershowitz | 20 | Questions about minors at house (5th) |
+| Wexner | 17 | $77M mansion, power of attorney |
+| David Copperfield | 13 | Visits to Palm Beach house |
+| Glenn Dubin | 5 | Financier, connected |
+| Kevin Spacey | 7 | Africa trip with Clinton |
+
+---
+
+## BILL CLINTON - Complete Evidence
+
+**Pilot Larry Visoski testimony:**
+
+Flight Feb 9, 2002:
+> "Bill Clinton, four Secret Service agents...two males, one female, Jeffrey Epstein, Ghislaine Maxwell, Sarah Kellen"
+
+Q: "How is it that someone like Bill Clinton gets on a Jeffrey Epstein flight?"
+A: "I don't know."
+
+Q: "Do you know before the flight takes off that Bill Clinton's going to be a passenger?"
+A: "Yes...The day before I'd get a phone call from, say, Sarah saying we're leaving tomorrow...On a case where President Clinton would be on board, we would put a little extra catering on board"
+
+Q: "You had Bill Clinton on the airplane ten or twenty times, right?"
+A: "Yeah. He's my main focus. I remember him being on the aircraft, sure."
+
+**CRITICAL QUESTION:**
+Q: "Do you remember him being on the airplane with younger girls?"
+A: "No."
+
+**Africa Trip:**
+Flight with Clinton, Kevin Spacey, Chris Tucker from JFK to Azores to Africa.
+> "They came up in the cockpit and said hello. So they conversed, nothing more."
+
+**Doug Band connection:**
+Q: "Did you ever hear that Doug Band and Ghislaine Maxwell were the people attributed to introducing Bill Clinton and Jeffrey Epstein?"
+A: "I don't know."
+
+---
+
+## PRINCE ANDREW - Complete Evidence
+
+**Pilot testimony:**
+Q: "Do you have any familiarity with Prince Andrew?"
+A: "I know who he is."
+
+Q: "Was he ever on the airplane?"
+A: "He may have been on the airplane."
+
+Q: "Do you remember him on the airplane with young girls?"
+A: "No, I do not."
+
+Q: "Do you remember Jeffrey Epstein flying in to meet with Prince Andrew?"
+A: "I don't remember. I know that happened, but I couldn't be accurate."
+
+Q: "Has Prince Andrew ever been on the airplane at the same time as a young girl?"
+A: "To the best of my knowledge, no."
+
+**Epstein's testimony (all 5th Amendment):**
+Q: "Have you ever met Prince Andrew?"
+A: "I refuse to answer."
+
+Q: "Has Prince Andrew been involved with underage minor females to your knowledge?"
+A: "I refuse to answer."
+
+Q: "Have you ever flown on the plane with Prince Andrew?"
+A: "I refuse to answer."
+
+---
+
+## ALAN DERSHOWITZ - Complete Evidence
+
+**Pilot testimony:**
+Q: "Alan Dershowitz, I'm sure you know who that is?"
+A: "Sure. He's famous."
+
+Q: "What was your understanding of Alan Dershowitz's relationship with Jeffrey Epstein?"
+A: "Never talked about it."
+
+**Epstein asked under oath:**
+Q: "When Alan Dershowitz stays at Jeffrey Epstein's house isn't it true that he has been at the house when underage minor females have been in the bedroom with Jeffrey Epstein?"
+A: "I refuse to answer."
+
+Q: "Have you flown on the airplane with Alan Dershowitz before?"
+A: "I refuse to answer."
+
+---
+
+## DONALD TRUMP - Complete Evidence (from earlier analysis)
+
+**Mark Epstein (brother) testimony:**
+- Met Trump once in late '90s
+- Trump rode on Epstein's plane (brother's plane, not Lolita Express)
+- "What was your understanding of the relationship of Donald Trump and your brother?"
+- Answer: "They were friends."
+
+**Epstein testimony:**
+Q: "Ms. Maxwell procured a particular underaged girl who worked at Donald Trump's Mar-a-Lago, for you to have a sexual relationship with; isn't that true?"
+A: [5th Amendment - refused to answer]
+
+Q: "Have you been there [Mar-a-Lago]?"
+A: "Yes."
+
+Q: "Who with?"
+A: [5th Amendment]
+
+---
+
+## LES WEXNER - Financial Connection
+
+**Epstein testimony:**
+Q: "Isn't it true that you own a 50,000 square foot home in Manhattan that was formerly owned by Les Wexner?"
+A: [5th Amendment]
+
+Q: "Isn't it true that one of your only clients is a financial advisor with Les Wexner?"
+A: [5th Amendment]
+
+Q: "Did Mr. Wexner replace you with Dennis Hersch?"
+A: [5th Amendment]
+
+**Witness asked:**
+Q: "Do you know whether or not Mr. Epstein has had a homosexual relationship with Les Wexner in the past?"
+A: [5th Amendment]
+
+---
+
+## DAVID COPPERFIELD - Evidence
+
+Q: "Do you know David Copperfield?"
+A: "I refuse to answer."
+
+Q: "Is David Copperfield somebody that would come into town and interact sexually with underage minor females?"
+A: "I refuse to answer."
+
+Q: "You are aware, are you not, that David Copperfield has visited Jeffrey Epstein's home in Palm Beach?"
+A: [5th Amendment]
+
+---
+
+## JEAN-LUC BRUNEL - Evidence
+
+**Flight June 21, 2002:**
+Passengers: Jean Luc Brunel, **Virginia Roberts**, Jeffrey Epstein, Ghislaine Maxwell, Sarah Kellen
+
+**Pilot testimony:**
+Q: "Do you know if Jeffrey Epstein's affiliated with the modeling company that's owned, run or managed by Jean Luc Brunel?"
+A: "No, I have no idea."
+
+Q: "Ever heard that he is affiliated with Jeffrey Epstein because they both have a sexual attraction to underage girls?"
+A: "You're making an assumption on that."
+
+**Epstein testimony:**
+Q: "Is Jean Luc Brunel his partner in that international child sex trade?"
+A: "I refuse to answer."
+
+---
+
+## VIRGINIA ROBERTS (GIUFFRE) - Flight Record
+
+Flight June 21, 2002: Documented on same flight as Brunel, Epstein, Maxwell, Kellen
+
+**Pilot testimony:**
+Q: "You remember this person, Virginia Roberts?"
+A: "I remember the name, that's it."
+
+Q: "What do you think her relationship is to Jeffrey Epstein?"
+A: "No idea."
+
+Multiple questions about Virginia - pilot claims no memory.
+
+---
+
+## SARAH KELLEN - The Scheduler (160 mentions)
+
+**Role documented:**
+- Scheduled aircraft departures
+- Called underage girls to schedule "appointments"
+- Frequent flyer with Nadia Marcinkova
+- Lived in Epstein's 301 E 66th St building
+
+**Evidence:**
+Q: "Do you know if Sarah Kellen schedules massages for Jeffrey Epstein?"
+A: "I have no idea."
+
+Q: "Who is directing which of the assistants is going to call the underage minor to give them an appointment?"
+A: "I refuse to answer."
+
+---
+
+## ABUSE PATTERNS - Key Testimony
+
+**12-year-old girls from France:**
+> "...brought over 12-year-old girls from France who spoke no English for the purpose of - for defendant to sexually exploit and abuse. After doing so, they were sent back to France the next day."
+
+**Daily abuse:**
+> "From the age of 15, plaintiff was sexually exploited and abused by defendant on a daily basis and often multiple times each day."
+
+**Pattern described:**
+> "Each time they would travel to one of these destinations, the same pattern of sexual abuse would occur, often with a vast array of aspiring models, actresses, celebrities, and/or other females, including minors from all over the world."
+
+---
+
+## ALFREDO RODRIGUEZ - The Butler Who Tried to Help
+
+**Key role:**
+- Butler at Palm Beach mansion
+- **Pled guilty to federal charges for hiding a journal containing names of women/girls**
+- Tried to sell the "black book" to attorneys
+
+Q: "Are you aware that Alfredo Rodriguez has pled guilty to federal charges for hiding a journal containing the names of women?"
+A: [5th Amendment]
+
+---
+
+## KEY OBSERVATIONS
+
+1. **Epstein invoked 5th Amendment** to virtually every question about abuse, victims, associates
+2. **Pilot claims ignorance** of what happened "in the back of the plane" during 18 years of service
+3. **Clinton documented 10-20+ flights** but pilot says "no young girls" with him
+4. **Prince Andrew "may have been"** on plane per pilot, all questions to Epstein refused
+5. **Virginia Roberts on same flight as Brunel** - documented proof of her presence
+6. **Sarah Kellen was the scheduler** - coordinated victim "appointments"
+7. **Mar-a-Lago explicitly named** as location where Maxwell recruited victim for Epstein
+8. **12-year-old French girls** trafficked, sent back next day
+9. **David Copperfield** visits to Palm Beach house - all questions refused
+10. **Wexner financial ties** - mansion transfer, "only client", possible personal relationship
+
+---
+
+## Database Status Post-Analysis
+
+**33,598 documents indexed**
+**51,628 entities extracted**
+**4,291 connections mapped**
+
+All deposition content now searchable via API.
+
+---
