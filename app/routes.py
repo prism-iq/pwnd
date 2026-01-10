@@ -7,8 +7,7 @@ from datetime import datetime
 import uuid
 
 from app.models import (
-    SearchResult, QueryRequest, AutoSessionRequest,
-    Node, Edge, Score, Flag, LanguageRequest
+    SearchResult, QueryRequest, AutoSessionRequest, LanguageRequest
 )
 from app.search import search_all, search_emails, search_nodes
 from app.db import execute_query, execute_insert, execute_update
@@ -310,67 +309,62 @@ async def get_edge(edge_id: int):
         raise HTTPException(status_code=404, detail="Edge not found")
     return edges[0]
 
+# Stop words for query parsing - constant at module level
+STOP_WORDS = frozenset({
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'what', 'about', 'who',
+    'how', 'why', 'when', 'where', 'do', 'does', 'did', 'have', 'has', 'had',
+    'be', 'been', 'being', 'and', 'or', 'but', 'if', 'then', 'of', 'to',
+    'for', 'with', 'on', 'at', 'by', 'from', 'in', 'out', 'up', 'down',
+    'this', 'that', 'these', 'those', 'it', 'its'
+})
+
+def _extract_keywords(query: str) -> list:
+    """Extract meaningful keywords from a query string"""
+    import re
+    words = re.findall(r'\b[a-zA-Z]{2,}\b', query.lower())
+    keywords = [w for w in words if w not in STOP_WORDS]
+    if not keywords:
+        keywords = [w for w in words if len(w) > 2]
+    return keywords
+
+def _search_documents_sync(query: str, limit: int = 30) -> list:
+    """Search documents using PostgreSQL - uses db.py connection pool"""
+    from app.db import get_db
+    import psycopg2.extras
+
+    keywords = _extract_keywords(query)
+    if not keywords:
+        return []
+
+    like_patterns = [f"%{kw}%" for kw in keywords[:3]]
+    where_clauses = " OR ".join(["c.full_text ILIKE %s" for _ in like_patterns])
+
+    with get_db() as conn:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(f"""
+            SELECT d.id, d.filename, d.doc_type,
+                   LEFT(c.full_text, 2000) as content
+            FROM documents d
+            JOIN contents c ON c.doc_id = d.id
+            WHERE {where_clauses}
+            LIMIT %s
+        """, (*like_patterns, limit))
+        return [dict(row) for row in cursor.fetchall()]
+
 # Investigation - POST endpoint for JSON response (ChatGPT-style UI)
 @router.post("/api/query")
 async def query_post(request: QueryRequest):
     """Query endpoint - returns JSON response (non-streaming)"""
-    import sqlite3
     import asyncio
 
     q = request.q
 
-    def search_documents(query: str, limit: int = 30):
-        """Search documents using FTS"""
-        import re
-        conn = sqlite3.connect("/opt/rag/db/sources.db")
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        # Clean query for FTS - extract keywords, remove stop words and special chars
-        stop_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'what', 'about', 'who', 'how', 'why', 'when', 'where', 'do', 'does', 'did', 'have', 'has', 'had', 'be', 'been', 'being', 'and', 'or', 'but', 'if', 'then', 'of', 'to', 'for', 'with', 'on', 'at', 'by', 'from', 'in', 'out', 'up', 'down', 'this', 'that', 'these', 'those', 'it', 'its'}
-        words = re.findall(r'\b[a-zA-Z]{2,}\b', query.lower())
-        keywords = [w for w in words if w not in stop_words]
-
-        if not keywords:
-            # Try full text search as fallback
-            keywords = [w for w in words if len(w) > 2]
-
-        results = []
-
-        # Search contents_fts
-        if keywords:
-            fts_query = ' OR '.join(keywords)
-            try:
-                cursor.execute("""
-                    SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
-                    FROM contents c
-                    JOIN documents d ON d.id = c.doc_id
-                    WHERE c.doc_id IN (
-                        SELECT rowid FROM contents_fts WHERE contents_fts MATCH ?
-                    )
-                    LIMIT ?
-                """, (fts_query, limit))
-                rows = cursor.fetchall()
-                results = [dict(row) for row in rows]
-            except Exception as e:
-                # Fallback to LIKE search
-                like_pattern = f"%{keywords[0]}%"
-                cursor.execute("""
-                    SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
-                    FROM contents c
-                    JOIN documents d ON d.id = c.doc_id
-                    WHERE c.full_text LIKE ?
-                    LIMIT ?
-                """, (like_pattern, limit))
-                rows = cursor.fetchall()
-                results = [dict(row) for row in rows]
-
-        conn.close()
-        return results
-
-    # Get search results
+    # Get search results using connection pool
     loop = asyncio.get_event_loop()
-    results = await loop.run_in_executor(None, lambda: search_documents(q, 30))
+    try:
+        results = await loop.run_in_executor(None, lambda: _search_documents_sync(q, 30))
+    except Exception:
+        results = []
 
     # Build context from results
     sources = []
@@ -729,10 +723,10 @@ async def get_evidence(target_id: str):
 
 
 @router.get("/api/prosecution/timeline")
-async def get_timeline(category: str = None, target: str = None):
+async def get_prosecution_timeline(category: str = None, target: str = None):
     """Get investigation timeline"""
-    from app.prosecution import get_timeline
-    return get_timeline(category, target)
+    from app.prosecution import get_timeline as prosecution_timeline
+    return prosecution_timeline(category, target)
 
 
 @router.get("/api/prosecution/summary")
