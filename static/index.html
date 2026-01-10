@@ -315,6 +315,45 @@
             gap: 16px;
         }
 
+        /* Mode Toggle Switch */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .mode-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .mode-btn:hover {
+            color: var(--text);
+        }
+
+        .mode-btn.active {
+            background: var(--bg-card);
+            color: var(--text);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .mode-btn.active.auto-mode {
+            background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
+            color: white;
+        }
+
         .auto-btn {
             padding: 14px 28px;
             border: none;
@@ -574,27 +613,45 @@
         <!-- Auto Explore Panel -->
         <div id="auto-panel" class="panel">
             <div class="auto-header">
-                <button class="auto-btn start" id="auto-btn" onclick="toggleAuto()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="5 3 19 12 5 21 5 3"/>
-                    </svg>
-                    Start Exploration
-                </button>
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="normalModeBtn" onclick="setMode('normal')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Normal
+                    </button>
+                    <button class="mode-btn" id="autoModeBtn" onclick="setMode('auto')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+                        </svg>
+                        Auto
+                    </button>
+                </div>
                 <div class="auto-status" id="auto-status">
                     <div class="status-dot"></div>
-                    <span>Idle</span>
+                    <span>Normal Mode</span>
                 </div>
             </div>
 
-            <div class="auto-description">
-                Auto mode intelligently explores the document archive, asking questions to discover patterns,
-                connections, and anomalies. Each query searches across all 33,598 documents.
+            <div class="auto-description" id="mode-description">
+                <strong>Normal Mode:</strong> Ask questions manually. The AI responds to your queries with sourced answers.
+            </div>
+
+            <!-- Manual query input for Normal mode -->
+            <div id="manual-query-section" class="search-box" style="margin-bottom: 20px;">
+                <input type="text" id="manual-query" placeholder="Ask a question about the documents..." autocomplete="off" style="width:100%;padding:18px 24px;padding-right:120px;font-size:1rem;background:var(--bg-card);border:2px solid var(--border);border-radius:16px;color:var(--text);outline:none;">
+                <button class="search-btn" onclick="submitManualQuery()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                    <span>Ask</span>
+                </button>
             </div>
 
             <div id="discoveries" class="discoveries">
-                <div class="empty">
-                    <div class="empty-icon">🤖</div>
-                    <p>Click "Start Exploration" to begin automated discovery</p>
+                <div class="empty" id="discoveries-empty">
+                    <div class="empty-icon">🔍</div>
+                    <p>Ask a question or switch to Auto mode for autonomous exploration</p>
                 </div>
             </div>
         </div>
@@ -639,6 +696,7 @@
 
     <script>
         let currentSource = 'all';
+        let currentMode = localStorage.getItem('explorationMode') || 'normal';
         let autoRunning = false;
         let autoInterval = null;
 
@@ -650,7 +708,107 @@
             event.target.closest('.tab').classList.add('active');
 
             if (name === 'targets') loadTargets();
+            if (name === 'auto') restoreMode();
         }
+
+        // Mode toggle (Normal/Auto)
+        function setMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('explorationMode', mode);
+
+            const normalBtn = document.getElementById('normalModeBtn');
+            const autoBtn = document.getElementById('autoModeBtn');
+            const status = document.getElementById('auto-status');
+            const description = document.getElementById('mode-description');
+
+            // Update toggle buttons
+            normalBtn.classList.toggle('active', mode === 'normal');
+            autoBtn.classList.toggle('active', mode === 'auto');
+            autoBtn.classList.toggle('auto-mode', mode === 'auto');
+
+            // Update status and description
+            const manualSection = document.getElementById('manual-query-section');
+            const emptyState = document.getElementById('discoveries-empty');
+
+            if (mode === 'auto') {
+                status.innerHTML = '<div class="status-dot running"></div><span>Auto Mode Active</span>';
+                status.classList.add('running');
+                description.innerHTML = '<strong>Auto Mode:</strong> AI autonomously explores documents, generates questions, and discovers patterns. Click any discovery to investigate further.';
+                if (manualSection) manualSection.style.display = 'none';
+                if (emptyState) emptyState.innerHTML = '<div class="empty-icon">🤖</div><p>Starting autonomous exploration...</p>';
+                startAutoExploration();
+            } else {
+                stopAutoExploration();
+                status.innerHTML = '<div class="status-dot"></div><span>Normal Mode</span>';
+                status.classList.remove('running');
+                description.innerHTML = '<strong>Normal Mode:</strong> Ask questions manually. The AI responds to your queries with sourced answers.';
+                if (manualSection) manualSection.style.display = 'block';
+                if (emptyState) emptyState.innerHTML = '<div class="empty-icon">🔍</div><p>Ask a question or switch to Auto mode for autonomous exploration</p>';
+            }
+        }
+
+        function restoreMode() {
+            setMode(currentMode);
+        }
+
+        function startAutoExploration() {
+            if (autoRunning) return;
+            autoRunning = true;
+
+            // Clear previous discoveries
+            const discoveries = document.getElementById('discoveries');
+            const empty = discoveries.querySelector('.empty');
+            if (empty) empty.remove();
+
+            // Start exploration loop
+            runAutoQuestion();
+            autoInterval = setInterval(runAutoQuestion, 8000);
+        }
+
+        function stopAutoExploration() {
+            autoRunning = false;
+            if (autoInterval) {
+                clearInterval(autoInterval);
+                autoInterval = null;
+            }
+        }
+
+        // Manual query submission (Normal mode)
+        async function submitManualQuery() {
+            const input = document.getElementById('manual-query');
+            const query = input.value.trim();
+            if (!query) return;
+
+            input.value = '';
+
+            // Remove empty state
+            const empty = document.getElementById('discoveries-empty');
+            if (empty) empty.remove();
+
+            // Add discovery card for this query
+            const discoveries = document.getElementById('discoveries');
+            const div = document.createElement('div');
+            div.className = 'discovery';
+            div.innerHTML = `
+                <div class="discovery-question">${escapeHtml(query)}</div>
+                <div class="discovery-answer"><span class="thinking">Searching documents...</span></div>
+                <div class="discovery-sources"></div>
+            `;
+            discoveries.insertBefore(div, discoveries.firstChild);
+
+            // Use RAG endpoint
+            await fetchAnswer(query, div);
+        }
+
+        // Handle Enter key for manual query
+        document.addEventListener('DOMContentLoaded', () => {
+            const manualInput = document.getElementById('manual-query');
+            if (manualInput) {
+                manualInput.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') submitManualQuery();
+                });
+            }
+        });
 
         // Source filters
         document.querySelectorAll('.filter').forEach(f => {
@@ -792,39 +950,12 @@
 
         let questionIndex = 0;
 
+        // Legacy toggle function - now redirects to setMode
         function toggleAuto() {
-            const btn = document.getElementById('auto-btn');
-            const status = document.getElementById('auto-status');
-
-            if (autoRunning) {
-                autoRunning = false;
-                clearInterval(autoInterval);
-                btn.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="5 3 19 12 5 21 5 3"/>
-                    </svg>
-                    Start Exploration
-                `;
-                btn.classList.remove('stop');
-                btn.classList.add('start');
-                status.innerHTML = '<div class="status-dot"></div><span>Stopped</span>';
-                status.classList.remove('running');
+            if (currentMode === 'auto') {
+                setMode('normal');
             } else {
-                autoRunning = true;
-                btn.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                    Stop
-                `;
-                btn.classList.remove('start');
-                btn.classList.add('stop');
-                status.innerHTML = '<div class="status-dot running"></div><span>Running...</span>';
-                status.classList.add('running');
-
-                document.getElementById('discoveries').innerHTML = '';
-                runAutoQuestion();
-                autoInterval = setInterval(runAutoQuestion, 8000);
+                setMode('auto');
             }
         }
 
@@ -855,6 +986,16 @@
                 discoveries.removeChild(discoveries.lastChild);
             }
 
+            await fetchAnswer(question, div);
+
+            // Update status after completion
+            if (autoRunning) {
+                status.innerHTML = '<div class="status-dot running"></div><span>Auto Mode Active</span>';
+            }
+        }
+
+        // Shared function to fetch answer from RAG API
+        async function fetchAnswer(question, div) {
             try {
                 // Use RAG endpoint for intelligent analysis
                 const response = await fetch('/api/ask?q=' + encodeURIComponent(question));
@@ -891,8 +1032,8 @@
                                     if (data.sources && data.sources.length > 0) {
                                         sources = data.sources;
                                         sourcesDiv.innerHTML = sources.slice(0, 4).map(s => {
-                                            const name = typeof s === 'string' ? s : (s.name || s.title || s.subject || 'Document');
-                                            return '<span class="source-tag">' + escapeHtml(String(name)).substring(0, 30) + '</span>';
+                                            const id = typeof s === 'number' ? s : (s.id || s);
+                                            return `<span class="source-tag" onclick="window.open('/source.html?id=${id}', '_blank')">#${id}</span>`;
                                         }).join('');
                                     }
                                 }
@@ -906,8 +1047,8 @@
                 }
 
             } catch (e) {
-                console.error('Auto error:', e);
-                div.querySelector('.discovery-answer').innerHTML = '<em>Analysis failed. Retrying...</em>';
+                console.error('Fetch error:', e);
+                div.querySelector('.discovery-answer').innerHTML = '<em>Analysis failed. Please try again.</em>';
             }
         }
 
