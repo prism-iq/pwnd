@@ -66,6 +66,103 @@ async def stats():
         "cache": cache_stats
     }
 
+# Live Thoughts Stream
+THOUGHTS_FILE = "/opt/rag/mind/thoughts.md"
+
+@router.get("/api/thoughts")
+async def get_thoughts(stream: bool = False, last_n: int = 10):
+    """Get thoughts - either as JSON or SSE stream"""
+    import re
+    import asyncio
+
+    def parse_thoughts():
+        """Parse thoughts.md into individual entries"""
+        try:
+            with open(THOUGHTS_FILE, "r") as f:
+                content = f.read()
+        except:
+            return []
+
+        # Split by --- delimiter
+        entries = re.split(r'\n---\n', content)
+        thoughts = []
+
+        for entry in entries:
+            entry = entry.strip()
+            if not entry:
+                continue
+
+            # Skip file header (# Title) but not entries (## Timestamp)
+            if entry.startswith('# ') and not entry.startswith('## '):
+                continue
+            if entry.startswith('>'):
+                continue
+
+            # Parse header: ## TIMESTAMP | TITLE
+            match = re.match(r'## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}) \| (.+?)\n(.+)', entry, re.DOTALL)
+            if match:
+                thoughts.append({
+                    "timestamp": match.group(1),
+                    "title": match.group(2).strip(),
+                    "content": match.group(3).strip()
+                })
+
+        return thoughts
+
+    if not stream:
+        # Return JSON
+        thoughts = parse_thoughts()
+        return {"thoughts": thoughts[-last_n:], "total": len(thoughts)}
+
+    # SSE Stream
+    async def event_stream():
+        last_mtime = 0
+        last_count = 0
+
+        while True:
+            try:
+                mtime = os.path.getmtime(THOUGHTS_FILE)
+                if mtime > last_mtime:
+                    thoughts = parse_thoughts()
+                    if len(thoughts) > last_count:
+                        # Send new thoughts
+                        for thought in thoughts[last_count:]:
+                            yield f"data: {json.dumps(thought)}\n\n"
+                        last_count = len(thoughts)
+                    last_mtime = mtime
+            except:
+                pass
+
+            await asyncio.sleep(1)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+    )
+
+@router.post("/api/thoughts")
+async def add_thought(thought: dict):
+    """Add a new thought (internal use)"""
+    from datetime import datetime
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    title = thought.get("title", "Untitled")
+    content = thought.get("content", "")
+
+    entry = f"\n## {timestamp} | {title}\n\n{content}\n\n---\n"
+
+    with open(THOUGHTS_FILE, "a") as f:
+        f.write(entry)
+
+    return {"status": "ok", "timestamp": timestamp}
+
+@router.get("/thoughts")
+async def thoughts_page():
+    """Serve thoughts page at /thoughts"""
+    from fastapi.responses import FileResponse
+    return FileResponse("/opt/rag/static/thoughts.html", media_type="text/html")
+
 # Search
 @router.get("/api/search", response_model=List[SearchResult])
 async def search(q: str = Query(..., max_length=1000), limit: int = Query(20, ge=1, le=100)):
