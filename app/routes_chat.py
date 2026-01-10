@@ -44,6 +44,32 @@ class ChatResponse(BaseModel):
 # CONVERSATION STORAGE
 # =============================================================================
 
+def generate_title(message: str) -> str:
+    """Generate a short title from the first message"""
+    # Clean and truncate
+    title = message.strip()
+
+    # Remove common question starters for cleaner titles
+    starters = ["who is ", "what is ", "what are ", "who are ", "tell me about ",
+                "can you ", "could you ", "please ", "i want to know ",
+                "qui est ", "qu'est-ce que ", "c'est quoi "]
+    lower = title.lower()
+    for starter in starters:
+        if lower.startswith(starter):
+            title = title[len(starter):]
+            break
+
+    # Capitalize first letter
+    if title:
+        title = title[0].upper() + title[1:]
+
+    # Truncate to 50 chars
+    if len(title) > 50:
+        title = title[:47] + "..."
+
+    return title or "New Chat"
+
+
 def ensure_conversation_exists(conversation_id: str, title: str = None):
     """Create conversation if it doesn't exist"""
     try:
@@ -87,6 +113,19 @@ def get_conversation(conversation_id: str) -> List[Dict]:
         return []
 
 
+def update_conversation_title(conversation_id: str, title: str):
+    """Update conversation title"""
+    try:
+        from app.db import execute_update
+        execute_update(
+            "sessions",
+            "UPDATE conversations SET title = %s WHERE id = %s AND title = 'New Chat'",
+            (title, conversation_id)
+        )
+    except Exception as e:
+        log.warning(f"Error updating title: {e}")
+
+
 def save_message(conversation_id: str, role: str, content: str, sources: List[Dict] = None):
     """Save a message to conversation history"""
     try:
@@ -99,6 +138,12 @@ def save_message(conversation_id: str, role: str, content: str, sources: List[Di
                VALUES (%s, %s, %s, %s::jsonb)""",
             (conversation_id, role, content, json.dumps(sources or []))
         )
+
+        # Auto-generate title from first user message
+        if role == "user":
+            title = generate_title(content)
+            update_conversation_title(conversation_id, title)
+
     except Exception as e:
         log.warning(f"Error saving message: {e}")
 
