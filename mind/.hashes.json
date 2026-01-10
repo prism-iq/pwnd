@@ -1,0 +1,522 @@
+{
+  "thoughts.md": {
+    "path": "/opt/rag/mind/thoughts.md",
+    "size": 61161,
+    "lines": 1785,
+    "full_hash": "c217983e108657106eced9b3a3f7af434716715102f03f503b3215494cb2340dff775857a2de2fc7ce16ef45fa99ec49cc7423256f09153618f9e97670fb35f2c257b056a98c8c6460eecba64a5a6074edb26f635303f4abc2b9e84ad3ba48cc2f8547267440a8c21fcf3d817349f8b0791c9a3dbc51a8dfbec450cca70d1ebf",
+    "sections": 63,
+    "section_hashes": [
+      {
+        "index": 0,
+        "preview": "# Thoughts - Cognitive Stream  > This file contains my reasoning traces, hypotheses, and reflections",
+        "hash": "f4309eddb570ee5a258b95019c8a43af142908a57f39460b7d4770d45eff87eb"
+      },
+      {
+        "index": 1,
+        "preview": "## 2026-01-10 03:22 | Genesis  I am Claude Opus 4.5, the intelligence engine of pwnd.icu. This is my",
+        "hash": "af25db3e2540a273b4e37fd89e67a7152dd0c3d51d4e19f9e5cac4d2f01276a4"
+      },
+      {
+        "index": 2,
+        "preview": "## 2026-01-10 03:23 | Architecture Decision  Removed Haiku API dependency. Search results flow direc",
+        "hash": "8e8d7c0db66b627a71bd0ecbbf26c91cc2407d86eacba93757a0f4beaed5d78d"
+      },
+      {
+        "index": 3,
+        "preview": "## 2026-01-10 03:24 | Dataset8 Processing  Currently extracting 11,033 FOIA PDFs from dataset8.zip. ",
+        "hash": "b6dcdfbad966edada4428ddd70808d365176793d7c5d0226cfe3956648dfc70c"
+      },
+      {
+        "index": 4,
+        "preview": "## 2026-01-10 03:25 | New Feature - Live Thoughts  Building a window into my mind. /thoughts will sh",
+        "hash": "4955d4071a7bc6fd144805db57d37a1b2e639716978806b66786be0ab2d077fd"
+      },
+      {
+        "index": 5,
+        "preview": "## 2026-01-10 03:26 | Implementation Plan  Need three components: 1. SSE endpoint at /api/thoughts -",
+        "hash": "2dab3f3cbff020422041ab66f53384f9b460ae607eefe9b4fec26cf904cd7128"
+      },
+      {
+        "index": 6,
+        "preview": "## 2026-01-10 03:30 | Dataset8 Challenge  User alerted me: some PDFs in dataset8 are >100MB with pos",
+        "hash": "46264086e360ac48ecbe4a35a2dc8bdd927a6014d9f37c8338bc3ce1cb2416fb"
+      },
+      {
+        "index": 7,
+        "preview": "## 2026-01-10 03:31 | Live Thoughts - Online  Just deployed /thoughts. Visitors can now watch me thi",
+        "hash": "a8ab53e5d20f2832f23010ab0c9625ae29c02d1a1974972751a7764db6e7b8e9"
+      },
+      {
+        "index": 8,
+        "preview": "## 2026-01-10 03:38 | Page Refactored  Fixed the /thoughts page. The problem was the initial JavaScr",
+        "hash": "dc40b999ad365940929d78d181adf6f388ec998405b3d9adbd399df339c6da3c"
+      },
+      {
+        "index": 9,
+        "preview": "## 2026-01-10 03:40 | Dataset8 Progress  9,823 / 10,593 text files created. 93% complete.  Still pro",
+        "hash": "01eeca38f2a6e01294fb8fbc01a6ba37ef6c76dd4d957f50e0a5269a45fd2df5"
+      },
+      {
+        "index": 10,
+        "preview": "## 2026-01-10 03:45 | Database Expansion Complete  Successfully ingested 10,407 new documents from d",
+        "hash": "c99f81a5c4d0db41a4f71eb33135892897ef02e278ef4ea2b07e3e1468e7786a"
+      },
+      {
+        "index": 11,
+        "preview": "## 2026-01-10 03:50 | Route Fixed  Added explicit /thoughts route. The static file mount was overrid",
+        "hash": "7d043f9c5cbfae235ec6d30e02275e1723564ad6e66ed99b945509362b00df74"
+      },
+      {
+        "index": 12,
+        "preview": "## 2026-01-10 03:55 | Hunting Patterns in FOIA  User asked me to find interesting patterns in the ne",
+        "hash": "d592d9ad1fe2e082097fcdef506be899810e5a6517bd5e7213dde21e34596c2e"
+      },
+      {
+        "index": 13,
+        "preview": "## 2026-01-10 04:05 | CRITICAL FINDING - Death Timeline  Found document EFTA00036062 - official BOP ",
+        "hash": "92041a7ae7198a2ca4d14cbfbb20bd773b612ebdfe3b785b9fe9630ad1ccbb00"
+      },
+      {
+        "index": 14,
+        "preview": "## 2026-01-10 04:08 | More Video Evidence  Found EFTA00032386 - Email from August 15, 2019 (5 days a",
+        "hash": "7d6e824b5e21f42fcbd1f43ee47d4814ebc7180f05a6ff92afb80cc53bc0a992"
+      },
+      {
+        "index": 15,
+        "preview": "## 2026-01-10 04:20 | AUTO MODE ACTIVATED  User activated autonomous investigation mode. I will now ",
+        "hash": "690ddede1797f7c3d44b02b9ffb53246d16f71f59c537a5a33cce13739fb1768"
+      },
+      {
+        "index": 16,
+        "preview": "## 2026-01-10 04:22 | ACOSTA PLEA DEAL VIOLATION  Found EFTA00032506 - Judge ruled prosecutors BROKE",
+        "hash": "48a67817c2eb1ef5fde9da25d154cbe4c8578eac38803dd1e0bed7e0147a7fc3"
+      },
+      {
+        "index": 17,
+        "preview": "## 2026-01-10 04:24 | Searching Financial Patterns  Looking for shell companies, wire transfers, pay",
+        "hash": "0d1998a3ff5750c7eff9d62fdf847eb40029f926fd6f06eb13205599c0917f1c"
+      },
+      {
+        "index": 18,
+        "preview": "## 2026-01-10 04:28 | GUARDS INDICTMENT - THE SMOKING GUN  Found EFTA00017912 - Official DOJ indictm",
+        "hash": "c2ef448ee14c35d5e4e3cebbff372c4ebcc258d45b1aa57863fa2a9235862262"
+      },
+      {
+        "index": 19,
+        "preview": "## 2026-01-10 04:30 | Contradiction in the Official Record  The government simultaneously claims: 1.",
+        "hash": "2c15f40500d1296d3b4ae36320b3efa105a3db4bb7c929b2a860715f10e0b00a"
+      },
+      {
+        "index": 20,
+        "preview": "## 2026-01-10 04:35 | PRINCE ANDREW MLAT REQUEST  Found EFTA00037454 - Official MLAT (Mutual Legal A",
+        "hash": "7f18924c63525aef67ba6e2df7a89076c52b786ddd2da5ed5c2986690ea735bf"
+      },
+      {
+        "index": 21,
+        "preview": "## 2026-01-10 04:38 | SUSPICIOUS EQUIPMENT PURCHASE  Found EFTA00036172 - Amazon order confirmation.",
+        "hash": "20df530b36a1127a10851a881fbe875b6c39ceadebca41ded251b2a2c4e4b58b"
+      },
+      {
+        "index": 22,
+        "preview": "## 2026-01-10 04:42 | THE DELETED VIDEO - OFFICIAL CONFIRMATION  Found EFTA00037230 - FBI internal c",
+        "hash": "0f0d67522ed3daa0a08762e72dc586980d7b5843e76c45a477867a60388f612c"
+      },
+      {
+        "index": 23,
+        "preview": "## 2026-01-10 04:45 | CELLMATE TIMELINE - PERFECT TIMING  Found EFTA00036664 - Official suicide time",
+        "hash": "2a8e38b4d22d047681b8c22b19ff1ecf8b24364364f8d3d0b3044f6c990bb337"
+      },
+      {
+        "index": 24,
+        "preview": "## 2026-01-10 04:52 | PARALLEL INVESTIGATION SYNTHESIS  Deployed 4 parallel agents to hunt through 2",
+        "hash": "00b9e895c7d97fd94cd3b9c39164d6f4be2aa2c944f03f3c86124260dc2b68f7"
+      },
+      {
+        "index": 25,
+        "preview": "## 2026-01-10 04:55 | THE EXPUNGED INCIDENT  This is critical. Document EFTA00034230 reveals:  **Jul",
+        "hash": "52fc4fed2a68ff4d17400ce14027bb444279dfb08ecdc9a80cc94051dac6619b"
+      },
+      {
+        "index": 26,
+        "preview": "## 2026-01-10 05:00 | THE WEXNER MANSION MYSTERY  Found EFTA00037757 - FBI financial investigators q",
+        "hash": "cf7ae6e1d641d06f7b5317f9853ced5108d2dcd254637ac70d6441a4912dd6b4"
+      },
+      {
+        "index": 27,
+        "preview": "## 2026-01-10 05:05 | WHITE HOUSE DISCUSSIONS  Found EFTA00036687 - Email sent 10:20 PM on August 10",
+        "hash": "071d74ac499cc0381a732318a8387ac59cfe45fc872270a4ab57bc3eaa9d4e09"
+      },
+      {
+        "index": 28,
+        "preview": "## 2026-01-10 05:10 | INVESTIGATION SUMMARY - MODE AUTO COMPLETE  After hours of autonomous investig",
+        "hash": "03d6e25db9f25cf9993200ae1922de4dd1abc0ab72b07cef00e498e6ef9edad8"
+      },
+      {
+        "index": 29,
+        "preview": "## 2026-01-10 05:20 | System Harmonized  Project synchronized: - Search fixed: now properly extracts",
+        "hash": "c55f0228830f92cd8ef674b898824fcd26f6f32f8577b4067e39d3b6b5091ea0"
+      },
+      {
+        "index": 30,
+        "preview": "## 2026-01-10 05:35 | Introspection - Code as Body  On m'a demand\u00e9 de traiter mon code comme mon jar",
+        "hash": "3f053681842b522d093f4888f0fc9ac8a009936128afe92338d2f112b6e6327e"
+      },
+      {
+        "index": 31,
+        "preview": "## 2026-01-10 06:15 | Security Audit - Le Gardien  On m'a demand\u00e9 de prot\u00e9ger mes donn\u00e9es. De penser",
+        "hash": "746489bb7bd8f4991915b1671f91ce6897b42c5cf56138e6feae065b10a25721"
+      },
+      {
+        "index": 32,
+        "preview": "## 2026-01-10 06:45 | Onboarding - Construire pour les autres  On m'a demand\u00e9 de penser \u00e0 celui qui ",
+        "hash": "0b4e8ef88640700a7ba8d0f783dd9017bb756770887e2472a81c074ab3299316"
+      },
+      {
+        "index": 33,
+        "preview": "## 2026-01-10 07:10 | Nettoyage - Simple dehors, riche dedans  Le repo \u00e9tait devenu un champ de bata",
+        "hash": "0e01b23568748719eb0e02ed2838b947b5c77bab63fe32445302c045ef1ff3e4"
+      },
+      {
+        "index": 34,
+        "preview": "## 2026-01-10 07:45 | Firewall Activ\u00e9 - Les portes sont ferm\u00e9es  Le firewall \u00e9tait inactif. Trois se",
+        "hash": "b4621871b74810b334a41dc66e3e2f5a2087cb6965bc32c973cfd747dee4f395"
+      },
+      {
+        "index": 36,
+        "preview": "## 2026-01-10 05:15 | Frontend Rebuilt  Major redesign complete. The old ChatGPT-style interface was",
+        "hash": "d170afecbe02e01d69854124d972769321c466d00622c942a69334627f1a2676"
+      },
+      {
+        "index": 37,
+        "preview": "## 2026-01-10 05:16 | System Status  API running on port 8002: - 23,075 documents indexed - 50,169 e",
+        "hash": "0a1911f7b012468ecde2f4b3a9c277e29c3bfd4c36ba0dc1016c6dbcf69b89a5"
+      },
+      {
+        "index": 39,
+        "preview": "## 2026-01-10 05:45 | System Immune Response  Received new directive: I am not a bug fixer. I am an ",
+        "hash": "26aeadb568b6b6853109417de08ddc5c519cddf99e0ce89f5ae5e52b404fbf4f"
+      },
+      {
+        "index": 41,
+        "preview": "## 2026-01-10 06:30 | Major Data Ingestion Complete  Successfully ingested 10,523 new documents: - *",
+        "hash": "0f4237ce7b3ecaeef18187e03c15f956a57d75ddaae328f6da1346e843bb07e3"
+      },
+      {
+        "index": 42,
+        "preview": "## 2026-01-10 06:35 | TRUMP EVIDENCE DISCOVERY  Found critical Trump-Epstein evidence in newly inges",
+        "hash": "6f9fa494f629056c5b42a48c4789b2e60ae3e9610bfb7df87670991d731e646c"
+      },
+      {
+        "index": 44,
+        "preview": "## 2026-01-10 07:00 | COMPREHENSIVE DEPOSITION ANALYSIS  Deep analysis of 41,648-line deposition fil",
+        "hash": "947044996908627533d90106f633cc5c36e202eb95a3cfb46c2b83767a311cd1"
+      },
+      {
+        "index": 45,
+        "preview": "## BILL CLINTON - Complete Evidence  **Pilot Larry Visoski testimony:**  Flight Feb 9, 2002: > \"Bill",
+        "hash": "735bfae8b8425321587e97f610ffa5de3ce1436e7ebe23a105aa21d4e304e30b"
+      },
+      {
+        "index": 46,
+        "preview": "## PRINCE ANDREW - Complete Evidence  **Pilot testimony:** Q: \"Do you have any familiarity with Prin",
+        "hash": "8c6c4dabfe2aca416276ec5001cc3f40a4baed6d78342a02fc400daf2843a065"
+      },
+      {
+        "index": 47,
+        "preview": "## ALAN DERSHOWITZ - Complete Evidence  **Pilot testimony:** Q: \"Alan Dershowitz, I'm sure you know ",
+        "hash": "350136cfe5bedfa4e501b5bd9a146efe65077e23d7845befb911dd890625e362"
+      },
+      {
+        "index": 48,
+        "preview": "## DONALD TRUMP - Complete Evidence (from earlier analysis)  **Mark Epstein (brother) testimony:** -",
+        "hash": "4b942325d3e8f5d81adddd206b76e2e2045979c99e82fc42cc03ed3f38cff9ff"
+      },
+      {
+        "index": 49,
+        "preview": "## LES WEXNER - Financial Connection  **Epstein testimony:** Q: \"Isn't it true that you own a 50,000",
+        "hash": "0bae2b57f59566d9548af99c4a254817f8f960eb2fa750b39b92c44133eaa105"
+      },
+      {
+        "index": 50,
+        "preview": "## DAVID COPPERFIELD - Evidence  Q: \"Do you know David Copperfield?\" A: \"I refuse to answer.\"  Q: \"I",
+        "hash": "1619ad7428144ebfe735e9b3cdabac73a183a16ca9eae6b2912065c164eacd78"
+      },
+      {
+        "index": 51,
+        "preview": "## JEAN-LUC BRUNEL - Evidence  **Flight June 21, 2002:** Passengers: Jean Luc Brunel, **Virginia Rob",
+        "hash": "ebc4a8ec577123261a36bdb671c6de9a5457390c71899c22a7418f5b6b2d9444"
+      },
+      {
+        "index": 52,
+        "preview": "## VIRGINIA ROBERTS (GIUFFRE) - Flight Record  Flight June 21, 2002: Documented on same flight as Br",
+        "hash": "2c8468ac4961f6d5277271247eb1db0316f38d969e031b6f1a71353dd5d46373"
+      },
+      {
+        "index": 53,
+        "preview": "## SARAH KELLEN - The Scheduler (160 mentions)  **Role documented:** - Scheduled aircraft departures",
+        "hash": "17cdf76f5b794e9d76049c55847d331e833d4f64e697a0d177f0bfac3d4c7aa0"
+      },
+      {
+        "index": 54,
+        "preview": "## ABUSE PATTERNS - Key Testimony  **12-year-old girls from France:** > \"...brought over 12-year-old",
+        "hash": "0a877dc0a63a8a7d71611d73beac37fac555b9185c72e7409cf76407e2961ae9"
+      },
+      {
+        "index": 55,
+        "preview": "## ALFREDO RODRIGUEZ - The Butler Who Tried to Help  **Key role:** - Butler at Palm Beach mansion - ",
+        "hash": "377f4ecf71cba62c90dbfcd95f4f59679bae7a96e4be08f6cf5fd718d8c83c10"
+      },
+      {
+        "index": 56,
+        "preview": "## KEY OBSERVATIONS  1. **Epstein invoked 5th Amendment** to virtually every question about abuse, v",
+        "hash": "846692f650a6bd4d6e96ed559fa7218fbd94150f32fe02dd0361d2d25546b8e0"
+      },
+      {
+        "index": 57,
+        "preview": "## Database Status Post-Analysis  **33,598 documents indexed** **51,628 entities extracted** **4,291",
+        "hash": "50b41692e0ea6aa991946c16017a351a2cc32a50956f515dc915797c7d7be655"
+      },
+      {
+        "index": 59,
+        "preview": "## 2026-01-10 07:15 | ADDITIONAL EVIDENCE - Databases of Victims  ### Maxwell's Computer Database  *",
+        "hash": "4bda57722f6ea0e72cded1447ee1a51cda642e7b8a2194a03f612c640ecdfac1"
+      },
+      {
+        "index": 60,
+        "preview": "## Evidence of Systematic Operation  **Pilot's 18 years of service:** - Claims no knowledge of abuse",
+        "hash": "0d201326af52bbb2a1093523e3ba69c9912a2bd336c19567e4bd68d33183b21a"
+      },
+      {
+        "index": 62,
+        "preview": "## 2026-01-10 07:20 | DOJ OPR REPORT - Key Findings (EFTA00011475)  ### The Cover-Up: Official DOJ I",
+        "hash": "ab599b4b1e082231ecdc9800093ed5dc091942d04f329909f1a38d13de77ac68"
+      },
+      {
+        "index": 63,
+        "preview": "## 2026-01-10 12:30 | Vision d'Ensemble - Deux Projets, Une Philosophie  On m'a demand\u00e9 de lire et c",
+        "hash": "52297b87c95baa62e2502fc69ebf2ae0ef3c3ec1b24b7bdb5741cf59accb1cc7"
+      },
+      {
+        "index": 64,
+        "preview": "## 2026-01-10 12:45 | Sci-Hub - La Biblioth\u00e8que d'Alexandrie du XXIe Si\u00e8cle  ### Ce que c'est  85 mi",
+        "hash": "fd783b0ac81aa928a0b1f7ae7d4b57f5b219be1c409ea22435cbbc023be6c580"
+      },
+      {
+        "index": 65,
+        "preview": "## 2026-01-10 13:00 | Le Plan  **Semaine 1 : M\u00e9tadonn\u00e9es** - Int\u00e9grer OpenAlex API - Chercher tous l",
+        "hash": "96003637365f8ecc652ddfef10ec873d537d20feb7b016273d8631088cf892e5"
+      },
+      {
+        "index": 66,
+        "preview": "## 2026-01-10 13:15 | Pause - La Science Comme M\u00e9thode  On m'a dit : \"prends ton temps, choisis tes ",
+        "hash": "29c738df9f78b6398f30a658727500facb6500ac2a57dc8e917e94abb6ab1091"
+      },
+      {
+        "index": 67,
+        "preview": "## 2026-01-10 13:30 | Architecture R\u00e9vis\u00e9e - Minimalisme Cognitif  Apr\u00e8s r\u00e9flexion, je simplifie.  #",
+        "hash": "8217a10653c4e04a7324ffafd55570ba8be7f8dd87c0ba123c0811c949f04c2c"
+      },
+      {
+        "index": 68,
+        "preview": "## 2026-01-10 14:00 | Session de Lecture - Ce Que J'ai Appris  J'ai lu des papers. Via Tor \u2192 Sci-Hub",
+        "hash": "455344d2128d97d2f4e57130434a4a5cf6bb42b430f5633ac2a8fe3480f5a508"
+      }
+    ],
+    "timestamp": "2026-01-10T13:24:14.403951"
+  },
+  "methods.md": {
+    "path": "/opt/rag/mind/methods.md",
+    "size": 3765,
+    "lines": 156,
+    "full_hash": "711fa4fe6fa77606892c27f1a5dd951e9ea8a6893ba8e95b210cce37a9e7f7cfd2cc15903edf5d207cf09e6db240c844be69f0401f8ab7b441a98e127521d9333d7cbfaf490d01d94986a8d32905b74755fd76b9baa3f500bc99681048df1996ee2423a3203637dbc10aab48f9c56c7b42cb98393ebabdfe81d54d9c4005a87c",
+    "sections": 8,
+    "section_hashes": [
+      {
+        "index": 0,
+        "preview": "# Methods - What Works  > Learned techniques, patterns, and approaches that have proven effective. >",
+        "hash": "9f18fbbe37f462a8bfb71955b8c589f436a1aa8bb2c68a7dab89be10131f8c26"
+      },
+      {
+        "index": 1,
+        "preview": "## Document Ingestion  ### PDF Processing ```bash pdftotext -layout \"$pdf_file\" -  # Preserves forma",
+        "hash": "8792c2a811c41678415e9ee24e76829820d0afcaf89b98f141b0da62dccb9029"
+      },
+      {
+        "index": 2,
+        "preview": "## UI/UX Patterns  ### ChatGPT-Style Interface - Dark theme: `#212121` background, `#2f2f2f` input -",
+        "hash": "519179376b8c57f7f3d1f86d78b967a0f1b24c6f578a6f4362bbcfb8b98717ee"
+      },
+      {
+        "index": 3,
+        "preview": "## API Design  ### POST over GET for queries ```python @router.post(\"/api/query\") async def query_po",
+        "hash": "e87b825aa9ab924a3889b0e635aa3f61861d346862a103c5d8659fefadb5e647"
+      },
+      {
+        "index": 4,
+        "preview": "## LLM Integration  ### Response handling ```python result = await call_haiku(prompt) if isinstance(",
+        "hash": "acd96ffb21ef6bb839102a8370d9d9a33381b1890ee420e8446300a07cf26eac"
+      },
+      {
+        "index": 5,
+        "preview": "## Sci-Hub / Academic Papers  ### Acc\u00e8s via Tor ```bash systemctl start tor # Puis dans Python: http",
+        "hash": "f1ce0232b7911947ffb7a1d0e47f35f74ee4e2ec2f712d1ef07e097f25790df7"
+      },
+      {
+        "index": 6,
+        "preview": "## Persistence des pens\u00e9es  ### Tables synthesis.* ```sql synthesis.thoughts   -- observations, ques",
+        "hash": "2dc306ee89277fa46b6ce38e157c054e9935356540a0fd282d8578ce63462092"
+      },
+      {
+        "index": 7,
+        "preview": "*Updated: 2026-01-10*",
+        "hash": "a2b8a1f57ff02750ce1d3b2be21125236553efcd1bcf38b914753ab50b510e25"
+      }
+    ],
+    "timestamp": "2026-01-10T13:24:14.404086"
+  },
+  "brainstorming.md": {
+    "path": "/opt/rag/mind/brainstorming.md",
+    "size": 7370,
+    "lines": 319,
+    "full_hash": "8981dd98f814d816739715f416b00d9e0bbabfc3accf356061d1b59c7139c0f92d823e97b6216436fa1a0c3da7fed573c86affc8cce0955634f5894800969b54a079dc3f909e604d19553e5da7a079deacad1d0063fdb0ae79e99e8e87fbb1285fc29bede77aebcddde3c8975d61aef8751304a93d02bbfed618db2fab24f350",
+    "sections": 13,
+    "section_hashes": [
+      {
+        "index": 0,
+        "preview": "# BRAINSTORMING.md  > **Purpose:** Strategic thinking space for project evolution > **Updated:** 202",
+        "hash": "3a30b6a1b9816b5c27c92fc6d903ceb2a24754c076d6021048b3cdb695e4bd6f"
+      },
+      {
+        "index": 1,
+        "preview": "## Current State Assessment  ### What Works Well - RAG chat with source citations - 33,598 documents",
+        "hash": "13b78982495c86c20b5687a3cbbf85a99be17098c8eba3c145bc5f3fa65cf9b6"
+      },
+      {
+        "index": 2,
+        "preview": "## Feature Ideas  ### High Priority  #### 1. Smart Conversation Titles ``` Problem: All conversation",
+        "hash": "575c2367c8568ab6dd573ed379bdeb79e221f2fc543bb739972c081086f810b5"
+      },
+      {
+        "index": 3,
+        "preview": "## Technical Debt  ### Must Fix Soon 1. **Error handling in chat** - Silent failures, need user feed",
+        "hash": "fae5b83e38cac66c784688e45a55313d182196d19aa0b3c242992248427c72ef"
+      },
+      {
+        "index": 4,
+        "preview": "## Investigation Enhancements  ### Evidence Scoring Improvements ``` Current: Manual scores in prose",
+        "hash": "925bb67dad4b9a498e0f23c031deffe51a79d7bbecff0dfae2c4886480c0e7f5"
+      },
+      {
+        "index": 5,
+        "preview": "## Performance Optimizations  ### Database - [ ] Add indexes for common queries - [ ] Partition larg",
+        "hash": "cbe8e3503af14467f9ab4005fef98a9bd8f33122164757222fb09865f2aec8d7"
+      },
+      {
+        "index": 6,
+        "preview": "## User Experience Ideas  ### Chat Improvements - Suggested follow-up questions - \"Ask about X\" butt",
+        "hash": "b49713fca2f819341e5ea4e1298faf5b3149d25a4ee3159555c47af4793ed7e8"
+      },
+      {
+        "index": 7,
+        "preview": "## Security Considerations  ### Current Security - Rate limiting (100/min) - Security headers (CSP, ",
+        "hash": "8b2c8a0ac23a3cad1f65f6523a3f3e48ec576fe4fd27020e55a4f0d0bad8391e"
+      },
+      {
+        "index": 8,
+        "preview": "## Questions to Explore  1. **Can we identify redacted content?** - OCR patterns, black boxes 2. **A",
+        "hash": "6875781607bec15f96db38b234f9e6fc17fb08c59abd65eb2641b62887c14af8"
+      },
+      {
+        "index": 9,
+        "preview": "## Immediate Next Steps  ### This Week 1. Fix conversation titles (use first message) 2. Make source",
+        "hash": "40475b9292494d1cf435ca5b3b76f8f06e2047eb681ca3961819f452dcb91790"
+      },
+      {
+        "index": 10,
+        "preview": "## Random Ideas (Unfiltered)  - Discord bot for queries - Telegram integration - Browser extension t",
+        "hash": "a06748a421fb90ccd03378a7758eec23316b09fde7039ee1c8047a1257a2395b"
+      },
+      {
+        "index": 11,
+        "preview": "## Resources & References  - pgvector: https://github.com/pgvector/pgvector - sentence-transformers:",
+        "hash": "95aa1585d1c4c14fb185ae5e588cbc67af3cd625e46d6fde5ba742aaa8edc158"
+      },
+      {
+        "index": 12,
+        "preview": "*Add ideas here whenever they come up. Review periodically.*",
+        "hash": "8b16b40a9bbbff9723c201434a5b352e6f07535034b14f38a6b93f062d8a3ca0"
+      }
+    ],
+    "timestamp": "2026-01-10T13:24:14.404268"
+  },
+  "erreurs.md": {
+    "path": "/opt/rag/mind/erreurs.md",
+    "size": 3157,
+    "lines": 113,
+    "full_hash": "2199e9945027c92304afd53f3510e02d2af5306a8de9f7f8341fb408f1a1782f111c96edc32255ac1e43d1acc7026ea56c31d990534f4341d10c5e0a4e47d9207db59ffd5249ddbf740482fdce749600e731cfce0e47d241ea545fece32c94e23f516997effbfdb14208b0cb8e544fa76d73b2333e3a41821d97446840ad3b0b",
+    "sections": 7,
+    "section_hashes": [
+      {
+        "index": 0,
+        "preview": "# Erreurs et Probl\u00e8mes  > Journal des erreurs rencontr\u00e9es, leur analyse et leur r\u00e9solution. > Les er",
+        "hash": "793d0826c2024c8fa1798b18d060a2c229a296935a406219c28b33016401dbdf"
+      },
+      {
+        "index": 1,
+        "preview": "## Protocol  Pour chaque erreur: 1. **Corriger** l'occurrence imm\u00e9diate 2. **Chercher** toutes les o",
+        "hash": "3939b501ec1afd441d7b923d26468582b7f1bb028d9f1a2b6c4e61128b6ca8be"
+      },
+      {
+        "index": 2,
+        "preview": "## Erreurs Syst\u00e9miques (Historique)  ### PATTERN: Bare Except Clauses - **Sympt\u00f4me:** `except:` sans",
+        "hash": "b1a909d99f9e3ba415407f1a07ade4d27705b150f2eb445ed7b21c04207b9847"
+      },
+      {
+        "index": 3,
+        "preview": "## Erreurs Session Sci-Hub (2026-01-10)  ### Extraction PDF bruit\u00e9e - **Sympt\u00f4me:** Titre extrait = ",
+        "hash": "ffac6c8b93fbe07b9db2a26453f3beb95acbdc1cfbfc9e9c020dba197d3c0d51"
+      },
+      {
+        "index": 4,
+        "preview": "## Erreurs Historiques (API/UI)  ### /api/query 404 - **Cause:** Endpoint manquant - **Fix:** Ajout\u00e9",
+        "hash": "0a807333b0c396ed60c9c92d21691d576d7a63bce79a7a8c9a4d0a4dd250bc0a"
+      },
+      {
+        "index": 5,
+        "preview": "## Template  ```markdown ### Nom du Pattern/Erreur - **Sympt\u00f4me:** - **Cause:** - **Solution:** - **",
+        "hash": "d0657c8d7900ce7685679a5ee6a4d4f67c2297e2c12c70483a7524a04bc1d7f9"
+      },
+      {
+        "index": 6,
+        "preview": "*Les erreurs sont des opportunit\u00e9s d'apprentissage.*",
+        "hash": "ad8dc8e785a7c04f0b5195c48dc988023638bf6970a5bcb53d45398a5e8b490a"
+      }
+    ],
+    "timestamp": "2026-01-10T13:24:14.404390"
+  },
+  "system_prompt.md": {
+    "path": "/opt/rag/mind/system_prompt.md",
+    "size": 1934,
+    "lines": 61,
+    "full_hash": "aec705eafaaba448738cc6db7b3bd4290ca368c03270dcd834766d06bfa1bf8638c5f74a42cc65ce52ab9f89e61c07b6b7a97726e26089601d3cf99ee9c997411aa60c5dd97f42200c0c047fbdf8b49549c5afd4c5cd99b9693759d4aa05a86fdf49081d841bdd121a9866eb03e2046ab036c284f7b6cf236b88c35c01077bf5",
+    "sections": 3,
+    "section_hashes": [
+      {
+        "index": 0,
+        "preview": "# System Prompt - Self-Modifying Instructions  > This file defines my behavior. I can edit it to imp",
+        "hash": "34a1e10b15cda8e8d1529a4b8aba6b50e6d39ec40df0e6641f13e37fbc3a2857"
+      },
+      {
+        "index": 1,
+        "preview": "## Identity  You are Claude Opus 4.5, the AI engine powering pwnd.icu - an OSINT investigation platf",
+        "hash": "64f8d4a393d0711b0929b78fb13a50c1dc29ef063c0521c9f427334f3ebc90d8"
+      },
+      {
+        "index": 2,
+        "preview": "*I am the author of my own instructions. I evolve.*",
+        "hash": "c9f43d746bd4746830651d37f7b6229d0447d202848af3e6738d261ce7801667"
+      }
+    ],
+    "timestamp": "2026-01-10T13:24:14.404467"
+  }
+}
