@@ -682,7 +682,7 @@
                         results.push({
                             type: 'document',
                             title: d.name || d.title || 'Document',
-                            content: d.snippet || '',
+                            content: cleanContent(d.snippet || ''),
                             score: d.score || 0
                         });
                     });
@@ -696,7 +696,7 @@
                         results.push({
                             type: 'email',
                             title: e.title || e.subject || 'Email',
-                            content: e.snippet || e.body || '',
+                            content: cleanContent(e.snippet || e.body || ''),
                             score: e.score || 0,
                             meta: e.sender || ''
                         });
@@ -711,7 +711,7 @@
                         results.push({
                             type: 'entity',
                             title: n.name || n.title || 'Entity',
-                            content: n.description || n.snippet || '',
+                            content: cleanContent(n.description || n.snippet || ''),
                             score: n.score || 0,
                             meta: n.type || ''
                         });
@@ -919,6 +919,17 @@
 
         function escapeRegex(str) {
             return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function cleanContent(text) {
+            if (!text) return '';
+            // Strip HTML tags
+            let clean = text.replace(/<[^>]*>/g, '');
+            // Remove URLs
+            clean = clean.replace(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/g, '');
+            // Collapse whitespace
+            clean = clean.replace(/\s+/g, ' ').trim();
+            return clean;
         }
 
         // Load stats
