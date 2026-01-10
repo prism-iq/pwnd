@@ -311,12 +311,19 @@ async def get_conversation_endpoint(conversation_id: str):
 
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str):
-    """Delete a conversation"""
+    """Delete a conversation and its messages"""
     try:
         from app.db import execute_update
+        # Delete messages first (foreign key constraint)
         execute_update(
             "sessions",
-            "DELETE FROM chat_messages WHERE conversation_id = %s",
+            "DELETE FROM messages WHERE conversation_id = %s",
+            (conversation_id,)
+        )
+        # Delete conversation
+        execute_update(
+            "sessions",
+            "DELETE FROM conversations WHERE id = %s",
             (conversation_id,)
         )
         return {"status": "deleted", "conversation_id": conversation_id}
