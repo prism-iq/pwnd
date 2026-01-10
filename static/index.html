@@ -944,6 +944,20 @@
 
         // Focus search on load
         document.getElementById('search').focus();
+
+        // Hot reload - check for updates every 3s
+        let lastModified = null;
+        setInterval(async () => {
+            try {
+                const res = await fetch('/index.html', { method: 'HEAD' });
+                const modified = res.headers.get('last-modified');
+                if (lastModified && modified !== lastModified) {
+                    console.log('Hot reload triggered');
+                    location.reload();
+                }
+                lastModified = modified;
+            } catch(e) {}
+        }, 3000);
     </script>
 </body>
 </html>
