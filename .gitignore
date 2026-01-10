@@ -54,3 +54,4 @@ exports/
 # Secrets
 service.env
 .env.local
+external_data/
