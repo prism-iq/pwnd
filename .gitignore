@@ -35,3 +35,22 @@ logs/
 # Temp
 tmp/
 *.tmp
+
+# Build artifacts
+rust-extract/target/
+polyglot/svelte-ui/node_modules/
+polyglot/svelte-ui/dist/
+polyglot/cpp-core/lib/
+polyglot/go-brain/brain
+go-gateway/l-gateway
+
+# Data files
+*.gguf
+*.tar.gz
+db/*.db
+data/inbox/
+exports/
+
+# Secrets
+service.env
+.env.local
