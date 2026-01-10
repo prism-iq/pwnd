@@ -1050,6 +1050,29 @@
         </div>
     </div>
 
+    <!-- Document Viewer Modal -->
+    <div id="doc-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="hideDocument()"></div>
+        <div class="modal-box doc-box" style="max-width: 800px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2 id="doc-title">Document</h2>
+                <button onclick="hideDocument()">×</button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                <div id="doc-loading" style="text-align: center; padding: 2rem; color: #888;">Loading...</div>
+                <div id="doc-content" style="display: none;">
+                    <div id="doc-meta" style="background: #1a1a1a; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">
+                        <div style="margin-bottom: 0.5rem;"><strong style="color: #888;">From:</strong> <span id="doc-from"></span></div>
+                        <div style="margin-bottom: 0.5rem;"><strong style="color: #888;">To:</strong> <span id="doc-to"></span></div>
+                        <div><strong style="color: #888;">Date:</strong> <span id="doc-date"></span></div>
+                    </div>
+                    <pre id="doc-body" style="white-space: pre-wrap; word-wrap: break-word; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6; color: #e0e0e0; background: #111; padding: 1rem; border-radius: 6px; max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+                <div id="doc-error" style="display: none; color: #ff6b6b; padding: 1rem;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Ingest Modal -->
     <div id="ingest-modal" class="modal hidden">
         <div class="modal-backdrop" onclick="hideIngest()"></div>
@@ -1263,7 +1286,7 @@
                             const sourcesDiv = document.createElement('div');
                             sourcesDiv.className = 'sources';
                             sourcesDiv.innerHTML = sources.slice(0, 8).map(id =>
-                                `<a href="/api/email/${id}" target="_blank">#${id}</a>`
+                                `<a href="#" onclick="showDocument(${id}); return false;">#${id}</a>`
                             ).join('');
                             assistantMsg.appendChild(sourcesDiv);
                         }
@@ -1707,6 +1730,51 @@
             };
         }
 
+        // ===================
+        // Document Viewer
+        // ===================
+        async function showDocument(docId) {
+            const modal = document.getElementById('doc-modal');
+            const loading = document.getElementById('doc-loading');
+            const content = document.getElementById('doc-content');
+            const error = document.getElementById('doc-error');
+
+            // Reset state
+            modal.classList.remove('hidden');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            error.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/document/${docId}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const doc = await response.json();
+
+                document.getElementById('doc-title').textContent = doc.subject || '(No Subject)';
+                document.getElementById('doc-from').textContent = doc.sender_name
+                    ? `${doc.sender_name} <${doc.sender}>`
+                    : doc.sender || '(Unknown)';
+                document.getElementById('doc-to').textContent = doc.to || '(None)';
+                document.getElementById('doc-date').textContent = doc.date
+                    ? new Date(doc.date).toLocaleString()
+                    : '(Unknown)';
+                document.getElementById('doc-body').textContent = doc.body || '(No content)';
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+            } catch (e) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Failed to load document: ${e.message}`;
+            }
+        }
+
+        function hideDocument() {
+            document.getElementById('doc-modal').classList.add('hidden');
+        }
+
         // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -1714,6 +1782,7 @@
                 hideTimeline();
                 hideSources();
                 hideIngest();
+                hideDocument();
             }
         });
     </script>

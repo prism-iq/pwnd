@@ -32,6 +32,220 @@ from app.search import search_corpus_scored, search_nodes, search_go_sync, auto_
 import json
 
 # =============================================================================
+# INVESTIGATION ENTITY WHITELIST - Known relevant persons, places, orgs
+# =============================================================================
+
+INVESTIGATION_PERSONS = {
+    # Primary subjects
+    'jeffrey epstein', 'ghislaine maxwell', 'jean-luc brunel', 'sarah kellen',
+    'nadia marcinkova', 'lesley groff', 'adriana ross', 'haley robson',
+    # Key accusers/victims
+    'virginia giuffre', 'virginia roberts', 'courtney wild', 'annie farmer',
+    'maria farmer', 'jennifer araoz', 'chauntae davies',
+    # Associates/accused
+    'prince andrew', 'alan dershowitz', 'les wexner', 'leon black',
+    'bill gates', 'bill clinton', 'donald trump', 'kevin spacey',
+    'woody allen', 'ehud barak', 'jes staley', 'reid hoffman',
+    # Legal/investigation
+    'alexander acosta', 'barry krischer', 'james comey', 'robert mueller',
+    'maurene comey', 'audrey strauss', 'geoffrey berman',
+    # Modeling/recruitment
+    'mc2', 'jean-luc brunel', 'claude brunel', 'peter listerman',
+    # Staff/pilots
+    'larry visoski', 'david rodgers', 'miles alexander',
+}
+
+INVESTIGATION_LOCATIONS = {
+    'little st james', 'st james island', 'pedophile island', 'orgy island',
+    'zorro ranch', 'new mexico', 'stanley new mexico',
+    'palm beach', 'el brillo way', 'florida',
+    'manhattan townhouse', '9 east 71st', 'east 71st street', 'new york',
+    'paris apartment', 'avenue foch',
+    'mar-a-lago', 'les wexner mansion', 'ohio mansion',
+    'metropolitan correctional center', 'mcc new york',
+}
+
+INVESTIGATION_ORGS = {
+    'mc2 model management', 'victoria\'s secret', 'l brands', 'the limited',
+    'apollo global', 'deutsche bank', 'jpmorgan', 'jp morgan chase',
+    'mit media lab', 'harvard university', 'gratitude america',
+    'c.o.u.q. foundation', 'elan air', 'air ghislaine',
+    'southern district of new york', 'sdny', 'palm beach police',
+    'fbi', 'federal bureau of investigation',
+}
+
+INVESTIGATION_TOPICS = {
+    'flight logs', 'flight manifest', 'lolita express', 'black book',
+    'plea deal', 'non-prosecution agreement', 'npa', 'work release',
+    'sex trafficking', 'trafficking', 'minor', 'underage', 'recruitment',
+    'massage', 'abuse', 'molestation', 'sexual assault',
+    'settlement', 'lawsuit', 'deposition', 'testimony', 'trial',
+    'conviction', 'indictment', 'arrest', 'suicide', 'homicide',
+}
+
+# Spam/commercial terms to filter OUT from suggestions
+SPAM_KEYWORDS = {
+    # E-commerce
+    'amazon', 'order', 'shipping', 'delivery', 'purchase', 'buy', 'sale',
+    'product', 'review', 'rating', 'customer', 'marketplace', 'seller',
+    'cart', 'checkout', 'payment', 'invoice', 'receipt',
+    # Home/furniture
+    'rug', 'carpet', 'shag', 'shaggy', 'cozy', 'furniture', 'mattress',
+    'bedroom', 'bathroom', 'kitchen', 'decor', 'wallpaper', 'paint',
+    'periwinkle', 'blue shag', 'spring mix', 'bohemian', 'boho',
+    'feet solid', 'inch', 'memory foam', 'lavender', 'infused',
+    # Electronics
+    'bluetooth', 'wireless', 'charger', 'cable', 'adapter', 'electronic',
+    'portable', 'fitness', 'exercise', 'stripper', 'pole dance',
+    # Social media
+    'linkedin', 'facebook', 'twitter', 'instagram', 'social media',
+    'newsletter', 'subscribe', 'unsubscribe', 'promotion', 'discount',
+    # Retailers
+    'houzz', 'wayfair', 'ebay', 'etsy', 'walmart', 'target',
+    # Common spam phrases
+    'you like', 'ever ready', 'first aid', 'fully stocked', 'meet your',
+    'how did', 'expectations', 'thank you for', 'your recent',
+    'we\'d love', 'hear from you', 'dear customer', 'valued customer',
+    'collection', 'exclusive', 'limited time', 'special offer',
+    'lucid', 'linenspa', 'criterion', 'blu-ray', 'dvd',
+    # Music/entertainment spam
+    'lady antebellum', 'antebellum', 'band', 'album', 'concert', 'tour',
+    'song', 'music', 'playlist', 'spotify', 'itunes', 'apple music',
+    'grammy', 'billboard', 'country music', 'pop music', 'rock music',
+    'artist', 'singer', 'musician', 'performer', 'record label',
+    # More misc spam
+    'three colors', 'first responder', 'ever ready', 'batteries',
+    'weather', 'forecast', 'hurricane', 'tropical storm',
+}
+
+SPAM_DOMAINS = {
+    'amazon.com', 'houzz.com', 'linkedin.com', 'facebook.com', 'twitter.com',
+    'ebay.com', 'wayfair.com', 'etsy.com', 'walmart.com', 'target.com',
+    'groupon.com', 'yelp.com', 'pinterest.com', 'instagram.com',
+}
+
+def is_investigation_relevant(text: str) -> bool:
+    """Check if text is relevant to the Epstein investigation"""
+    if not text:
+        return False
+    text_lower = text.lower().strip()
+
+    # Check against investigation entities
+    for person in INVESTIGATION_PERSONS:
+        if person in text_lower:
+            return True
+    for location in INVESTIGATION_LOCATIONS:
+        if location in text_lower:
+            return True
+    for org in INVESTIGATION_ORGS:
+        if org in text_lower:
+            return True
+    for topic in INVESTIGATION_TOPICS:
+        if topic in text_lower:
+            return True
+    return False
+
+def is_spam_entity(text: str) -> bool:
+    """Check if text is a spam/commercial entity to filter out"""
+    if not text:
+        return True
+    text_lower = text.lower().strip()
+
+    # Too short
+    if len(text_lower) < 4:
+        return True
+
+    # Contains spam keywords
+    for spam in SPAM_KEYWORDS:
+        if spam in text_lower:
+            return True
+
+    # Is a number or product code
+    if text_lower.replace(' ', '').replace('-', '').isdigit():
+        return True
+
+    return False
+
+def filter_suggestions(suggestions: List[str], query: str) -> List[str]:
+    """Filter suggestions to only include investigation-relevant ones"""
+    query_lower = query.lower()
+    filtered = []
+
+    for s in suggestions:
+        s_lower = s.lower().strip()
+
+        # Skip if same as query
+        if s_lower == query_lower or s_lower in query_lower:
+            continue
+
+        # Skip spam
+        if is_spam_entity(s):
+            continue
+
+        # Prefer investigation-relevant
+        if is_investigation_relevant(s):
+            filtered.append(s)
+        # Allow if not obviously spam and reasonably long
+        elif len(s) > 6 and not any(spam in s_lower for spam in SPAM_KEYWORDS):
+            # Check if it looks like a name (capitalized words)
+            words = s.split()
+            if len(words) >= 2 and all(w[0].isupper() for w in words if w):
+                filtered.append(s)
+
+    return filtered[:4]
+
+def get_curated_suggestions(query: str) -> List[str]:
+    """Get suggestions from curated investigation documents based on query"""
+    query_lower = query.lower()
+    suggestions = []
+
+    # Map query topics to relevant follow-up suggestions
+    if any(x in query_lower for x in ['epstein', 'jeffrey']):
+        suggestions = ['Ghislaine Maxwell', 'Virginia Giuffre', 'Lolita Express', 'Little St James Island']
+    elif any(x in query_lower for x in ['maxwell', 'ghislaine']):
+        suggestions = ['Virginia Giuffre testimony', 'Sarah Kellen role', 'Jean-Luc Brunel', 'Maxwell trial verdict']
+    elif any(x in query_lower for x in ['giuffre', 'virginia']):
+        suggestions = ['Prince Andrew accusations', 'Alan Dershowitz', 'Ghislaine Maxwell', '2008 plea deal']
+    elif any(x in query_lower for x in ['prince andrew', 'andrew']):
+        suggestions = ['Virginia Giuffre lawsuit', 'Settlement details', 'Maxwell connections', 'Flight logs']
+    elif any(x in query_lower for x in ['lolita express', 'flight', 'plane']):
+        suggestions = ['Flight logs passengers', 'Little St James trips', 'Bill Clinton flights', 'Celebrity passengers']
+    elif any(x in query_lower for x in ['plea deal', '2008', 'acosta']):
+        suggestions = ['Alexander Acosta role', 'Non-prosecution agreement', 'Victim impact', 'Federal investigation']
+    elif any(x in query_lower for x in ['island', 'st james', 'virgin islands']):
+        suggestions = ['Island construction', 'Victim testimony', 'FBI raid 2019', 'Staff witnesses']
+    elif any(x in query_lower for x in ['wexner', 'les']):
+        suggestions = ['Victoria Secret connection', 'Financial transfers', 'Ohio mansion', 'Power of attorney']
+    elif any(x in query_lower for x in ['gates', 'bill gates']):
+        suggestions = ['MIT donations', 'Meeting timeline', 'Melinda Gates divorce', 'Jeffrey Epstein meetings']
+    elif any(x in query_lower for x in ['trump', 'donald']):
+        suggestions = ['Mar-a-Lago connection', 'Palm Beach social circle', '2002 quote', 'Distancing timeline']
+    elif any(x in query_lower for x in ['death', 'suicide', 'killed']):
+        suggestions = ['Camera malfunction', 'Guard negligence', 'Autopsy findings', 'Conspiracy theories']
+    elif any(x in query_lower for x in ['trial', 'verdict', 'conviction']):
+        suggestions = ['Maxwell sentencing', 'Victim testimony', 'Evidence presented', 'Co-conspirators']
+    elif any(x in query_lower for x in ['brunel', 'jean-luc']):
+        suggestions = ['MC2 Model Management', 'Modeling recruitment', 'Paris connection', 'Brunel death']
+    elif any(x in query_lower for x in ['kellen', 'sarah']):
+        suggestions = ['Scheduling role', 'Immunity deal', 'Victim recruitment', 'Inner circle']
+    elif any(x in query_lower for x in ['dershowitz', 'alan']):
+        suggestions = ['Virginia Giuffre accusations', 'Legal defense', 'Denial statements', 'Defamation case']
+    elif any(x in query_lower for x in ['black book', 'contacts', 'address']):
+        suggestions = ['Celebrity contacts', 'Politician names', 'Business connections', 'European contacts']
+    elif any(x in query_lower for x in ['palm beach', 'florida']):
+        suggestions = ['Police investigation', 'El Brillo Way mansion', 'Victim recruitment', 'State charges']
+    elif any(x in query_lower for x in ['zorro', 'new mexico', 'ranch']):
+        suggestions = ['Ranch activities', 'Staff testimony', 'Scientific interests', 'Visitor logs']
+    elif any(x in query_lower for x in ['mit', 'media lab', 'university']):
+        suggestions = ['Joi Ito resignation', 'Donation amounts', 'Academic connections', 'Research funding']
+    else:
+        # Default relevant suggestions
+        suggestions = ['Jeffrey Epstein network', 'Ghislaine Maxwell role', 'Victim testimonies', 'Key evidence']
+
+    # Don't suggest what was already asked
+    return [s for s in suggestions if s.lower() not in query_lower][:3]
+
+# =============================================================================
 # LRU CACHE - Avoid redundant searches
 # =============================================================================
 
@@ -100,6 +314,72 @@ def create_evidence_record(query: str, results: List[Dict], entities: Dict) -> D
     }
     evidence["hash"] = compute_evidence_hash(evidence)
     return evidence
+
+# =============================================================================
+# SMART RESPONSE BUILDER (when Haiku unavailable)
+# =============================================================================
+
+def build_smart_response(query: str, results: List[Dict], entities: Dict) -> str:
+    """Build intelligent response using curated document content"""
+    if not results:
+        return f"No results found for '{query}'. Try different search terms."
+
+    # Prioritize curated investigation documents
+    curated = [r for r in results if r.get('sender_email') == 'investigation@pwnd.icu']
+    other = [r for r in results if r.get('sender_email') != 'investigation@pwnd.icu']
+
+    query_lower = query.lower()
+
+    # If we have curated docs, extract key content
+    if curated:
+        top_doc = curated[0]
+        doc_id = top_doc.get('id')
+        title = top_doc.get('name', '').upper()
+        snippet = re.sub(r'<[^>]+>', '', top_doc.get('snippet', ''))
+
+        # Build response from curated content
+        lines = [f"**{title}** (#{doc_id})"]
+        lines.append("")
+        lines.append(snippet.strip())
+
+        # Add related docs
+        if len(curated) > 1:
+            related = [f"#{r.get('id')}: {r.get('name', '')[:50]}" for r in curated[1:4]]
+            lines.append("")
+            lines.append("**Related documents:** " + " | ".join(related))
+
+        # Add entities if found (filter out spam)
+        persons = entities.get("persons", [])[:15]
+        if persons:
+            names = []
+            for p in persons:
+                name = p.get('name', '')
+                if name and not is_spam_entity(name):
+                    if is_investigation_relevant(name):
+                        names.insert(0, name)  # Priority for investigation entities
+                    elif len(name) > 5:
+                        names.append(name)
+            if names:
+                lines.append("")
+                lines.append(f"**Key persons:** {', '.join(names[:5])}")
+
+        # Suggest next step
+        lines.append("")
+        lines.append("**Next:** Click source documents for full details.")
+
+        return "\n".join(lines)
+
+    # Fallback for non-curated results
+    top_ids = ', '.join([f'#{r.get("id")}' for r in results[:5]])
+    senders = list(set(r.get('sender_email', '') for r in results[:10] if r.get('sender_email')))[:3]
+
+    return f"""Found {len(results)} documents matching '{query}'.
+
+**Top results:** {top_ids}
+
+**Sources:** {', '.join(senders[:2]) if senders else 'various'}
+
+Review the source documents for detailed information."""
 
 # =============================================================================
 # FAST REGEX EXTRACTION (replaces slow Phi-3)
@@ -291,10 +571,11 @@ def get_session_seen_emails(conversation_id: str) -> set:
 
 
 ALTERNATIVE_ANGLES = [
-    "flight records", "Virgin Islands", "legal correspondence",
-    "bank transfers", "property records", "known associates",
-    "Maxwell connections", "foundation payments", "travel dates",
-    "witness names", "settlement documents", "private jet"
+    "Ghislaine Maxwell role", "Virginia Giuffre testimony", "flight logs passengers",
+    "Little St James Island", "2008 plea deal", "Palm Beach investigation",
+    "Les Wexner connection", "victim testimonies", "Jean-Luc Brunel",
+    "Prince Andrew accusations", "Bill Gates meetings", "Maxwell trial evidence",
+    "Epstein death circumstances", "Sarah Kellen role", "Black book contacts"
 ]
 
 
@@ -1041,7 +1322,7 @@ FINDINGS: The absence of data means either:
 
 NEXT STEP: Try alternate spellings, related names, or broader search terms."""
         yield {"type": "chunk", "text": response}
-        yield {"type": "suggestions", "queries": ["epstein", "maxwell", "virgin islands", "palm beach"]}
+        yield {"type": "suggestions", "queries": get_curated_suggestions(query)}
         yield {"type": "done", "sources": []}
         return
 
@@ -1120,16 +1401,8 @@ Analyze briefly. Cite #IDs. Suggest next step."""
     haiku_response = await call_haiku(haiku_prompt, system=system_prompt, max_tokens=800)
 
     if "error" in haiku_response:
-        # Fast fallback - no LLM needed
-        senders = list(set(r.get('sender_email', '') for r in all_results[:10] if r.get('sender_email')))[:3]
-        dates = sorted([str(r.get('date', ''))[:7] for r in all_results if r.get('date')])
-        top_ids = ', '.join([f'#{r.get("id")}' for r in all_results[:5]])
-
-        response = f"""ANALYSIS: Found {len(all_results)} relevant emails.
-
-FINDINGS: Key contacts include {', '.join(senders[:2]) if senders else 'various senders'}. Timeline spans {dates[0] if dates else '?'} to {dates[-1] if dates else '?'}. See {top_ids}.
-
-NEXT STEP: Search for specific names mentioned in these emails."""
+        # Smart fallback - use curated document content directly
+        response = build_smart_response(query, all_results, parallel_extracted)
     else:
         response = haiku_response.get("text", "Analysis complete.")
 
@@ -1186,20 +1459,36 @@ NEXT STEP: Search for specific names mentioned in these emails."""
         elif s['count'] > 0:
             suggestions.append(term)
 
-    # Add discovered entities from extraction
+    # Add discovered entities from extraction (only investigation-relevant ones)
     for entity in discovered_entities:
         if entity.lower() not in query_lower and entity not in suggestions:
-            if ' ' in entity:  # Multi-word = likely real name
+            if is_investigation_relevant(entity):
                 suggestions.insert(0, entity)
+            elif ' ' in entity and not is_spam_entity(entity):
+                suggestions.append(entity)
+
+    # Filter suggestions to remove spam and prioritize investigation entities
+    filtered = filter_suggestions(suggestions, query)
+
+    # If no good suggestions from extraction, use curated suggestions
+    if len(filtered) < 2:
+        curated = get_curated_suggestions(query)
+        for c in curated:
+            if c.lower() not in [f.lower() for f in filtered]:
+                filtered.append(c)
 
     # Dedupe and limit
     seen_sugg = set()
     unique_suggestions = []
-    for s in suggestions:
+    for s in filtered[:6]:
         sl = s.lower()
-        if sl not in seen_sugg:
+        if sl not in seen_sugg and sl not in query_lower:
             seen_sugg.add(sl)
             unique_suggestions.append(s)
+
+    # Always provide at least curated suggestions if nothing else
+    if not unique_suggestions:
+        unique_suggestions = get_curated_suggestions(query)
 
     if unique_suggestions:
         yield {"type": "suggestions", "queries": unique_suggestions[:4]}
@@ -1210,11 +1499,100 @@ NEXT STEP: Search for specific names mentioned in these emails."""
 
 
 # =============================================================================
-# AUTO-INVESTIGATION (unchanged)
+# AUTO-EXPLORATION - Find unscored investigation-relevant content
+# =============================================================================
+
+def get_exploration_targets(limit: int = 20) -> List[str]:
+    """Get search terms for unexplored investigation-relevant emails"""
+    try:
+        # Find emails with investigation keywords that haven't been scored
+        rows = execute_query("sources", """
+            SELECT DISTINCT e.subject
+            FROM emails e
+            LEFT JOIN scores s ON s.target_type = 'email' AND s.target_id = e.doc_id
+            WHERE s.target_id IS NULL
+              AND e.sender_email != 'investigation@pwnd.icu'
+              AND (
+                  LOWER(e.subject) LIKE '%epstein%'
+                  OR LOWER(e.subject) LIKE '%maxwell%'
+                  OR LOWER(e.subject) LIKE '%giuffre%'
+                  OR LOWER(e.subject) LIKE '%trafficking%'
+                  OR LOWER(e.subject) LIKE '%island%'
+                  OR LOWER(e.subject) LIKE '%flight%'
+                  OR LOWER(e.subject) LIKE '%victim%'
+                  OR LOWER(e.subject) LIKE '%investigation%'
+                  OR LOWER(e.subject) LIKE '%lawsuit%'
+                  OR LOWER(e.subject) LIKE '%settlement%'
+              )
+            ORDER BY RANDOM()
+            LIMIT %s
+        """, (limit,))
+
+        targets = []
+        for row in rows:
+            subject = row.get('subject', '')
+            if subject and len(subject) > 10:
+                # Extract key terms from subject
+                words = subject.split()[:4]
+                term = ' '.join(words)
+                if not is_spam_entity(term):
+                    targets.append(term)
+
+        # Add known investigation entities that may have related emails
+        investigation_targets = [
+            "Epstein network connections",
+            "Maxwell recruitment patterns",
+            "Flight manifest details",
+            "Victim testimony records",
+            "Financial transactions Epstein",
+            "Property records Little St James",
+            "Legal correspondence 2008",
+            "Settlement documents victims"
+        ]
+
+        # Mix exploration targets with known investigation topics
+        combined = targets[:10] + investigation_targets[:10]
+        random.shuffle(combined)
+        return combined[:limit]
+
+    except Exception:
+        # Fallback to curated exploration targets
+        return [
+            "Jeffrey Epstein associates",
+            "Ghislaine Maxwell network",
+            "Virginia Giuffre case",
+            "Flight logs analysis",
+            "Victim recruitment patterns",
+            "Palm Beach investigation files",
+            "New York prosecution",
+            "Financial trail Epstein"
+        ]
+
+def get_unscored_entity_count() -> int:
+    """Count emails without scores for progress tracking"""
+    try:
+        rows = execute_query("sources", """
+            SELECT COUNT(*) as cnt
+            FROM emails e
+            LEFT JOIN scores s ON s.target_type = 'email' AND s.target_id = e.doc_id
+            WHERE s.target_id IS NULL
+        """, ())
+        return rows[0]['cnt'] if rows else 0
+    except:
+        return 0
+
+# =============================================================================
+# AUTO-INVESTIGATION - Enhanced with exploration mode
 # =============================================================================
 
 async def auto_investigate(conversation_id: str, max_queries: int = 10) -> AsyncGenerator[Dict[str, Any], None]:
-    """Auto-investigation mode"""
+    """Auto-investigation mode with heat-seeking exploration
+
+    Heat-seeking logic:
+    - Track "heat" based on curated docs found and high scores
+    - When hot: continue in same direction (follow suggestions)
+    - When cooling: bounce to explore new directions
+    """
 
     messages = execute_query(
         "sessions",
@@ -1226,26 +1604,98 @@ async def auto_investigate(conversation_id: str, max_queries: int = 10) -> Async
         yield {"type": "error", "msg": "No user message found."}
         return
 
-    yield {"type": "auto_start", "max_queries": max_queries}
+    # Get initial exploration targets from database
+    exploration_targets = get_exploration_targets(max_queries * 2)
+    unscored_count = get_unscored_entity_count()
+
+    yield {"type": "auto_start", "max_queries": max_queries, "unscored_emails": unscored_count}
 
     query_count = 0
     pending = [messages[0]['content']]
+    hot_pending = []  # High-priority queue for heat-seeking
     processed = set()
+    exploration_index = 0
 
-    while query_count < max_queries and pending:
-        current = pending.pop(0)
-        if current in processed:
+    # Heat tracking
+    heat_score = 0
+    consecutive_cold = 0
+    hot_threshold = 3  # Curated docs found to be "hot"
+    cold_threshold = 3  # Consecutive low-value queries before bouncing
+
+    while query_count < max_queries:
+        # Priority: hot_pending > pending > exploration
+        if hot_pending:
+            current = hot_pending.pop(0)
+            yield {"type": "thinking", "text": f"[HOT LEAD: {current}]\n"}
+        elif pending:
+            current = pending.pop(0)
+        elif exploration_index < len(exploration_targets):
+            current = exploration_targets[exploration_index]
+            exploration_index += 1
+            consecutive_cold = 0  # Reset on bounce
+            yield {"type": "thinking", "text": f"[EXPLORING: {current}]\n"}
+        else:
+            break
+
+        if current.lower() in [p.lower() for p in processed]:
             continue
+
         processed.add(current)
         query_count += 1
 
-        yield {"type": "auto_query", "query": current, "index": query_count}
+        yield {"type": "auto_query", "query": current, "index": query_count, "heat": heat_score}
+
+        # Track this query's heat
+        query_curated_count = 0
+        query_suggestions = []
 
         async for event in process_query(current, conversation_id, is_auto=True):
+            if event.get("type") == "sources":
+                # Count curated docs in sources (13011-13031)
+                sources = event.get("ids", [])
+                query_curated_count = len([s for s in sources if 13011 <= s <= 13031])
+
             if event.get("type") == "suggestions":
-                for q in event.get("queries", []):
-                    if q not in processed and q not in pending:
-                        pending.append(q)
+                query_suggestions = event.get("queries", [])
+
             yield event
 
-    yield {"type": "auto_complete", "total_queries": query_count}
+        # Update heat based on results
+        if query_curated_count >= hot_threshold:
+            # HOT - Found valuable content, prioritize following this thread
+            heat_score += query_curated_count
+            consecutive_cold = 0
+            yield {"type": "thinking", "text": f"[HEAT +{query_curated_count}] Following hot lead...\n"}
+
+            # Add suggestions to hot queue (priority)
+            for q in query_suggestions:
+                q_lower = q.lower()
+                if q_lower not in [p.lower() for p in processed]:
+                    if is_investigation_relevant(q):
+                        hot_pending.insert(0, q)
+                    elif not is_spam_entity(q) and q not in pending:
+                        hot_pending.append(q)
+
+        elif query_curated_count > 0:
+            # WARM - Some value, add to regular queue
+            heat_score += query_curated_count
+            consecutive_cold = 0
+
+            for q in query_suggestions:
+                q_lower = q.lower()
+                if q_lower not in [p.lower() for p in processed] and q not in pending:
+                    if is_investigation_relevant(q):
+                        pending.insert(0, q)
+                    elif not is_spam_entity(q):
+                        pending.append(q)
+
+        else:
+            # COLD - No value, increment cold counter
+            consecutive_cold += 1
+            if consecutive_cold >= cold_threshold and not hot_pending:
+                # Bounce to new exploration
+                yield {"type": "thinking", "text": f"[COLD x{consecutive_cold}] Bouncing to new direction...\n"}
+                pending.clear()  # Clear low-value pending items
+                consecutive_cold = 0
+
+    yield {"type": "auto_complete", "total_queries": query_count, "explored": exploration_index, "final_heat": heat_score}

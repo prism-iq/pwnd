@@ -72,23 +72,39 @@ SUSPICIOUS_KEYWORDS = {
     'epstein', 'maxwell', 'trafficking', 'abuse', 'minor', 'underage', 'victim',
     'settlement', 'lawsuit', 'subpoena', 'deposition', 'indictment', 'arrest',
     'investigation', 'fbi', 'secret', 'confidential', 'offshore', 'shell company',
-    'wire transfer', 'cash', 'anonymous', 'cover up', 'destroy', 'delete'
+    'wire transfer', 'cash', 'anonymous', 'cover up', 'destroy', 'delete',
+    'giuffre', 'brunel', 'wexner', 'acosta', 'dershowitz', 'kellen', 'marcinkova',
+    'plea deal', 'lolita express', 'little st james', 'zorro ranch', 'palm beach'
 }
 
 PERTINENT_KEYWORDS = {
     'flight', 'plane', 'jet', 'aircraft', 'passenger', 'manifest', 'log',
     'island', 'ranch', 'mansion', 'property', 'yacht', 'helicopter',
     'meeting', 'visit', 'stayed', 'traveled', 'accompanied', 'introduced',
-    'payment', 'donation', 'transfer', 'account', 'foundation', 'trust'
+    'payment', 'donation', 'transfer', 'account', 'foundation', 'trust',
+    'testimony', 'deposition', 'accusation', 'allegation', 'evidence',
+    'trial', 'conviction', 'sentence', 'prison', 'guilty', 'charged'
+}
+
+# Investigation sources to boost significantly
+INVESTIGATION_SOURCES = {
+    'investigation@pwnd.icu', 'investigation database'
 }
 
 def auto_score_result(result: Dict) -> Dict[str, int]:
     """Calculate suspicion/pertinence scores from content"""
     text = f"{result.get('name', '')} {result.get('snippet', '')}".lower()
+    sender = str(result.get('sender', '')).lower()
 
     suspicion = 0
     pertinence = 50
 
+    # Strongly boost curated investigation documents
+    if any(src in sender for src in INVESTIGATION_SOURCES):
+        pertinence += 45
+        suspicion += 35
+
+    # Score based on investigation-relevant keywords
     for kw in SUSPICIOUS_KEYWORDS:
         if kw in text:
             suspicion += 15
@@ -215,57 +231,51 @@ def search_emails(q: str, limit: int = 20) -> List[SearchResult]:
     # Fetch more results initially to allow re-ranking
     fetch_limit = min(limit * 3, 100)
 
+    # JOIN with scores to prioritize curated investigation documents
     query = """
         SELECT
-            doc_id,
-            subject,
-            sender_email as sender,
-            ts_headline('english', COALESCE(body_text, subject), plainto_tsquery('english', %s),
+            e.doc_id,
+            e.subject,
+            e.sender_email as sender,
+            ts_headline('english', COALESCE(e.body_text, e.subject), plainto_tsquery('english', %s),
                 'StartSel=<mark>, StopSel=</mark>, MaxWords=30, MinWords=10') as snippet,
-            ts_rank(tsv, plainto_tsquery('english', %s)) as rank
-        FROM emails
-        WHERE tsv @@ plainto_tsquery('english', %s)
-        ORDER BY rank DESC
+            ts_rank(e.tsv, plainto_tsquery('english', %s)) as rank,
+            COALESCE(s.pertinence, 50) as pertinence,
+            COALESCE(s.suspicion, 0) as suspicion,
+            (ts_rank(e.tsv, plainto_tsquery('english', %s)) * 0.5 + COALESCE(s.pertinence, 50) / 100.0 * 0.5) as combined_rank
+        FROM emails e
+        LEFT JOIN scores s ON s.target_type = 'email' AND s.target_id = e.doc_id
+        WHERE e.tsv @@ plainto_tsquery('english', %s)
+        ORDER BY combined_rank DESC
         LIMIT %s
     """
 
-    rows = execute_query("sources", query, (q, q, q, fetch_limit))
+    rows = execute_query("sources", query, (q, q, q, q, fetch_limit))
     if not rows:
         return []
 
-    # Get scores for these emails
-    doc_ids = [row['doc_id'] for row in rows]
-    scores_map = get_scores('email', doc_ids)
-
-    # Build results with composite scores
+    # Build results - scores already included from JOIN
     results = []
     for row in rows:
         doc_id = row['doc_id']
         ts_rank = float(row.get('rank', 0))
-
-        # Get scores (default if not found)
-        entity_scores = scores_map.get(doc_id, {
-            'suspicion': 0, 'pertinence': 50, 'confidence': 70, 'anomaly': 0
-        })
-
-        composite = calculate_composite_score(ts_rank, entity_scores)
+        pertinence = int(row.get('pertinence', 50))
+        suspicion = int(row.get('suspicion', 0))
+        combined = float(row.get('combined_rank', 0))
 
         results.append(SearchResult(
             id=doc_id,
             type='email',
             name=row['subject'] or '(no subject)',
             snippet=row.get('snippet', ''),
-            score=composite,
+            score=combined,
             metadata={
                 'ts_rank': ts_rank,
-                'suspicion': entity_scores['suspicion'],
-                'pertinence': entity_scores['pertinence'],
-                'anomaly': entity_scores['anomaly']
+                'suspicion': suspicion,
+                'pertinence': pertinence,
+                'anomaly': 0
             }
         ))
-
-    # Re-sort by composite score
-    results.sort(key=lambda x: x.score, reverse=True)
 
     return results[:limit]
 
@@ -366,22 +376,27 @@ def search_corpus_scored(search_term: str, limit: int = 15) -> List[Dict[str, An
     fetch_limit = min(limit * 3, 60)
 
     try:
+        # Join with scores table to boost high-pertinence documents
         query = """
             SELECT
-                doc_id as id,
-                subject as name,
-                sender_email,
-                recipients_to,
-                date_sent as date,
-                ts_headline('english', COALESCE(body_text, subject), plainto_tsquery('english', %s),
+                e.doc_id as id,
+                e.subject as name,
+                e.sender_email,
+                e.recipients_to,
+                e.date_sent as date,
+                ts_headline('english', COALESCE(e.body_text, e.subject), plainto_tsquery('english', %s),
                     'StartSel=<mark>, StopSel=</mark>, MaxWords=35, MinWords=10') as snippet,
-                ts_rank(tsv, plainto_tsquery('english', %s)) as rank
-            FROM emails
-            WHERE tsv @@ plainto_tsquery('english', %s)
+                ts_rank(e.tsv, plainto_tsquery('english', %s)) as ts_rank,
+                COALESCE(s.pertinence, 50) as pertinence,
+                COALESCE(s.suspicion, 0) as suspicion,
+                (ts_rank(e.tsv, plainto_tsquery('english', %s)) * 0.5 + COALESCE(s.pertinence, 50) / 100.0 * 0.5) as rank
+            FROM emails e
+            LEFT JOIN scores s ON s.target_type = 'email' AND s.target_id = e.doc_id
+            WHERE e.tsv @@ plainto_tsquery('english', %s)
             ORDER BY rank DESC
             LIMIT %s
         """
-        rows = execute_query("sources", query, (search_term, search_term, search_term, fetch_limit))
+        rows = execute_query("sources", query, (search_term, search_term, search_term, search_term, fetch_limit))
         if not rows:
             return []
 

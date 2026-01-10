@@ -216,7 +216,7 @@
 
         async function loadSource(id) {
             try {
-                const response = await fetch(`/api/source/${id}`);
+                const response = await fetch(`/api/document/${id}`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);

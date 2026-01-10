@@ -15,7 +15,20 @@ import { EventEmitter } from 'events';
 
 const app = express();
 const server = createServer(app);
-const io = new SocketIO(server, { cors: { origin: '*' } });
+const ALLOWED_ORIGINS = [
+  'https://pwnd.icu',
+  'https://www.pwnd.icu',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+const io = new SocketIO(server, {
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }
+});
 
 // Service endpoints (the other organs)
 const ORGANS = {

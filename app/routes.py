@@ -82,6 +82,65 @@ async def search_nodes_endpoint(q: str = Query(..., max_length=1000), limit: int
     """Search nodes only"""
     return search_nodes(q, limit)
 
+# Document Viewer (with alias for /api/email/)
+@router.get("/api/email/{doc_id}")
+async def get_email_alias(doc_id: int):
+    """Alias for document endpoint (for frontend compatibility)"""
+    return await get_document(doc_id)
+
+@router.get("/api/document/{doc_id}")
+async def get_document(doc_id: int):
+    """Get full document content by ID"""
+    try:
+        rows = execute_query("sources", """
+            SELECT doc_id, subject, body_text, sender_email, sender_name,
+                   recipients_to, recipients_cc, date_sent
+            FROM emails WHERE doc_id = %s
+        """, (doc_id,))
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        row = rows[0]
+        return {
+            "id": row["doc_id"],
+            "subject": row["subject"],
+            "body": row["body_text"],
+            "sender": row["sender_email"],
+            "sender_name": row["sender_name"],
+            "to": row["recipients_to"],
+            "cc": row["recipients_cc"],
+            "date": str(row["date_sent"]) if row["date_sent"] else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/documents/batch")
+async def get_documents_batch(ids: str = Query(..., description="Comma-separated doc IDs")):
+    """Get multiple documents by IDs"""
+    try:
+        doc_ids = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()][:20]
+        if not doc_ids:
+            return []
+
+        placeholders = ",".join(["%s"] * len(doc_ids))
+        rows = execute_query("sources", f"""
+            SELECT doc_id, subject, body_text, sender_email, sender_name, date_sent
+            FROM emails WHERE doc_id IN ({placeholders})
+        """, tuple(doc_ids))
+
+        return [{
+            "id": r["doc_id"],
+            "subject": r["subject"],
+            "body": r["body_text"][:2000] if r["body_text"] else "",
+            "sender": r["sender_email"],
+            "date": str(r["date_sent"]) if r["date_sent"] else None
+        } for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Graph
 @router.get("/api/nodes")
 async def get_nodes(type: Optional[str] = None, limit: int = Query(100, ge=1, le=1000)):

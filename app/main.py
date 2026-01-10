@@ -1,15 +1,63 @@
 """FastAPI application entry point"""
 import logging
+import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from collections import defaultdict
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from pathlib import Path
 
 from app.routes import router
 from app.routes_auth import router as auth_router
 from app.db import init_databases
 from app.config import API_HOST, API_PORT
+
+# =============================================================================
+# SECURITY: Rate Limiting
+# =============================================================================
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, requests_per_minute: int = 60):
+        super().__init__(app)
+        self.requests_per_minute = requests_per_minute
+        self.requests = defaultdict(list)
+
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+
+        # Clean old requests
+        self.requests[client_ip] = [
+            t for t in self.requests[client_ip]
+            if now - t < 60
+        ]
+
+        # Check rate limit
+        if len(self.requests[client_ip]) >= self.requests_per_minute:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Rate limit exceeded. Try again later."}
+            )
+
+        self.requests[client_ip].append(now)
+        return await call_next(request)
+
+# =============================================================================
+# SECURITY: Security Headers
+# =============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("app")
@@ -47,17 +95,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Security middleware (order matters - first added = last executed)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+
 # CORS - production + localhost
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://pwnd.icu",
-        "http://localhost",
-        "http://127.0.0.1",
+        "https://www.pwnd.icu",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Include API routes
