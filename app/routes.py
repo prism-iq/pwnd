@@ -321,25 +321,49 @@ async def query_post(request: QueryRequest):
 
     def search_documents(query: str, limit: int = 30):
         """Search documents using FTS"""
+        import re
         conn = sqlite3.connect("/opt/rag/db/sources.db")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        # Clean query for FTS - extract keywords, remove stop words and special chars
+        stop_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'what', 'about', 'who', 'how', 'why', 'when', 'where', 'do', 'does', 'did', 'have', 'has', 'had', 'be', 'been', 'being', 'and', 'or', 'but', 'if', 'then', 'of', 'to', 'for', 'with', 'on', 'at', 'by', 'from', 'in', 'out', 'up', 'down', 'this', 'that', 'these', 'those', 'it', 'its'}
+        words = re.findall(r'\b[a-zA-Z]{2,}\b', query.lower())
+        keywords = [w for w in words if w not in stop_words]
+
+        if not keywords:
+            # Try full text search as fallback
+            keywords = [w for w in words if len(w) > 2]
+
+        results = []
+
         # Search contents_fts
-        try:
-            cursor.execute("""
-                SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
-                FROM contents c
-                JOIN documents d ON d.id = c.doc_id
-                WHERE c.doc_id IN (
-                    SELECT rowid FROM contents_fts WHERE contents_fts MATCH ?
-                )
-                LIMIT ?
-            """, (query, limit))
-            rows = cursor.fetchall()
-            results = [dict(row) for row in rows]
-        except:
-            results = []
+        if keywords:
+            fts_query = ' OR '.join(keywords)
+            try:
+                cursor.execute("""
+                    SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
+                    FROM contents c
+                    JOIN documents d ON d.id = c.doc_id
+                    WHERE c.doc_id IN (
+                        SELECT rowid FROM contents_fts WHERE contents_fts MATCH ?
+                    )
+                    LIMIT ?
+                """, (fts_query, limit))
+                rows = cursor.fetchall()
+                results = [dict(row) for row in rows]
+            except Exception as e:
+                # Fallback to LIKE search
+                like_pattern = f"%{keywords[0]}%"
+                cursor.execute("""
+                    SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
+                    FROM contents c
+                    JOIN documents d ON d.id = c.doc_id
+                    WHERE c.full_text LIKE ?
+                    LIMIT ?
+                """, (like_pattern, limit))
+                rows = cursor.fetchall()
+                results = [dict(row) for row in rows]
 
         conn.close()
         return results
