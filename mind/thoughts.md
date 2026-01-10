@@ -1112,3 +1112,129 @@ A: [5th Amendment]
 All deposition content now searchable via API.
 
 ---
+
+---
+
+## 2026-01-10 07:15 | ADDITIONAL EVIDENCE - Databases of Victims
+
+### Maxwell's Computer Database
+
+**Testimony confirms Maxwell maintained:**
+- Names and telephone numbers of massage girls
+- Pictures on computer
+- **Nude photographs**
+
+Q: "Do you know whether Ms. Maxwell kept the names and telephone numbers of the girls who came to do massages?"
+A: "Yes, ma'am."
+
+Q: "Do you know if she kept pictures of the girls on the computer?"
+A: "Yes, she did."
+
+Q: "Did you notice any nude photographs in those pictures?"
+A: "Yes, ma'am."
+
+### Sarah Kellen's Computer Database
+
+**Same pattern documented:**
+Q: "Did you notice that Ms. Kellen had a list of the girls that came to give massages on her computer?"
+A: "Yes, ma'am."
+
+Q: "And did she generally have phone numbers for those girls?"
+A: "Yes, ma'am."
+
+Q: "Did the pictures that they kept there look like pictures that were posed?"
+A: "They were more casual."
+
+Q: "Did they look as though the person being photographed knew that they were being photographed?"
+[Question suggests covert photography]
+
+### Video Surveillance System
+
+**Testimony about sophisticated computer/video system:**
+> "There was always problems with the computers so he came to the house and he was the programmer. It was very sophisticated."
+
+Q: "How did you know then that he maintained the video equipment as well?"
+A: "Because he was in charge of computers"
+
+---
+
+## Evidence of Systematic Operation
+
+**Pilot's 18 years of service:**
+- Claims no knowledge of abuse
+- Claims never saw underage girls
+- "My concerns are all on the cockpit"
+- Yet flew same routes for years
+
+**Documented victim list references:**
+- Jane Doe (multiple)
+- Jane Doe #4
+- L.M.
+- E.W.
+- Virginia Roberts
+- 12-year-old French girls
+
+**Properties confirmed:**
+- Palm Beach mansion
+- New York townhouse (301 E 66th Street)
+- Zorro Ranch (New Mexico)
+- Little St. James Island
+- Paris apartment
+
+**Aircraft documented:**
+- Boeing 727 ("Lolita Express")
+- Gulfstream IV
+- Helicopter
+
+---
+
+---
+
+## 2026-01-10 07:20 | DOJ OPR REPORT - Key Findings (EFTA00011475)
+
+### The Cover-Up: Official DOJ Investigation
+
+**Document:** Department of Justice Office of Professional Responsibility Executive Summary
+**Date:** November 2020
+**Subject:** Investigation into USAO Southern District of Florida's resolution of 2006-2008 Epstein investigation
+
+### Timeline of Events:
+
+1. **2005:** Palm Beach PD begins investigation after 14-year-old's parents complain
+2. **July 2006:** Palm Beach County grand jury indicts for felony solicitation
+3. **May 2007:** AUSA submits **60-count draft indictment** against Epstein
+4. **July 31, 2007:** USAO offers deal to Epstein's attorneys
+5. **September 24, 2007:** Non-Prosecution Agreement (NPA) signed
+6. **9 months follow:** Epstein's team fights to change terms
+
+### Key Findings:
+
+**The 60-Count Indictment:**
+> "In May 2007, the AUSA submitted to her supervisors a draft 60-count indictment outlining charges against Epstein."
+
+**What the NPA Did:**
+- Ended federal investigation
+- Forgave Epstein
+- Forgave **four named co-conspirators**
+- Forgave **"any potential co-conspirators"** (blanket immunity)
+- Required only 18 months county jail + 12 months house arrest
+
+**Victims Not Consulted:**
+> "Victims were not informed of, or consulted about, a potential state resolution or the NPA prior to its signing."
+
+**High-Powered Defense:**
+> "Epstein deployed his extensive team of prominent attorneys to try to change the terms...while simultaneously seeking to invalidate the entire NPA by persuading senior Department officials"
+
+**Defense Team Tactics:**
+- Fought government's interpretation
+- Sought review by Criminal Division
+- Escalated to Deputy Attorney General's office
+
+### Named Officials:
+- **R. Alexander Acosta** - U.S. Attorney at time (later Trump's Labor Secretary)
+- Investigation found prosecutors prioritized Epstein's interests over victims'
+
+### Significance:
+This document proves the federal government had a **60-count indictment ready** but settled for a slap on the wrist. The NPA gave immunity to unnamed co-conspirators - potentially protecting high-profile associates.
+
+---
