@@ -491,3 +491,150 @@ async def extraction_stats():
         return {"status": "no_workers", "workers": None}
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+# =============================================================================
+# PROSECUTION CASE BUILDER
+# =============================================================================
+
+@router.get("/api/prosecution/targets")
+async def get_targets():
+    """Get all prosecution targets with profiles"""
+    from app.prosecution import get_prosecution_targets
+    return get_prosecution_targets()
+
+
+@router.get("/api/prosecution/targets/{target_id}")
+async def get_target(target_id: str):
+    """Get detailed profile for a prosecution target"""
+    from app.prosecution import get_target_profile
+    profile = get_target_profile(target_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Target not found")
+    return profile
+
+
+@router.get("/api/prosecution/targets/{target_id}/readiness")
+async def get_readiness(target_id: str):
+    """Calculate prosecution readiness for a target"""
+    from app.prosecution import calculate_prosecution_readiness
+    return calculate_prosecution_readiness(target_id)
+
+
+@router.get("/api/prosecution/targets/{target_id}/evidence")
+async def get_evidence(target_id: str):
+    """Get evidence chain for a target"""
+    from app.prosecution import get_evidence_chain
+    chain = get_evidence_chain(target_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Target not found")
+    return chain
+
+
+@router.get("/api/prosecution/timeline")
+async def get_timeline(category: str = None, target: str = None):
+    """Get investigation timeline"""
+    from app.prosecution import get_timeline
+    return get_timeline(category, target)
+
+
+@router.get("/api/prosecution/summary")
+async def get_summary():
+    """Get overall prosecution readiness summary"""
+    from app.prosecution import get_prosecution_summary
+    return get_prosecution_summary()
+
+@router.put("/api/prosecution/targets/{target_id}/flag")
+async def update_target_flag(target_id: str, flag: int = Query(..., ge=-2, le=12), reason: str = Query(None)):
+    """Update guilt flag for a target (-2 to 12). Admin only."""
+    from app.prosecution import update_guilt_flag
+    result = update_guilt_flag(target_id, flag, reason)
+    if not result:
+        raise HTTPException(status_code=404, detail="Target not found")
+    return result
+
+@router.get("/api/prosecution/flags")
+async def get_all_flags():
+    """Get guilt flags for all targets"""
+    from app.prosecution import get_prosecution_targets, get_flag_label
+    targets = get_prosecution_targets()
+    return {
+        'scale': {
+            '-2': 'CLEARED',
+            '-1': 'LIKELY VICTIM',
+            '0': 'NO EVIDENCE',
+            '1-2': 'ASSOCIATION ONLY',
+            '3-4': 'SUSPICIOUS',
+            '5-6': 'CREDIBLE ACCUSATIONS',
+            '7-8': 'LIKELY GUILTY',
+            '9-10': 'SHOULD BE PROSECUTED',
+            '11-12': 'CONVICTED'
+        },
+        'targets': [
+            {
+                'id': t['id'],
+                'name': t['name'],
+                'guilt_flag': t['guilt_flag'],
+                'flag_label': t['flag_label'],
+                'flag_reason': t['flag_reason'],
+                'confidence': t['confidence']
+            }
+            for t in targets
+        ]
+    }
+
+@router.get("/api/prosecution/export/{target_id}")
+async def export_dossier(target_id: str):
+    """Export prosecution dossier for a target as JSON"""
+    from app.prosecution import (
+        get_target_profile, calculate_prosecution_readiness,
+        get_evidence_chain, get_timeline
+    )
+
+    profile = get_target_profile(target_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Target not found")
+
+    readiness = calculate_prosecution_readiness(target_id)
+    evidence = get_evidence_chain(target_id)
+    timeline = get_timeline(target=target_id)
+
+    dossier = {
+        "generated_at": datetime.utcnow().isoformat(),
+        "target": profile,
+        "readiness": readiness,
+        "evidence_chain": evidence,
+        "timeline": timeline,
+        "disclaimer": "This dossier is for investigative purposes only. All claims require independent verification."
+    }
+
+    return dossier
+
+@router.get("/api/prosecution/export")
+async def export_all_dossiers():
+    """Export all prosecution dossiers as JSON"""
+    from app.prosecution import (
+        get_prosecution_targets, get_target_profile,
+        calculate_prosecution_readiness, get_timeline, get_prosecution_summary
+    )
+
+    summary = get_prosecution_summary()
+    targets = get_prosecution_targets()
+    timeline = get_timeline()
+
+    dossiers = []
+    for t in targets:
+        profile = get_target_profile(t['id'])
+        readiness = calculate_prosecution_readiness(t['id'])
+        dossiers.append({
+            "target": profile,
+            "readiness": readiness
+        })
+
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "summary": summary,
+        "investigation_timeline": timeline,
+        "targets": dossiers,
+        "disclaimer": "This report is for investigative purposes only. All claims require independent verification."
+    }

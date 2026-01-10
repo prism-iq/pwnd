@@ -324,6 +324,287 @@
             line-height: 1.5;
         }
         .close-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 20px; }
+
+        /* Modal Box Styles (for new modals) */
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: transparent;
+        }
+        .modal-box {
+            position: relative;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .modal-box .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-box .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .modal-box .modal-header button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-box .modal-header button:hover {
+            color: var(--text-primary);
+        }
+        .modal-box .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        /* Timeline Styles */
+        .timeline-container {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+        .timeline-event {
+            position: relative;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .timeline-event::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 18px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg-primary);
+        }
+        .timeline-event.legal::before { background: var(--accent-purple); }
+        .timeline-event.death::before { background: var(--accent-red); }
+        .timeline-event.trafficking::before { background: var(--accent-yellow); }
+        .timeline-date {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 6px 0;
+            color: var(--text-primary);
+        }
+        .timeline-targets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        .timeline-target {
+            font-size: 10px;
+            padding: 2px 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+        }
+        .timeline-confidence {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--accent-green);
+            color: white;
+        }
+        .timeline-confidence.medium { background: var(--accent-yellow); color: #000; }
+        .timeline-confidence.low { background: var(--accent-red); }
+
+        /* Targets Grid Styles */
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .target-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .target-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .target-card.high-conf { border-left: 3px solid var(--accent-green); }
+        .target-card.med-conf { border-left: 3px solid var(--accent-yellow); }
+        .target-card.low-conf { border-left: 3px solid var(--accent-red); }
+        .target-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .target-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .target-score {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+        .target-score.medium { color: var(--accent-yellow); }
+        .target-score.low { color: var(--accent-red); }
+        .target-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .target-status.convicted { background: var(--accent-green); color: white; }
+        .target-status.settled { background: var(--accent-yellow); color: #000; }
+        .target-status.deceased { background: var(--text-muted); color: white; }
+        .target-charges {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .target-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .flag-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        .flag-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        /* Target Detail Styles */
+        .target-detail-section {
+            margin-bottom: 20px;
+        }
+        .target-detail-section h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+        .evidence-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        .evidence-type {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--accent);
+            color: white;
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+        .evidence-summary {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-top: 6px;
+        }
+        .evidence-confidence {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .witness-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .witness-tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            color: var(--text-secondary);
+        }
+        .readiness-meter {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .readiness-score {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .readiness-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .readiness-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        .readiness-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
     </style>
 </head>
 <body>
@@ -336,8 +617,11 @@
                 <div class="stat">Hypotheses: <span class="stat-value" id="stat-hypotheses">0</span></div>
             </div>
             <div class="auto-status" id="auto-status">Running investigation...</div>
-            <button class="new-btn" style="margin-top: 12px; border-color: var(--accent-dim);" onclick="showTimeline()">
+            <button class="new-btn" style="margin-top: 12px; border-color: var(--accent);" onclick="showTimeline()">
                 Case Timeline
+            </button>
+            <button class="new-btn" style="margin-top: 8px; border-color: #f85149;" onclick="showProsecutionTargets()">
+                Prosecution Targets
             </button>
             <button class="new-btn" style="margin-top: 8px; border-color: var(--text-muted);" onclick="showSources()">
                 Data Sources
@@ -362,7 +646,7 @@
     </aside>
 
     <!-- License Modal -->
-    <div id="license-modal" class="modal hidden">
+    <div id="license-modal" class="modal">
         <div class="modal-backdrop" onclick="hideLicense()"></div>
         <div class="modal-box license-box">
             <div class="modal-header">
@@ -398,7 +682,7 @@
     </div>
 
     <!-- Document Viewer Modal -->
-    <div id="doc-modal" class="modal hidden">
+    <div id="doc-modal" class="modal">
         <div class="modal-backdrop" onclick="hideDocument()"></div>
         <div class="modal-box doc-box" style="max-width: 800px; max-height: 90vh;">
             <div class="modal-header">
@@ -421,7 +705,7 @@
     </div>
 
     <!-- Ingest Modal -->
-    <div id="ingest-modal" class="modal hidden">
+    <div id="ingest-modal" class="modal">
         <div class="modal-backdrop" onclick="hideIngest()"></div>
         <div class="modal-box ingest-box">
             <div class="modal-header">
@@ -456,6 +740,75 @@
                         Refresh
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Modal -->
+    <div id="timeline-modal" class="modal">
+        <div class="modal-backdrop" onclick="hideTimeline()"></div>
+        <div class="modal-box timeline-box" style="max-width: 900px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2>Investigation Timeline</h2>
+                <button onclick="hideTimeline()">×</button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                <div class="timeline-toolbar" style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <select id="timeline-category" onchange="filterTimeline()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                        <option value="">All Categories</option>
+                        <option value="legal">Legal</option>
+                        <option value="death">Deaths</option>
+                        <option value="trafficking">Trafficking</option>
+                        <option value="financial">Financial</option>
+                    </select>
+                    <select id="timeline-target" onchange="filterTimeline()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                        <option value="">All Targets</option>
+                    </select>
+                </div>
+                <div id="timeline-loading" style="text-align: center; padding: 2rem; color: #888;">Loading timeline...</div>
+                <div id="timeline-content" style="display: none;">
+                    <div class="timeline-container" id="timeline-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prosecution Targets Modal -->
+    <div id="targets-modal" class="modal">
+        <div class="modal-backdrop" onclick="hideTargets()"></div>
+        <div class="modal-box targets-box" style="max-width: 1000px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2>Prosecution Targets</h2>
+                <div id="targets-summary" style="font-size: 12px; color: #888;"></div>
+                <button onclick="hideTargets()">×</button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                <div class="targets-toolbar" style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <select id="targets-filter" onchange="filterTargets()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                        <option value="all">All Targets</option>
+                        <option value="ready">Prosecution Ready (70%+)</option>
+                        <option value="needs-work">Needs Evidence (40-69%)</option>
+                        <option value="insufficient">Insufficient (&lt;40%)</option>
+                    </select>
+                </div>
+                <div id="targets-loading" style="text-align: center; padding: 2rem; color: #888;">Loading targets...</div>
+                <div id="targets-content" style="display: none;">
+                    <div class="targets-grid" id="targets-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target Detail Modal -->
+    <div id="target-detail-modal" class="modal">
+        <div class="modal-backdrop" onclick="hideTargetDetail()"></div>
+        <div class="modal-box target-detail-box" style="max-width: 800px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2 id="target-detail-name">Target</h2>
+                <button onclick="hideTargetDetail()">×</button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                <div id="target-detail-content"></div>
             </div>
         </div>
     </div>
@@ -545,6 +898,8 @@
         let currentEventSource = null;
         let entities = [];
         let hypotheses = [];
+        let cachedTargets = [];
+        let cachedTimeline = [];
 
         // API
         async function fetchStats() {
@@ -814,7 +1169,37 @@
         }
 
         function hideDocument() {
-            document.getElementById('doc-modal').classList.add('hidden');
+            document.getElementById('doc-modal').classList.remove('active');
+        }
+
+        function hideLicense() {
+            const modal = document.getElementById('license-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function hideSources() {
+            const modal = document.getElementById('sources-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function hideIngest() {
+            const modal = document.getElementById('ingest-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function showLicense() {
+            const modal = document.getElementById('license-modal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function showSources() {
+            // TODO: implement sources modal
+            console.log('Sources modal not implemented yet');
+        }
+
+        function showIngest() {
+            const modal = document.getElementById('ingest-modal');
+            if (modal) modal.classList.add('active');
         }
 
         function updateEntities(newEntities) {
@@ -841,6 +1226,8 @@
             if (e.key === 'Escape') {
                 hideLicense();
                 hideTimeline();
+                hideTargets();
+                hideTargetDetail();
                 hideSources();
                 hideIngest();
                 hideDocument();
@@ -848,10 +1235,327 @@
             }
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') stopQuery();
-        });
+        // ===================
+        // Timeline Functions
+        // ===================
+        async function showTimeline() {
+            const modal = document.getElementById('timeline-modal');
+            const loading = document.getElementById('timeline-loading');
+            const content = document.getElementById('timeline-content');
+            const container = document.getElementById('timeline-container');
+
+            modal.classList.add('active');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/prosecution/timeline');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const events = await response.json();
+                cachedTimeline = events;
+
+                // Populate target dropdown
+                const targetSelect = document.getElementById('timeline-target');
+                const allTargets = [...new Set(events.flatMap(e => e.targets || []))];
+                targetSelect.innerHTML = '<option value="">All Targets</option>' +
+                    allTargets.map(t => `<option value="${t}">${t.replace(/_/g, ' ')}</option>`).join('');
+
+                renderTimeline(events);
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            } catch (e) {
+                loading.textContent = `Failed to load timeline: ${e.message}`;
+            }
+        }
+
+        function renderTimeline(events) {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = events.map(event => {
+                const confClass = event.confidence >= 80 ? '' : event.confidence >= 50 ? 'medium' : 'low';
+                const targets = (event.targets || []).map(t =>
+                    `<span class="timeline-target">${t.replace(/_/g, ' ')}</span>`
+                ).join('');
+
+                return `
+                    <div class="timeline-event ${event.category || ''}">
+                        <span class="timeline-confidence ${confClass}">${event.confidence}%</span>
+                        <div class="timeline-date">${event.date}</div>
+                        <div class="timeline-title">${event.event}</div>
+                        ${event.conflicts && event.conflicts.length > 0 ?
+                            `<div style="font-size: 11px; color: var(--accent-yellow); margin-top: 4px;">
+                                Note: ${event.conflicts.join(', ')}
+                            </div>` : ''}
+                        <div class="timeline-targets">${targets}</div>
+                    </div>
+                `;
+            }).join('');
+
+            if (events.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No events match this filter</div>';
+            }
+        }
+
+        function filterTimeline() {
+            const category = document.getElementById('timeline-category').value;
+            const target = document.getElementById('timeline-target').value;
+
+            let filtered = cachedTimeline;
+
+            if (category) {
+                filtered = filtered.filter(e => e.category === category);
+            }
+            if (target) {
+                filtered = filtered.filter(e => (e.targets || []).includes(target));
+            }
+
+            renderTimeline(filtered);
+        }
+
+        function hideTimeline() {
+            document.getElementById('timeline-modal').classList.remove('active');
+        }
+
+        // ===================
+        // Prosecution Targets Functions
+        // ===================
+        async function showProsecutionTargets() {
+            const modal = document.getElementById('targets-modal');
+            const loading = document.getElementById('targets-loading');
+            const content = document.getElementById('targets-content');
+            const grid = document.getElementById('targets-grid');
+            const summary = document.getElementById('targets-summary');
+
+            modal.classList.add('active');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                // Fetch summary and targets in parallel
+                const [summaryRes, targetsRes] = await Promise.all([
+                    fetch('/api/prosecution/summary'),
+                    fetch('/api/prosecution/targets')
+                ]);
+
+                if (!targetsRes.ok) throw new Error(`HTTP ${targetsRes.status}`);
+
+                const summaryData = await summaryRes.json();
+                const targets = await targetsRes.json();
+
+                // Cache for filtering
+                cachedTargets = targets;
+
+                // Update summary
+                summary.innerHTML = `
+                    <span style="color: var(--accent-green);">${summaryData.prosecution_ready} ready</span> |
+                    <span style="color: var(--accent-yellow);">${summaryData.needs_more_evidence} need evidence</span> |
+                    <span style="color: var(--text-muted);">${summaryData.total_targets} total</span>
+                `;
+
+                // Render target cards
+                renderTargets(targets);
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            } catch (e) {
+                loading.textContent = `Failed to load targets: ${e.message}`;
+            }
+        }
+
+        function hideTargets() {
+            document.getElementById('targets-modal').classList.remove('active');
+        }
+
+        function getFlagColor(flag) {
+            if (flag >= 11) return '#dc2626';  // Red - Convicted
+            if (flag >= 9) return '#ea580c';   // Orange - Should prosecute
+            if (flag >= 7) return '#d97706';   // Amber - Likely guilty
+            if (flag >= 5) return '#ca8a04';   // Yellow - Credible accusations
+            if (flag >= 3) return '#65a30d';   // Lime - Suspicious
+            if (flag >= 1) return '#16a34a';   // Green - Association
+            if (flag >= 0) return '#6b7280';   // Gray - No evidence
+            return '#22c55e';                   // Bright green - Cleared
+        }
+
+        function renderTargets(targets) {
+            const grid = document.getElementById('targets-grid');
+            grid.innerHTML = targets.map(target => {
+                const confClass = target.confidence >= 70 ? 'high-conf' :
+                                 target.confidence >= 40 ? 'med-conf' : 'low-conf';
+                const scoreClass = target.confidence >= 70 ? '' :
+                                  target.confidence >= 40 ? 'medium' : 'low';
+
+                const statusClass = target.status.toLowerCase().includes('convicted') ? 'convicted' :
+                                   target.status.toLowerCase().includes('settled') ? 'settled' :
+                                   target.status.toLowerCase().includes('died') ? 'deceased' : '';
+
+                const flag = target.guilt_flag || 0;
+                const flagColor = getFlagColor(flag);
+                const flagLabel = target.flag_label || '';
+
+                return `
+                    <div class="target-card ${confClass}" onclick="showTargetDetail('${target.id}')">
+                        <div class="target-header">
+                            <div class="target-name">${target.name}</div>
+                            <div class="flag-badge" style="background: ${flagColor};" title="${target.flag_reason || ''}">
+                                ${flag}
+                            </div>
+                        </div>
+                        <div class="flag-label" style="color: ${flagColor};">${flagLabel}</div>
+                        <div class="target-status ${statusClass}">${target.status}</div>
+                        <div class="target-charges">${target.charges.slice(0, 2).join(', ')}</div>
+                        <div class="target-meta">
+                            <span>${target.evidence_count} evidence</span>
+                            <span>${target.witnesses.length} witnesses</span>
+                            <span class="target-score ${scoreClass}">${target.confidence}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (targets.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No targets match this filter</div>';
+            }
+        }
+
+        function filterTargets() {
+            const filter = document.getElementById('targets-filter').value;
+            let filtered = cachedTargets;
+
+            if (filter === 'ready') {
+                filtered = cachedTargets.filter(t => t.confidence >= 70);
+            } else if (filter === 'needs-work') {
+                filtered = cachedTargets.filter(t => t.confidence >= 40 && t.confidence < 70);
+            } else if (filter === 'insufficient') {
+                filtered = cachedTargets.filter(t => t.confidence < 40);
+            }
+
+            renderTargets(filtered);
+        }
+
+        // ===================
+        // Target Detail Functions
+        // ===================
+        async function showTargetDetail(targetId) {
+            const modal = document.getElementById('target-detail-modal');
+            const nameEl = document.getElementById('target-detail-name');
+            const content = document.getElementById('target-detail-content');
+
+            modal.classList.add('active');
+            content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #888;">Loading...</div>';
+
+            try {
+                // Fetch profile and readiness in parallel
+                const [profileRes, readinessRes] = await Promise.all([
+                    fetch(`/api/prosecution/targets/${targetId}`),
+                    fetch(`/api/prosecution/targets/${targetId}/readiness`)
+                ]);
+
+                if (!profileRes.ok) throw new Error(`HTTP ${profileRes.status}`);
+
+                const profile = await profileRes.json();
+                const readiness = await readinessRes.json();
+
+                nameEl.textContent = profile.name;
+
+                const scoreColor = readiness.score >= 70 ? 'var(--accent-green)' :
+                                  readiness.score >= 40 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+
+                const flag = profile.guilt_flag || 0;
+                const flagColor = getFlagColor(flag);
+                const flagLabel = profile.flag_label || '';
+
+                content.innerHTML = `
+                    <!-- Guilt Flag & Readiness -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                        <div class="readiness-meter">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                                <div class="flag-badge" style="background: ${flagColor}; width: 48px; height: 48px; font-size: 20px;">${flag}</div>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: ${flagColor};">${flagLabel}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Guilt Flag (-2 to 12)</div>
+                                </div>
+                            </div>
+                            ${profile.flag_reason ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 10px; text-align: center;">${profile.flag_reason}</div>` : ''}
+                        </div>
+                        <div class="readiness-meter">
+                            <div class="readiness-score" style="color: ${scoreColor};">${readiness.score}%</div>
+                            <div class="readiness-label">${readiness.recommendation}</div>
+                            <div class="readiness-bar">
+                                <div class="readiness-fill" style="width: ${readiness.score}%; background: ${scoreColor};"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status & Charges -->
+                    <div class="target-detail-section" style="margin-top: 20px;">
+                        <h3>Status</h3>
+                        <p style="color: var(--text-primary);">${profile.status}</p>
+                        <div style="margin-top: 10px;">
+                            ${profile.potential_charges.map(c => `<span class="witness-tag" style="background: var(--accent-red); color: white; border: none;">${c}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Evidence Chain -->
+                    <div class="target-detail-section">
+                        <h3>Evidence Chain (${profile.evidence.length} items)</h3>
+                        ${profile.evidence.map(e => `
+                            <div class="evidence-item">
+                                <span class="evidence-type">${e.type}</span>
+                                <span style="font-size: 11px; color: ${e.confidence >= 80 ? 'var(--accent-green)' : e.confidence >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">
+                                    ${e.confidence}% confidence
+                                </span>
+                                <div class="evidence-summary">${e.summary}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Witnesses -->
+                    <div class="target-detail-section">
+                        <h3>Witnesses (${profile.witnesses.length})</h3>
+                        <div class="witness-list">
+                            ${profile.witnesses.length > 0 ?
+                                profile.witnesses.map(w => `<span class="witness-tag">${w}</span>`).join('') :
+                                '<span style="color: var(--text-muted);">No witnesses identified</span>'}
+                        </div>
+                    </div>
+
+                    <!-- Timeline Events -->
+                    <div class="target-detail-section">
+                        <h3>Timeline Events (${profile.timeline.length})</h3>
+                        ${profile.timeline.map(t => `
+                            <div style="padding: 8px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 6px;">
+                                <span style="color: var(--text-muted); font-size: 11px;">${t.date}</span>
+                                <span style="color: var(--text-primary); font-size: 13px; margin-left: 8px;">${t.event}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Strengths & Gaps -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="target-detail-section">
+                            <h3 style="color: var(--accent-green);">Strengths</h3>
+                            <ul style="font-size: 12px; color: var(--text-secondary); padding-left: 16px;">
+                                ${readiness.strengths.map(s => `<li>${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="target-detail-section">
+                            <h3 style="color: var(--accent-red);">Gaps</h3>
+                            <ul style="font-size: 12px; color: var(--text-secondary); padding-left: 16px;">
+                                ${readiness.missing.map(m => `<li>${m}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = `<div style="color: var(--accent-red); padding: 1rem;">Failed to load: ${e.message}</div>`;
+            }
+        }
+
+        function hideTargetDetail() {
+            document.getElementById('target-detail-modal').classList.remove('active');
+        }
 
         // Init
         fetchStats();

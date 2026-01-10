@@ -352,6 +352,36 @@ PROSECUTION_TARGETS = {
     'jes staley': {'crimes': ['maintaining contact'], 'status': 'lost job'},
     'jean-luc brunel': {'crimes': ['trafficking', 'rape'], 'status': 'died in custody'},
     'ghislaine maxwell': {'crimes': ['trafficking', 'conspiracy'], 'status': 'convicted'},
+    'sarah kellen': {'crimes': ['scheduling abuse', 'conspiracy'], 'status': 'immunity deal'},
+    'nadia marcinkova': {'crimes': ['participating in abuse'], 'status': 'immunity deal'},
+    'alexander acosta': {'crimes': ['corrupt plea deal'], 'status': 'resigned'},
+}
+
+# Topic-to-target mapping for evidence linking
+TOPIC_TARGET_LINKS = {
+    'lolita express': ['prince andrew', 'bill gates', 'alan dershowitz', 'bill clinton'],
+    'flight log': ['prince andrew', 'bill gates', 'alan dershowitz'],
+    'little st james': ['prince andrew', 'bill gates', 'bill clinton'],
+    'island': ['prince andrew', 'bill gates'],
+    'palm beach': ['alexander acosta', 'alan dershowitz'],
+    'plea deal': ['alexander acosta'],
+    'trafficking': ['ghislaine maxwell', 'jean-luc brunel', 'sarah kellen'],
+    'recruitment': ['ghislaine maxwell', 'sarah kellen', 'nadia marcinkova'],
+    'massage': ['ghislaine maxwell', 'sarah kellen'],
+    'virginia giuffre': ['prince andrew', 'alan dershowitz', 'ghislaine maxwell'],
+    'testimony': ['prince andrew', 'alan dershowitz', 'ghislaine maxwell'],
+    'deposition': ['prince andrew', 'alan dershowitz'],
+    'zorro ranch': ['bill gates', 'les wexner'],
+    'new mexico': ['bill gates'],
+    'mit media lab': ['bill gates', 'leon black'],
+    'donation': ['bill gates', 'leon black', 'les wexner'],
+    'deutsche bank': ['jes staley', 'leon black'],
+    'financial': ['les wexner', 'leon black', 'jes staley'],
+    'maxwell trial': ['ghislaine maxwell', 'sarah kellen', 'nadia marcinkova'],
+    'epstein death': ['ghislaine maxwell'],  # conspiracy theories
+    'suicide': ['ghislaine maxwell'],
+    'model': ['jean-luc brunel', 'ghislaine maxwell'],
+    'mc2': ['jean-luc brunel'],
 }
 
 def format_prosecution_evidence(results: List[Dict], query: str) -> str:
@@ -359,32 +389,51 @@ def format_prosecution_evidence(results: List[Dict], query: str) -> str:
     query_lower = query.lower()
     evidence_lines = []
 
-    for target, info in PROSECUTION_TARGETS.items():
+    # Find relevant targets: direct mention OR topic link
+    relevant_targets = set()
+
+    # Direct mentions
+    for target in PROSECUTION_TARGETS:
         if target in query_lower:
-            # Find documents mentioning this target
-            relevant_docs = []
-            for r in results[:20]:
-                snippet = str(r.get('snippet', '')).lower()
-                name = str(r.get('name', '')).lower()
-                if target in snippet or target in name:
-                    doc_id = r.get('id')
-                    relevant_docs.append({
-                        'id': doc_id,
-                        'snippet': r.get('snippet', '')[:100]
-                    })
+            relevant_targets.add(target)
 
-            if relevant_docs:
-                target_title = target.title()
-                crimes = ', '.join(info['crimes'])
-                status = info['status']
+    # Topic-based links
+    for topic, targets in TOPIC_TARGET_LINKS.items():
+        if topic in query_lower:
+            relevant_targets.update(targets)
 
-                evidence_lines.append(f"\n**EVIDENCE AGAINST {target_title.upper()}:**")
-                evidence_lines.append(f"- Potential charges: {crimes}")
-                evidence_lines.append(f"- Current status: {status}")
-                evidence_lines.append(f"- Documents found: {len(relevant_docs)}")
+    for target in relevant_targets:
+        info = PROSECUTION_TARGETS.get(target)
+        if not info:
+            continue
 
-                for doc in relevant_docs[:3]:
-                    evidence_lines.append(f"  - #{doc['id']}: {doc['snippet'][:60]}...")
+        # Find documents mentioning this target
+        relevant_docs = []
+        for r in results[:20]:
+            snippet = str(r.get('snippet', '')).lower()
+            name = str(r.get('name', '')).lower()
+            if target in snippet or target in name:
+                doc_id = r.get('id')
+                relevant_docs.append({
+                    'id': doc_id,
+                    'snippet': r.get('snippet', '')[:100]
+                })
+
+        # Even without docs, show the linked target for topic queries
+        target_title = target.title()
+        crimes = ', '.join(info['crimes'])
+        status = info['status']
+
+        evidence_lines.append(f"\n**EVIDENCE AGAINST {target_title.upper()}:**")
+        evidence_lines.append(f"- Potential charges: {crimes}")
+        evidence_lines.append(f"- Current status: {status}")
+
+        if relevant_docs:
+            evidence_lines.append(f"- Documents found: {len(relevant_docs)}")
+            for doc in relevant_docs[:2]:
+                evidence_lines.append(f"  - #{doc['id']}: {doc['snippet'][:50]}...")
+        else:
+            evidence_lines.append(f"- Connection: linked via topic")
 
     return '\n'.join(evidence_lines) if evidence_lines else ''
 
