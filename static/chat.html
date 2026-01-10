@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWND.ICU - Investigation Chat</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --bg-input: #1a1a1a;
+            --bg-user: #1e3a5f;
+            --bg-assistant: #1a1a2e;
+            --border: #252525;
+            --text: #e5e5e5;
+            --text-dim: #888;
+            --accent: #3b82f6;
+            --accent-dim: #1d4ed8;
+            --green: #22c55e;
+            --orange: #f59e0b;
+            --red: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .header-title {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-input);
+            color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--bg-card);
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dim);
+        }
+
+        /* Main Layout */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent-dim);
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .conversation-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: var(--bg-input);
+        }
+
+        .conversation-item.active {
+            background: var(--bg-input);
+            border-left: 2px solid var(--accent);
+        }
+
+        .conversation-title {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--bg-user);
+            color: var(--accent);
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--green);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            padding: 15px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: var(--bg-user);
+        }
+
+        .message.assistant .message-content {
+            background: var(--bg-assistant);
+        }
+
+        .message-content p {
+            margin-bottom: 10px;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin-bottom: 5px;
+        }
+
+        .message-content code {
+            background: var(--bg-input);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.85em;
+        }
+
+        /* Sources */
+        .sources {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .sources-header {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .source-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .source-tag {
+            padding: 4px 10px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .source-tag:hover {
+            background: var(--border);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            min-height: 52px;
+            max-height: 200px;
+        }
+
+        .message-input:focus {
+            border-color: var(--accent);
+        }
+
+        .message-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .send-btn {
+            padding: 14px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-dim);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 20px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state h2 {
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .suggestion {
+            padding: 10px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Citation highlight */
+        .citation {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .citation:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="/" class="logo">PWND.ICU</a>
+            <span class="header-title">Investigation Chat</span>
+        </div>
+        <div class="header-actions">
+            <a href="/" class="btn">Search</a>
+            <a href="/investigation.html" class="btn">Targets</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+            </div>
+            <div class="conversations-list" id="conversationsList">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="empty-state" id="emptyState">
+                    <h2>Epstein Investigation Assistant</h2>
+                    <p>Ask questions about the documents. I'll search the evidence and provide answers with citations.</p>
+                    <div class="suggestions">
+                        <div class="suggestion" onclick="askSuggestion('Who is Ghislaine Maxwell?')">Who is Ghislaine Maxwell?</div>
+                        <div class="suggestion" onclick="askSuggestion('What do the flight logs show?')">What do the flight logs show?</div>
+                        <div class="suggestion" onclick="askSuggestion('Tell me about the 2008 plea deal')">Tell me about the 2008 plea deal</div>
+                        <div class="suggestion" onclick="askSuggestion('Who visited Little St. James island?')">Who visited the island?</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea
+                        class="message-input"
+                        id="messageInput"
+                        placeholder="Ask about the Epstein documents..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conversationId = null;
+        let isLoading = false;
+
+        // Load conversations on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConversations();
+            autoResizeInput();
+        });
+
+        // Auto-resize textarea
+        function autoResizeInput() {
+            const input = document.getElementById('messageInput');
+            input.addEventListener('input', () => {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+            });
+        }
+
+        // Handle Enter key
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Load conversation list
+        async function loadConversations() {
+            try {
+                const response = await fetch('/api/chat/conversations');
+                const conversations = await response.json();
+
+                const list = document.getElementById('conversationsList');
+                list.innerHTML = conversations.map(conv => `
+                    <div class="conversation-item ${conv.id === conversationId ? 'active' : ''}"
+                         onclick="loadConversation('${conv.id}')">
+                        <div class="conversation-title">${conv.title || 'New Chat'}</div>
+                        <div class="conversation-meta">${conv.message_count} messages</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load conversations:', e);
+            }
+        }
+
+        // Load a specific conversation
+        async function loadConversation(id) {
+            try {
+                const response = await fetch(`/api/chat/conversations/${id}`);
+                const data = await response.json();
+
+                conversationId = id;
+                document.getElementById('emptyState').style.display = 'none';
+
+                const messages = document.getElementById('messages');
+                messages.innerHTML = data.messages.map(msg => createMessageHTML(msg)).join('');
+                messages.scrollTop = messages.scrollHeight;
+
+                loadConversations(); // Refresh sidebar
+            } catch (e) {
+                console.error('Failed to load conversation:', e);
+            }
+        }
+
+        // Start new chat
+        function newChat() {
+            conversationId = null;
+            document.getElementById('messages').innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <h2>Epstein Investigation Assistant</h2>
+                    <p>Ask questions about the documents. I'll search the evidence and provide answers with citations.</p>
+                    <div class="suggestions">
+                        <div class="suggestion" onclick="askSuggestion('Who is Ghislaine Maxwell?')">Who is Ghislaine Maxwell?</div>
+                        <div class="suggestion" onclick="askSuggestion('What do the flight logs show?')">What do the flight logs show?</div>
+                        <div class="suggestion" onclick="askSuggestion('Tell me about the 2008 plea deal')">Tell me about the 2008 plea deal</div>
+                        <div class="suggestion" onclick="askSuggestion('Who visited Little St. James island?')">Who visited the island?</div>
+                    </div>
+                </div>
+            `;
+            loadConversations();
+        }
+
+        // Ask a suggestion
+        function askSuggestion(text) {
+            document.getElementById('messageInput').value = text;
+            sendMessage();
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || isLoading) return;
+
+            isLoading = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            // Hide empty state
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) emptyState.style.display = 'none';
+
+            // Add user message
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += createMessageHTML({ role: 'user', content: message });
+
+            // Add loading indicator
+            const loadingId = 'loading-' + Date.now();
+            messagesDiv.innerHTML += `
+                <div class="message assistant" id="${loadingId}">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            try {
+                const response = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId,
+                        include_sources: true
+                    })
+                });
+
+                const data = await response.json();
+                conversationId = data.conversation_id;
+
+                // Remove loading indicator
+                document.getElementById(loadingId).remove();
+
+                // Add assistant message
+                messagesDiv.innerHTML += createMessageHTML({
+                    role: 'assistant',
+                    content: data.message.content,
+                    sources: data.sources
+                });
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                loadConversations();
+
+            } catch (e) {
+                console.error('Failed to send message:', e);
+                document.getElementById(loadingId).innerHTML = `
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content" style="color: var(--red);">
+                        Error: Failed to get response. Please try again.
+                    </div>
+                `;
+            }
+
+            isLoading = false;
+            document.getElementById('sendBtn').disabled = false;
+        }
+
+        // Create message HTML
+        function createMessageHTML(msg) {
+            const avatar = msg.role === 'user' ? 'U' : 'AI';
+            let content = formatContent(msg.content);
+
+            let sourcesHTML = '';
+            if (msg.sources && msg.sources.length > 0) {
+                sourcesHTML = `
+                    <div class="sources">
+                        <div class="sources-header">Sources (${msg.sources.length} documents)</div>
+                        <div class="source-list">
+                            ${msg.sources.map((s, i) => `
+                                <span class="source-tag" onclick="viewSource(${s.id})" title="${s.snippet || ''}">
+                                    [${i + 1}] ${s.title.slice(0, 30)}${s.title.length > 30 ? '...' : ''}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="message ${msg.role}">
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-content">
+                        ${content}
+                        ${sourcesHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Format message content (markdown-lite)
+        function formatContent(text) {
+            if (!text) return '';
+
+            // Escape HTML
+            text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Convert markdown
+            text = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\[(\d+)\]/g, '<span class="citation">[$1]</span>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+
+            // Handle lists
+            text = text.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');
+            text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+
+            return `<p>${text}</p>`;
+        }
+
+        // View source document
+        function viewSource(docId) {
+            window.open(`/source.html?id=${docId}`, '_blank');
+        }
+    </script>
+</body>
+</html>

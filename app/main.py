@@ -12,6 +12,7 @@ from pathlib import Path
 
 from app.routes import router
 from app.routes_auth import router as auth_router
+from app.routes_chat import router as chat_router
 from app.db import init_databases, close_pool
 from app.config import API_HOST, API_PORT
 
@@ -119,6 +120,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(router)
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 # Serve static files
 from app.config import STATIC_DIR
