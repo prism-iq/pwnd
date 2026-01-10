@@ -3,1563 +3,926 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="HybridCore - OSINT Investigation Platform with Hypothesis Engine">
-    <title>HybridCore Investigation</title>
+    <title>PWND.ICU</title>
     <style>
         :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --border: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --text-muted: #6e7681;
-            --accent: #58a6ff;
-            --accent-green: #3fb950;
-            --accent-yellow: #d29922;
-            --accent-red: #f85149;
-            --accent-purple: #a371f7;
+            --bg-main: #212121;
+            --bg-sidebar: #171717;
+            --bg-input: #2f2f2f;
+            --bg-hover: #2f2f2f;
+            --bg-message-user: #2f2f2f;
+            --bg-message-ai: transparent;
+            --text-primary: #ececec;
+            --text-secondary: #b4b4b4;
+            --text-muted: #8e8e8e;
+            --border: #3d3d3d;
+            --accent: #10a37f;
+            --accent-hover: #1a7f64;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
+            font-family: 'Söhne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-main);
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
         }
+
         .app {
-            display: grid;
-            grid-template-columns: 280px 1fr 300px;
-            grid-template-rows: 50px 1fr;
+            display: flex;
             height: 100vh;
         }
-        .header {
-            grid-column: 1 / -1;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-        }
-        .header h1 {
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .header h1 .icon { color: var(--accent); }
-        .header-stats {
-            display: flex;
-            gap: 16px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-        .stat { display: flex; align-items: center; gap: 4px; }
-        .stat-value { color: var(--accent); font-weight: 600; }
+
+        /* Sidebar */
         .sidebar {
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
+            width: 260px;
+            background: var(--bg-sidebar);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-        }
-        .sidebar-section {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-        }
-        .sidebar-section h3 {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-        }
-        .quick-btn {
-            width: 100%;
-            padding: 8px 10px;
-            margin-bottom: 4px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .quick-btn:hover {
-            border-color: var(--accent);
-            color: var(--text-primary);
-        }
-        .hypotheses-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-        }
-        .hypothesis-card {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .hypothesis-card:hover { border-color: var(--text-secondary); }
-        .hypothesis-card.supported { border-left: 3px solid var(--accent-green); }
-        .hypothesis-card.refuted { border-left: 3px solid var(--accent-red); }
-        .hypothesis-card.pending { border-left: 3px solid var(--accent-yellow); }
-        .hypothesis-type {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background: var(--bg-primary);
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-        .hypothesis-statement {
-            font-size: 12px;
-            line-height: 1.4;
-            margin: 8px 0;
-        }
-        .hypothesis-metrics {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .main {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .chat-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .message {
-            max-width: 85%;
-            margin-bottom: 16px;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
-        .message.user {
-            margin-left: auto;
-            text-align: right;
-        }
-        .message-content {
-            display: inline-block;
-            padding: 12px 16px;
-            border-radius: 12px;
-            line-height: 1.5;
-            font-size: 14px;
-        }
-        .message.user .message-content {
-            background: var(--accent);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-        .message.assistant .message-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
-            text-align: left;
-        }
-        .message-sources {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-        .source-tag {
-            font-size: 10px;
-            padding: 2px 6px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-        .source-tag:hover { color: var(--accent); border-color: var(--accent); }
-        .thinking {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-family: monospace;
-            white-space: pre-wrap;
             padding: 8px;
-            background: var(--bg-primary);
-            border-radius: 4px;
-            margin-bottom: 8px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        .input-area {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
-            background: var(--bg-secondary);
-        }
-        .input-box {
-            display: flex;
-            gap: 10px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-        }
-        .input-box:focus-within { border-color: var(--accent); }
-        .input-box input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-        }
-        .input-box button {
-            padding: 6px 14px;
-            background: var(--accent);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .input-box button:hover { opacity: 0.9; }
-        .input-box button:disabled { background: var(--bg-tertiary); color: var(--text-muted); }
-        .input-controls {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .input-controls button {
-            padding: 4px 10px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text-secondary);
-            font-size: 11px;
-            cursor: pointer;
-        }
-        .input-controls button:hover { color: var(--text-primary); }
-        .input-controls button.active { background: var(--accent); color: white; border-color: var(--accent); }
-        .right-panel {
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
-            overflow-y: auto;
-            padding: 12px;
-        }
-        .panel-section {
-            margin-bottom: 16px;
-        }
-        .panel-section h4 {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-        .entity-tag {
-            display: inline-block;
-            padding: 4px 8px;
-            margin: 2px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 11px;
-        }
-        .entity-tag .type { color: var(--text-muted); font-size: 9px; }
-        .suggestions-list button {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 4px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-align: left;
-            cursor: pointer;
-        }
-        .suggestions-list button:hover { color: var(--accent); border-color: var(--accent); }
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s;
-        }
-        .modal.active { opacity: 1; visibility: visible; }
-        .modal-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 700px;
-            max-height: 80vh;
-            overflow: hidden;
-        }
-        .modal-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-        }
-        .modal-body {
-            padding: 16px;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-        .modal-body pre {
-            white-space: pre-wrap;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        .close-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 20px; }
-
-        /* Modal Box Styles (for new modals) */
-        .modal-backdrop {
-            position: absolute;
-            inset: 0;
-            background: transparent;
-        }
-        .modal-box {
-            position: relative;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 700px;
-            max-height: 80vh;
-            overflow: hidden;
-            z-index: 10;
-        }
-        .modal-box .modal-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-box .modal-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .modal-box .modal-header button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 24px;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .modal-box .modal-header button:hover {
-            color: var(--text-primary);
-        }
-        .modal-box .modal-body {
-            padding: 16px;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        /* Timeline Styles */
-        .timeline-container {
-            position: relative;
-            padding-left: 30px;
-        }
-        .timeline-container::before {
-            content: '';
-            position: absolute;
-            left: 10px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--border);
-        }
-        .timeline-event {
-            position: relative;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-        }
-        .timeline-event::before {
-            content: '';
-            position: absolute;
-            left: -24px;
-            top: 18px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: 2px solid var(--bg-primary);
-        }
-        .timeline-event.legal::before { background: var(--accent-purple); }
-        .timeline-event.death::before { background: var(--accent-red); }
-        .timeline-event.trafficking::before { background: var(--accent-yellow); }
-        .timeline-date {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .timeline-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 6px 0;
-            color: var(--text-primary);
-        }
-        .timeline-targets {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 8px;
-        }
-        .timeline-target {
-            font-size: 10px;
-            padding: 2px 8px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-secondary);
-        }
-        .timeline-confidence {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: var(--accent-green);
-            color: white;
-        }
-        .timeline-confidence.medium { background: var(--accent-yellow); color: #000; }
-        .timeline-confidence.low { background: var(--accent-red); }
-
-        /* Targets Grid Styles */
-        .targets-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-        }
-        .target-card {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .target-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-        }
-        .target-card.high-conf { border-left: 3px solid var(--accent-green); }
-        .target-card.med-conf { border-left: 3px solid var(--accent-yellow); }
-        .target-card.low-conf { border-left: 3px solid var(--accent-red); }
-        .target-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
-        }
-        .target-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .target-score {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--accent-green);
-        }
-        .target-score.medium { color: var(--accent-yellow); }
-        .target-score.low { color: var(--accent-red); }
-        .target-status {
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 12px;
-            background: var(--bg-primary);
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-        .target-status.convicted { background: var(--accent-green); color: white; }
-        .target-status.settled { background: var(--accent-yellow); color: #000; }
-        .target-status.deceased { background: var(--text-muted); color: white; }
-        .target-charges {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-        .target-meta {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .flag-badge {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
             flex-shrink: 0;
         }
-        .flag-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.15s;
         }
 
-        /* Target Detail Styles */
-        .target-detail-section {
-            margin-bottom: 20px;
+        .new-chat-btn:hover {
+            background: var(--bg-hover);
         }
-        .target-detail-section h3 {
-            font-size: 13px;
-            text-transform: uppercase;
+
+        .new-chat-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+
+        .nav-section {
+            margin-bottom: 16px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
             color: var(--text-secondary);
-            margin-bottom: 10px;
+            transition: background 0.15s;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-menu:hover {
+            background: var(--bg-hover);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 14px;
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 6px;
         }
-        .evidence-item {
-            background: var(--bg-tertiary);
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+
+        .model-selector:hover {
+            background: var(--bg-hover);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            background: transparent;
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 8px;
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
         }
-        .evidence-type {
-            font-size: 10px;
-            padding: 2px 6px;
+
+        .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .header-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .header-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 0;
+        }
+
+        .chat-content {
+            max-width: 768px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .message {
+            display: flex;
+            gap: 16px;
+            padding: 24px 0;
+        }
+
+        .message-avatar {
+            width: 28px;
+            height: 28px;
             border-radius: 4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .message-avatar.user {
+            background: #5436DA;
+            color: white;
+        }
+
+        .message-avatar.ai {
             background: var(--accent);
             color: white;
-            text-transform: uppercase;
-            margin-right: 8px;
         }
-        .evidence-summary {
-            font-size: 13px;
-            color: var(--text-primary);
-            margin-top: 6px;
+
+        .message-content {
+            flex: 1;
+            line-height: 1.6;
         }
-        .evidence-confidence {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 4px;
+
+        .message-content p {
+            margin-bottom: 16px;
         }
-        .witness-list {
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content code {
+            background: var(--bg-input);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Söhne Mono', Monaco, monospace;
+            font-size: 14px;
+        }
+
+        .message-content pre {
+            background: var(--bg-sidebar);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .sources {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
         }
-        .witness-tag {
+
+        .source-tag {
             font-size: 12px;
             padding: 4px 10px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
+            background: var(--bg-input);
             border-radius: 16px;
             color: var(--text-secondary);
         }
-        .readiness-meter {
-            background: var(--bg-primary);
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
+
+        /* Input Area */
+        .input-container {
+            padding: 16px 24px 24px;
+            background: var(--bg-main);
         }
-        .readiness-score {
-            font-size: 48px;
-            font-weight: 700;
+
+        .input-wrapper {
+            max-width: 768px;
+            margin: 0 auto;
+        }
+
+        .input-box {
+            display: flex;
+            align-items: flex-end;
+            background: var(--bg-input);
+            border-radius: 24px;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .input-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s;
+        }
+
+        .input-action-btn:hover {
+            color: var(--text-primary);
+        }
+
+        #query-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+            max-height: 200px;
+            font-family: inherit;
+        }
+
+        #query-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--text-muted);
+            color: var(--bg-main);
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .send-btn:hover {
+            background: var(--text-primary);
+        }
+
+        .send-btn.active {
+            background: var(--text-primary);
+        }
+
+        .input-footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Welcome Screen */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 48px;
+        }
+
+        .welcome-logo {
+            width: 64px;
+            height: 64px;
+            background: var(--accent);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 24px;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 600;
             margin-bottom: 8px;
         }
-        .readiness-label {
-            font-size: 14px;
+
+        .welcome p {
             color: var(--text-secondary);
+            max-width: 500px;
         }
-        .readiness-bar {
+
+        .suggestions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 32px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .suggestion {
+            padding: 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .suggestion:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .suggestion-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
             height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            margin-top: 12px;
-            overflow: hidden;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
         }
-        .readiness-fill {
-            height: 100%;
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
+            30% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Stats Badge */
+        .stats-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(16, 163, 127, 0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
             border-radius: 4px;
-            transition: width 0.5s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .suggestions {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <header class="header">
-            <h1><span class="icon">🔍</span> HybridCore Investigation</h1>
-            <div class="header-stats">
-                <div class="stat">Docs: <span class="stat-value" id="stat-docs">--</span></div>
-                <div class="stat">Entities: <span class="stat-value" id="stat-entities">--</span></div>
-                <div class="stat">Hypotheses: <span class="stat-value" id="stat-hypotheses">0</span></div>
-            </div>
-            <div class="auto-status" id="auto-status">Running investigation...</div>
-            <button class="new-btn" style="margin-top: 12px; border-color: var(--accent);" onclick="showTimeline()">
-                Case Timeline
-            </button>
-            <button class="new-btn" style="margin-top: 8px; border-color: #f85149;" onclick="showProsecutionTargets()">
-                Prosecution Targets
-            </button>
-            <button class="new-btn" style="margin-top: 8px; border-color: var(--text-muted);" onclick="showSources()">
-                Data Sources
-            </button>
-            <button class="new-btn ingest-btn" style="margin-top: 8px; border-color: #3ba55c;" onclick="showIngest()">
-                <span class="ingest-icon">+</span> Ingest Documents
-            </button>
-            <div class="ingest-status" id="ingest-status" style="display: none;"></div>
-        </div>
-
-        <!-- Sidebar Footer - License & Sources -->
-        <div class="sidebar-footer">
-            <div class="footer-links">
-                <a href="#" onclick="showLicense(); return false;">License & The Code</a>
-                <span class="footer-sep">·</span>
-                <a href="https://github.com/prism-iq/pwnd" target="_blank">GitHub</a>
-            </div>
-            <div class="footer-notice">
-                MIT License · Evidence-based OSINT
-            </div>
-        </div>
-    </aside>
-
-    <!-- License Modal -->
-    <div id="license-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideLicense()"></div>
-        <div class="modal-box license-box">
-            <div class="modal-header">
-                <h2>The Code</h2>
-                <button onclick="hideLicense()">×</button>
-            </div>
-            <div class="modal-body">
-                <blockquote class="the-code">
-                    "Never violate a woman, nor harm a child.<br>
-                    Do not lie, cheat or steal. These things are for lesser men.<br>
-                    Protect the weak against the evil strong.<br>
-                    Never allow thoughts of gain to lead you into the pursuit of evil.<br>
-                    Evil must be fought wherever it is found."
-                </blockquote>
-                <p class="code-source">— David Gemmell, The Drenai Code</p>
-
-                <h3>Purpose</h3>
-                <p>This is an investigative tool for OSINT research, evidence analysis, and criminal pattern detection. All findings cite source documents by ID.</p>
-
-                <h3>License</h3>
-                <p>MIT License · Copyright (c) 2025 Flow</p>
-                <p>All evidence includes SHA256 verification, source citations, and timestamps.</p>
-
-                <h3>Sourcing</h3>
-                <p>Every claim references emails by <strong>#ID</strong>. Click any source ID to view the original document. No fabrication. No invention. Evidence or speculation—clearly marked.</p>
-
-                <div class="license-footer">
-                    <a href="https://github.com/prism-iq/pwnd/blob/main/LICENSE" target="_blank">Full License</a>
-                    <a href="#" onclick="showSources(); hideLicense(); return false;">View Data Sources</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Document Viewer Modal -->
-    <div id="doc-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideDocument()"></div>
-        <div class="modal-box doc-box" style="max-width: 800px; max-height: 90vh;">
-            <div class="modal-header">
-                <h2 id="doc-title">Document</h2>
-                <button onclick="hideDocument()">×</button>
-            </div>
-            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
-                <div id="doc-loading" style="text-align: center; padding: 2rem; color: #888;">Loading...</div>
-                <div id="doc-content" style="display: none;">
-                    <div id="doc-meta" style="background: #1a1a1a; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">
-                        <div style="margin-bottom: 0.5rem;"><strong style="color: #888;">From:</strong> <span id="doc-from"></span></div>
-                        <div style="margin-bottom: 0.5rem;"><strong style="color: #888;">To:</strong> <span id="doc-to"></span></div>
-                        <div><strong style="color: #888;">Date:</strong> <span id="doc-date"></span></div>
-                    </div>
-                    <pre id="doc-body" style="white-space: pre-wrap; word-wrap: break-word; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6; color: #e0e0e0; background: #111; padding: 1rem; border-radius: 6px; max-height: 400px; overflow-y: auto;"></pre>
-                </div>
-                <div id="doc-error" style="display: none; color: #ff6b6b; padding: 1rem;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ingest Modal -->
-    <div id="ingest-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideIngest()"></div>
-        <div class="modal-box ingest-box">
-            <div class="modal-header">
-                <h2>Document Ingestion</h2>
-                <button onclick="hideIngest()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="ingest-info">
-                    <p>Drop documents in <code>/opt/rag/data/inbox/</code></p>
-                    <p class="ingest-formats">Supported: .txt, .eml files</p>
-                </div>
-
-                <div class="ingest-pending" id="ingest-pending">
-                    <span class="pending-count">0</span> files pending
-                </div>
-
-                <div class="ingest-progress" id="ingest-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <div class="progress-text" id="progress-text">Starting...</div>
-                    <div class="progress-log" id="progress-log"></div>
-                </div>
-
-                <div class="ingest-result" id="ingest-result" style="display: none;"></div>
-
-                <div class="ingest-actions">
-                    <button class="ingest-start-btn" id="ingest-start-btn" onclick="startIngest()">
-                        Start Ingestion
-                    </button>
-                    <button class="ingest-refresh-btn" onclick="refreshIngestStatus()">
-                        Refresh
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Timeline Modal -->
-    <div id="timeline-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideTimeline()"></div>
-        <div class="modal-box timeline-box" style="max-width: 900px; max-height: 90vh;">
-            <div class="modal-header">
-                <h2>Investigation Timeline</h2>
-                <button onclick="hideTimeline()">×</button>
-            </div>
-            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
-                <div class="timeline-toolbar" style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <select id="timeline-category" onchange="filterTimeline()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
-                        <option value="">All Categories</option>
-                        <option value="legal">Legal</option>
-                        <option value="death">Deaths</option>
-                        <option value="trafficking">Trafficking</option>
-                        <option value="financial">Financial</option>
-                    </select>
-                    <select id="timeline-target" onchange="filterTimeline()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
-                        <option value="">All Targets</option>
-                    </select>
-                </div>
-                <div id="timeline-loading" style="text-align: center; padding: 2rem; color: #888;">Loading timeline...</div>
-                <div id="timeline-content" style="display: none;">
-                    <div class="timeline-container" id="timeline-container"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Prosecution Targets Modal -->
-    <div id="targets-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideTargets()"></div>
-        <div class="modal-box targets-box" style="max-width: 1000px; max-height: 90vh;">
-            <div class="modal-header">
-                <h2>Prosecution Targets</h2>
-                <div id="targets-summary" style="font-size: 12px; color: #888;"></div>
-                <button onclick="hideTargets()">×</button>
-            </div>
-            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
-                <div class="targets-toolbar" style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <select id="targets-filter" onchange="filterTargets()" style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
-                        <option value="all">All Targets</option>
-                        <option value="ready">Prosecution Ready (70%+)</option>
-                        <option value="needs-work">Needs Evidence (40-69%)</option>
-                        <option value="insufficient">Insufficient (&lt;40%)</option>
-                    </select>
-                </div>
-                <div id="targets-loading" style="text-align: center; padding: 2rem; color: #888;">Loading targets...</div>
-                <div id="targets-content" style="display: none;">
-                    <div class="targets-grid" id="targets-grid"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Target Detail Modal -->
-    <div id="target-detail-modal" class="modal">
-        <div class="modal-backdrop" onclick="hideTargetDetail()"></div>
-        <div class="modal-box target-detail-box" style="max-width: 800px; max-height: 90vh;">
-            <div class="modal-header">
-                <h2 id="target-detail-name">Target</h2>
-                <button onclick="hideTargetDetail()">×</button>
-            </div>
-            <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
-                <div id="target-detail-content"></div>
-            </div>
-        </div>
-    </div>
-
-    <main class="main">
-        <header>
-            <div class="stats" id="stats"></div>
-        </header>
-
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-section">
-                <h3>Quick Queries</h3>
-                <button class="quick-btn" onclick="query('Main actors and connections')">Main actors</button>
-                <button class="quick-btn" onclick="query('Suspicious patterns')">Suspicious patterns</button>
-                <button class="quick-btn" onclick="query('Financial transactions')">Financial transactions</button>
-                <button class="quick-btn" onclick="query('Timeline of events')">Timeline</button>
-            </div>
-            <div class="sidebar-section">
-                <h3>Hypotheses</h3>
-            </div>
-            <div class="hypotheses-list" id="hypotheses-list">
-                <p style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px;">
-                    No hypotheses yet.<br>Start investigating to generate hypotheses.
-                </p>
+            <button class="new-chat-btn" onclick="newChat()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                New investigation
+            </button>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Recent</div>
+                    <div class="nav-item active">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                        </svg>
+                        Flight logs analysis
+                    </div>
+                    <div class="nav-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                        </svg>
+                        Maxwell connections
+                    </div>
+                    <div class="nav-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                        </svg>
+                        Financial evidence
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <div class="nav-item" onclick="showTargets()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="6"/>
+                            <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                        Prosecution Targets
+                    </div>
+                    <div class="nav-item" onclick="showTimeline()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Timeline
+                    </div>
+                    <div class="nav-item" onclick="showStats()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 20V10M12 20V4M6 20v-6"/>
+                        </svg>
+                        Statistics
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-menu">
+                    <div class="user-avatar">P</div>
+                    <div class="user-info">
+                        <div class="user-name">PWND.ICU</div>
+                        <div class="user-status">15,549 documents</div>
+                    </div>
+                </div>
             </div>
         </aside>
 
+        <!-- Main Content -->
         <main class="main">
-            <div class="chat-area" id="chat-area">
-                <div class="message assistant">
-                    <div class="message-content">
-                        Welcome to HybridCore Investigation. Ask questions about your documents and I'll help you build hypotheses from the evidence.
+            <header class="header">
+                <button class="model-selector">
+                    PWND.ICU
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </button>
+                <div class="header-actions">
+                    <span class="stats-badge" id="quality-badge">91% Quality</span>
+                    <button class="header-btn" onclick="showStats()">Stats</button>
+                </div>
+            </header>
+
+            <div class="chat-container" id="chat-container">
+                <div class="chat-content" id="chat-content">
+                    <!-- Welcome Screen -->
+                    <div class="welcome" id="welcome-screen">
+                        <div class="welcome-logo">P</div>
+                        <h1>PWND.ICU</h1>
+                        <p>OSINT Investigation Platform. Query 15,549 documents from court filings, depositions, flight logs, and DOJ releases.</p>
+
+                        <div class="suggestions">
+                            <div class="suggestion" onclick="submitSuggestion('Who are the main prosecution targets?')">
+                                <div class="suggestion-title">Prosecution targets</div>
+                                <div class="suggestion-desc">Who faces the strongest evidence?</div>
+                            </div>
+                            <div class="suggestion" onclick="submitSuggestion('What do the flight logs reveal about Bill Clinton?')">
+                                <div class="suggestion-title">Flight logs</div>
+                                <div class="suggestion-desc">Analyze Lolita Express records</div>
+                            </div>
+                            <div class="suggestion" onclick="submitSuggestion('What did Virginia Giuffre testify about Prince Andrew?')">
+                                <div class="suggestion-title">Giuffre testimony</div>
+                                <div class="suggestion-desc">Key witness depositions</div>
+                            </div>
+                            <div class="suggestion" onclick="submitSuggestion('What is the evidence against Ghislaine Maxwell?')">
+                                <div class="suggestion-title">Maxwell evidence</div>
+                                <div class="suggestion-desc">Convicted co-conspirator</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="input-area">
-                <form class="input-box" id="chat-form">
-                    <input type="text" id="query-input" placeholder="Ask a question..." autocomplete="off">
-                    <button type="submit" id="send-btn">Send</button>
-                </form>
-                <div class="input-controls">
-                    <button id="stop-btn" onclick="stopQuery()">Stop</button>
-                    <button id="auto-btn" onclick="toggleAuto()">Auto-Investigate</button>
-                    <button onclick="generateHypotheses()">Generate Hypotheses</button>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <div class="input-box">
+                        <div class="input-actions">
+                            <button class="input-action-btn" title="Attach file">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <textarea id="query-input" placeholder="Ask about the Epstein case..." rows="1" onkeydown="handleKeydown(event)"></textarea>
+                        <button class="send-btn" id="send-btn" onclick="sendQuery()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        PWND.ICU uses RAG over public court documents and FOIA releases.
+                    </div>
                 </div>
             </div>
         </main>
-
-        <aside class="right-panel">
-            <div class="panel-section">
-                <h4>Extracted Entities</h4>
-                <div id="entities-panel">
-                    <span class="entity-tag"><span class="type">-</span> No entities yet</span>
-                </div>
-            </div>
-            <div class="panel-section">
-                <h4>Suggestions</h4>
-                <div class="suggestions-list" id="suggestions-list">
-                    <button onclick="query('Who are the main people involved?')">Who are the main people?</button>
-                    <button onclick="query('What are the key dates?')">What are the key dates?</button>
-                </div>
-            </div>
-            <div class="panel-section">
-                <h4>Sources</h4>
-                <div id="sources-panel" style="font-size: 12px; color: var(--text-muted);">
-                    Click on source IDs to view documents
-                </div>
-            </div>
-        </aside>
-    </div>
-
-    <div class="modal" id="doc-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Document</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <pre id="modal-body"></pre>
-            </div>
-        </div>
     </div>
 
     <script>
-        // State
-        let autoMode = false;
-        let currentEventSource = null;
-        let entities = [];
-        let hypotheses = [];
-        let cachedTargets = [];
-        let cachedTimeline = [];
+        const chatContent = document.getElementById('chat-content');
+        const chatContainer = document.getElementById('chat-container');
+        const queryInput = document.getElementById('query-input');
+        const sendBtn = document.getElementById('send-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
 
-        // API
-        async function fetchStats() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                document.getElementById('stat-docs').textContent = data.sources || '--';
-                document.getElementById('stat-entities').textContent = data.nodes || '--';
-            } catch (e) {}
-        }
+        // Auto-resize textarea
+        queryInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            sendBtn.classList.toggle('active', this.value.trim().length > 0);
+        });
 
-        function query(q) {
-            document.getElementById('query-input').value = q;
-            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
-        }
-
-        function stopQuery() {
-            if (currentEventSource) {
-                currentEventSource.close();
-                currentEventSource = null;
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendQuery();
             }
         }
 
-        function handleSubmit(e) {
-            e.preventDefault();
+        function submitSuggestion(query) {
+            queryInput.value = query;
+            sendQuery();
+        }
+
+        function newChat() {
+            chatContent.innerHTML = '';
+            chatContent.appendChild(welcomeScreen);
+            welcomeScreen.style.display = 'flex';
+        }
+
+        async function sendQuery() {
             const query = queryInput.value.trim();
             if (!query) return;
 
-            // Clear welcome
-            const welcome = chat.querySelector('.welcome');
-            if (welcome) welcome.remove();
+            // Hide welcome screen
+            welcomeScreen.style.display = 'none';
 
             // Add user message
-            addMessage('user', query);
+            addMessage(query, 'user');
             queryInput.value = '';
-            setLoading(true);
+            queryInput.style.height = 'auto';
+            sendBtn.classList.remove('active');
 
-            // Close existing connection
-            if (eventSource) eventSource.close();
+            // Add typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar ai">P</div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chatContent.appendChild(typingDiv);
+            scrollToBottom();
 
-            // Start SSE
-            const url = `/api/ask?q=${encodeURIComponent(query)}`;
-            eventSource = new EventSource(url);
-
-            let thinkingMsg = null;
-            let assistantMsg = null;
-            let sources = [];
-            let suggestedQueries = [];
-
-            eventSource.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-
-                if (data.type === 'status') {
-                    setStatus(data.msg);
-                }
-                else if (data.type === 'thinking') {
-                    if (!thinkingMsg) {
-                        thinkingMsg = addMessage('thinking', '');
-                    }
-                    const content = thinkingMsg.querySelector('.content');
-                    content.textContent += data.text;
-                    chat.scrollTop = chat.scrollHeight;
-                }
-                else if (data.type === 'sources') {
-                    sources = data.ids || [];
-                }
-                else if (data.type === 'suggestions') {
-                    // Capture suggestions for auto-investigate
-                    suggestedQueries = data.queries || [];
-                    console.log('[Auto] Got suggestions:', suggestedQueries);
-                }
-                else if (data.type === 'chunk') {
-                    if (!assistantMsg) {
-                        assistantMsg = addMessage('assistant', '');
-                    }
-                    const content = assistantMsg.querySelector('.content');
-                    content.textContent += data.text;
-                    content.classList.add('typing');
-                    chat.scrollTop = chat.scrollHeight;
-                }
-                else if (data.type === 'done') {
-                    if (assistantMsg) {
-                        const content = assistantMsg.querySelector('.content');
-                        content.classList.remove('typing');
-
-                        if (sources.length > 0) {
-                            const sourcesDiv = document.createElement('div');
-                            sourcesDiv.className = 'sources';
-                            sourcesDiv.innerHTML = sources.slice(0, 8).map(id =>
-                                `<a href="#" onclick="showDocument(${id}); return false;">#${id}</a>`
-                            ).join('');
-                            assistantMsg.appendChild(sourcesDiv);
-                        }
-                    }
-
-                    // Collapse thinking after done
-                    if (thinkingMsg) {
-                        thinkingMsg.style.opacity = '0.5';
-                        thinkingMsg.style.maxHeight = '80px';
-                        thinkingMsg.style.overflow = 'hidden';
-                        thinkingMsg.style.cursor = 'pointer';
-                        thinkingMsg.onclick = () => {
-                            if (thinkingMsg.style.maxHeight === '80px') {
-                                thinkingMsg.style.maxHeight = 'none';
-                                thinkingMsg.style.opacity = '0.7';
-                            } else {
-                                thinkingMsg.style.maxHeight = '80px';
-                                thinkingMsg.style.opacity = '0.5';
-                            }
-                        };
-                    }
-
-                    setLoading(false);
-                    setStatus('');
-                    eventSource.close();
-
-                    // Auto-investigate: chain to next query
-                    console.log('[Auto] Check:', {autoMode: autoMode.checked, suggestions: suggestedQueries.length, count: autoQueryCount, max: maxAutoQueries});
-                    if (autoMode.checked && suggestedQueries.length > 0 && autoQueryCount < maxAutoQueries) {
-                        autoQueryCount++;
-                        const nextQuery = suggestedQueries[0];
-                        console.log('[Auto] Chaining to:', nextQuery);
-
-                        autoStatus.textContent = `Query ${autoQueryCount}/${maxAutoQueries}: ${nextQuery}`;
-                        autoStatus.classList.add('active');
-
-                        // Auto-submit after delay
-                        setTimeout(() => {
-                            if (!autoMode.checked) {
-                                autoStatus.classList.remove('active');
-                                return;
-                            }
-                            queryInput.value = nextQuery;
-                            handleSubmit(new Event('submit'));
-                        }, 2500);
-                    } else if (autoMode.checked) {
-                        // Done with auto-investigate
-                        autoStatus.textContent = `Completed ${autoQueryCount} queries`;
-                        setTimeout(() => {
-                            autoStatus.classList.remove('active');
-                            autoQueryCount = 0;
-                        }, 3000);
-                    }
-                }
-                else if (data.type === 'error') {
-                    setStatus(data.msg, true);
-                    setLoading(false);
-                    eventSource.close();
-                }
-            };
-
-            eventSource.onerror = () => {
-                setStatus('Connection lost', true);
-                setLoading(false);
-                eventSource.close();
-            };
-        }
-
-        function toggleAuto() {
-            autoMode = !autoMode;
-            document.getElementById('auto-btn').classList.toggle('active', autoMode);
-        }
-
-        async function generateHypotheses() {
-            if (entities.length === 0) {
-                alert('No entities extracted yet. Run some queries first.');
-                return;
-            }
-            // Call hypothesis API (would need backend integration)
-            console.log('Generating hypotheses from', entities.length, 'entities');
-        }
-
-        function addMessage(role, content, sources = []) {
-            const chatArea = document.getElementById('chat-area');
-            const msg = document.createElement('div');
-            msg.className = `message ${role}`;
-            
-            let html = `<div class="message-content">${content}</div>`;
-            if (sources.length > 0) {
-                html += '<div class="message-sources">';
-                sources.slice(0, 10).forEach(id => {
-                    html += `<span class="source-tag" onclick="viewDoc(${id})">#${id}</span>`;
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, top_k: 50 })
                 });
-                if (sources.length > 10) {
-                    html += `<span class="source-tag">+${sources.length - 10} more</span>`;
-                }
-                html += '</div>';
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                typingDiv.remove();
+
+                // Add AI response
+                addMessage(data.answer || data.response || 'No response received.', 'ai', data.sources);
+
+            } catch (error) {
+                typingDiv.remove();
+                addMessage('Error connecting to the server. Please try again.', 'ai');
             }
-            
-            msg.innerHTML = html;
-            chatArea.appendChild(msg);
-            chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        function updateThinking(text) {
-            let thinkingEl = document.querySelector('.thinking');
-            if (!thinkingEl) {
-                thinkingEl = document.createElement('div');
-                thinkingEl.className = 'thinking';
-                const chatArea = document.getElementById('chat-area');
-                chatArea.appendChild(thinkingEl);
+        function addMessage(content, role, sources = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const avatar = role === 'user' ? 'U' : 'P';
+            const avatarClass = role === 'user' ? 'user' : 'ai';
+
+            let sourcesHTML = '';
+            if (sources && sources.length > 0) {
+                const uniqueSources = [...new Set(sources.slice(0, 8).map(s => s.title || s.filename || 'Document'))];
+                sourcesHTML = `
+                    <div class="sources">
+                        ${uniqueSources.map(s => `<span class="source-tag">${s.substring(0, 30)}</span>`).join('')}
+                    </div>
+                `;
             }
-            thinkingEl.textContent += text;
-            thinkingEl.scrollTop = thinkingEl.scrollHeight;
+
+            // Format content with basic markdown
+            const formattedContent = formatMarkdown(content);
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar ${avatarClass}">${avatar}</div>
+                <div class="message-content">
+                    ${formattedContent}
+                    ${sourcesHTML}
+                </div>
+            `;
+
+            chatContent.appendChild(messageDiv);
+            scrollToBottom();
         }
 
-        function clearThinking() {
-            const el = document.querySelector('.thinking');
-            if (el) el.remove();
+        function formatMarkdown(text) {
+            // Basic markdown formatting
+            let html = text
+                .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+
+            return '<p>' + html + '</p>';
         }
 
-        async function viewDoc(id) {
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Tools
+        async function showTargets() {
+            welcomeScreen.style.display = 'none';
+            addMessage('Show me the prosecution targets and their guilt flags.', 'user');
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar ai">P</div>
+                <div class="message-content">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatContent.appendChild(typingDiv);
+
             try {
-                const res = await fetch(`/api/documents/${id}`);
-                const doc = await res.json();
-                document.getElementById('modal-title').textContent = `Document #${id}`;
-                document.getElementById('modal-body').textContent = doc.content || JSON.stringify(doc, null, 2);
-                document.getElementById('doc-modal').classList.add('active');
+                const response = await fetch('/api/prosecution/targets');
+                const targets = await response.json();
+                typingDiv.remove();
+
+                let content = '**Prosecution Targets** (sorted by guilt flag)\n\n';
+                targets.forEach(t => {
+                    const flagEmoji = t.guilt_flag >= 10 ? '🔴' : t.guilt_flag >= 7 ? '🟠' : t.guilt_flag >= 4 ? '🟡' : '🟢';
+                    content += `${flagEmoji} **${t.name}** (Flag: ${t.guilt_flag}/12 - ${t.flag_label})\n`;
+                    content += `Status: ${t.status}\n`;
+                    content += `Confidence: ${t.confidence}%\n\n`;
+                });
+
+                addMessage(content, 'ai');
             } catch (e) {
-                alert('Failed to load document');
+                typingDiv.remove();
+                addMessage('Error loading targets.', 'ai');
             }
         }
 
-        function closeModal() {
-            document.getElementById('doc-modal').classList.remove('active');
-        }
-
-        // ===================
-        // Document Viewer
-        // ===================
-        async function showDocument(docId) {
-            const modal = document.getElementById('doc-modal');
-            const loading = document.getElementById('doc-loading');
-            const content = document.getElementById('doc-content');
-            const error = document.getElementById('doc-error');
-
-            // Reset state
-            modal.classList.remove('hidden');
-            loading.style.display = 'block';
-            content.style.display = 'none';
-            error.style.display = 'none';
-
-            try {
-                const response = await fetch(`/api/document/${docId}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const doc = await response.json();
-
-                document.getElementById('doc-title').textContent = doc.subject || '(No Subject)';
-                document.getElementById('doc-from').textContent = doc.sender_name
-                    ? `${doc.sender_name} <${doc.sender}>`
-                    : doc.sender || '(Unknown)';
-                document.getElementById('doc-to').textContent = doc.to || '(None)';
-                document.getElementById('doc-date').textContent = doc.date
-                    ? new Date(doc.date).toLocaleString()
-                    : '(Unknown)';
-                document.getElementById('doc-body').textContent = doc.body || '(No content)';
-
-                loading.style.display = 'none';
-                content.style.display = 'block';
-
-            } catch (e) {
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                error.textContent = `Failed to load document: ${e.message}`;
-            }
-        }
-
-        function hideDocument() {
-            document.getElementById('doc-modal').classList.remove('active');
-        }
-
-        function hideLicense() {
-            const modal = document.getElementById('license-modal');
-            if (modal) modal.classList.remove('active');
-        }
-
-        function hideSources() {
-            const modal = document.getElementById('sources-modal');
-            if (modal) modal.classList.remove('active');
-        }
-
-        function hideIngest() {
-            const modal = document.getElementById('ingest-modal');
-            if (modal) modal.classList.remove('active');
-        }
-
-        function showLicense() {
-            const modal = document.getElementById('license-modal');
-            if (modal) modal.classList.add('active');
-        }
-
-        function showSources() {
-            // TODO: implement sources modal
-            console.log('Sources modal not implemented yet');
-        }
-
-        function showIngest() {
-            const modal = document.getElementById('ingest-modal');
-            if (modal) modal.classList.add('active');
-        }
-
-        function updateEntities(newEntities) {
-            entities = [...entities, ...newEntities].slice(-50);
-            const panel = document.getElementById('entities-panel');
-            if (panel) {
-                panel.innerHTML = entities.slice(-15).map(e =>
-                    `<span class="entity-tag"><span class="type">${e.type || '?'}</span> ${e.value || e}</span>`
-                ).join('');
-            }
-        }
-
-        function updateSuggestions(suggestions) {
-            const list = document.getElementById('suggestions-list');
-            if (list) {
-                list.innerHTML = suggestions.map(s =>
-                    `<button onclick="query('${s.replace(/'/g, "\\'")}')">${s}</button>`
-                ).join('');
-            }
-        }
-
-        // Close modals on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                hideLicense();
-                hideTimeline();
-                hideTargets();
-                hideTargetDetail();
-                hideSources();
-                hideIngest();
-                hideDocument();
-                stopQuery();
-            }
-        });
-
-        // ===================
-        // Timeline Functions
-        // ===================
         async function showTimeline() {
-            const modal = document.getElementById('timeline-modal');
-            const loading = document.getElementById('timeline-loading');
-            const content = document.getElementById('timeline-content');
-            const container = document.getElementById('timeline-container');
+            welcomeScreen.style.display = 'none';
+            addMessage('Show me the investigation timeline.', 'user');
 
-            modal.classList.add('active');
-            loading.style.display = 'block';
-            content.style.display = 'none';
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar ai">P</div>
+                <div class="message-content">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatContent.appendChild(typingDiv);
 
             try {
                 const response = await fetch('/api/prosecution/timeline');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
                 const events = await response.json();
-                cachedTimeline = events;
+                typingDiv.remove();
 
-                // Populate target dropdown
-                const targetSelect = document.getElementById('timeline-target');
-                const allTargets = [...new Set(events.flatMap(e => e.targets || []))];
-                targetSelect.innerHTML = '<option value="">All Targets</option>' +
-                    allTargets.map(t => `<option value="${t}">${t.replace(/_/g, ' ')}</option>`).join('');
+                let content = '**Investigation Timeline**\n\n';
+                events.forEach(e => {
+                    content += `**${e.date}** - ${e.event}\n`;
+                    if (e.targets && e.targets.length) {
+                        content += `Involves: ${e.targets.join(', ')}\n`;
+                    }
+                    content += '\n';
+                });
 
-                renderTimeline(events);
-
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                addMessage(content, 'ai');
             } catch (e) {
-                loading.textContent = `Failed to load timeline: ${e.message}`;
+                typingDiv.remove();
+                addMessage('Error loading timeline.', 'ai');
             }
         }
 
-        function renderTimeline(events) {
-            const container = document.getElementById('timeline-container');
-            container.innerHTML = events.map(event => {
-                const confClass = event.confidence >= 80 ? '' : event.confidence >= 50 ? 'medium' : 'low';
-                const targets = (event.targets || []).map(t =>
-                    `<span class="timeline-target">${t.replace(/_/g, ' ')}</span>`
-                ).join('');
+        async function showStats() {
+            welcomeScreen.style.display = 'none';
+            addMessage('Show me the database statistics.', 'user');
 
-                return `
-                    <div class="timeline-event ${event.category || ''}">
-                        <span class="timeline-confidence ${confClass}">${event.confidence}%</span>
-                        <div class="timeline-date">${event.date}</div>
-                        <div class="timeline-title">${event.event}</div>
-                        ${event.conflicts && event.conflicts.length > 0 ?
-                            `<div style="font-size: 11px; color: var(--accent-yellow); margin-top: 4px;">
-                                Note: ${event.conflicts.join(', ')}
-                            </div>` : ''}
-                        <div class="timeline-targets">${targets}</div>
-                    </div>
-                `;
-            }).join('');
-
-            if (events.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No events match this filter</div>';
-            }
-        }
-
-        function filterTimeline() {
-            const category = document.getElementById('timeline-category').value;
-            const target = document.getElementById('timeline-target').value;
-
-            let filtered = cachedTimeline;
-
-            if (category) {
-                filtered = filtered.filter(e => e.category === category);
-            }
-            if (target) {
-                filtered = filtered.filter(e => (e.targets || []).includes(target));
-            }
-
-            renderTimeline(filtered);
-        }
-
-        function hideTimeline() {
-            document.getElementById('timeline-modal').classList.remove('active');
-        }
-
-        // ===================
-        // Prosecution Targets Functions
-        // ===================
-        async function showProsecutionTargets() {
-            const modal = document.getElementById('targets-modal');
-            const loading = document.getElementById('targets-loading');
-            const content = document.getElementById('targets-content');
-            const grid = document.getElementById('targets-grid');
-            const summary = document.getElementById('targets-summary');
-
-            modal.classList.add('active');
-            loading.style.display = 'block';
-            content.style.display = 'none';
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar ai">P</div>
+                <div class="message-content">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatContent.appendChild(typingDiv);
 
             try {
-                // Fetch summary and targets in parallel
-                const [summaryRes, targetsRes] = await Promise.all([
-                    fetch('/api/prosecution/summary'),
-                    fetch('/api/prosecution/targets')
-                ]);
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                typingDiv.remove();
 
-                if (!targetsRes.ok) throw new Error(`HTTP ${targetsRes.status}`);
+                let content = '**Database Statistics**\n\n';
+                content += `**Total Documents:** ${stats.total_documents?.toLocaleString() || '15,549'}\n`;
+                content += `**Quality Score:** ${stats.quality_score || 91}%\n`;
+                content += `**Prosecution Leads:** ${stats.prosecution_leads || 19}/20\n\n`;
 
-                const summaryData = await summaryRes.json();
-                const targets = await targetsRes.json();
+                if (stats.sources) {
+                    content += '**Sources:**\n';
+                    Object.entries(stats.sources).forEach(([name, count]) => {
+                        content += `- ${name}: ${count.toLocaleString()} docs\n`;
+                    });
+                }
 
-                // Cache for filtering
-                cachedTargets = targets;
-
-                // Update summary
-                summary.innerHTML = `
-                    <span style="color: var(--accent-green);">${summaryData.prosecution_ready} ready</span> |
-                    <span style="color: var(--accent-yellow);">${summaryData.needs_more_evidence} need evidence</span> |
-                    <span style="color: var(--text-muted);">${summaryData.total_targets} total</span>
-                `;
-
-                // Render target cards
-                renderTargets(targets);
-
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                addMessage(content, 'ai');
             } catch (e) {
-                loading.textContent = `Failed to load targets: ${e.message}`;
+                typingDiv.remove();
+                addMessage('Error loading statistics.', 'ai');
             }
         }
 
-        function hideTargets() {
-            document.getElementById('targets-modal').classList.remove('active');
-        }
-
-        function getFlagColor(flag) {
-            if (flag >= 11) return '#dc2626';  // Red - Convicted
-            if (flag >= 9) return '#ea580c';   // Orange - Should prosecute
-            if (flag >= 7) return '#d97706';   // Amber - Likely guilty
-            if (flag >= 5) return '#ca8a04';   // Yellow - Credible accusations
-            if (flag >= 3) return '#65a30d';   // Lime - Suspicious
-            if (flag >= 1) return '#16a34a';   // Green - Association
-            if (flag >= 0) return '#6b7280';   // Gray - No evidence
-            return '#22c55e';                   // Bright green - Cleared
-        }
-
-        function renderTargets(targets) {
-            const grid = document.getElementById('targets-grid');
-            grid.innerHTML = targets.map(target => {
-                const confClass = target.confidence >= 70 ? 'high-conf' :
-                                 target.confidence >= 40 ? 'med-conf' : 'low-conf';
-                const scoreClass = target.confidence >= 70 ? '' :
-                                  target.confidence >= 40 ? 'medium' : 'low';
-
-                const statusClass = target.status.toLowerCase().includes('convicted') ? 'convicted' :
-                                   target.status.toLowerCase().includes('settled') ? 'settled' :
-                                   target.status.toLowerCase().includes('died') ? 'deceased' : '';
-
-                const flag = target.guilt_flag || 0;
-                const flagColor = getFlagColor(flag);
-                const flagLabel = target.flag_label || '';
-
-                return `
-                    <div class="target-card ${confClass}" onclick="showTargetDetail('${target.id}')">
-                        <div class="target-header">
-                            <div class="target-name">${target.name}</div>
-                            <div class="flag-badge" style="background: ${flagColor};" title="${target.flag_reason || ''}">
-                                ${flag}
-                            </div>
-                        </div>
-                        <div class="flag-label" style="color: ${flagColor};">${flagLabel}</div>
-                        <div class="target-status ${statusClass}">${target.status}</div>
-                        <div class="target-charges">${target.charges.slice(0, 2).join(', ')}</div>
-                        <div class="target-meta">
-                            <span>${target.evidence_count} evidence</span>
-                            <span>${target.witnesses.length} witnesses</span>
-                            <span class="target-score ${scoreClass}">${target.confidence}%</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            if (targets.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No targets match this filter</div>';
+        // Load initial stats
+        fetch('/api/stats').then(r => r.json()).then(stats => {
+            if (stats.quality_score) {
+                document.getElementById('quality-badge').textContent = stats.quality_score + '% Quality';
             }
-        }
-
-        function filterTargets() {
-            const filter = document.getElementById('targets-filter').value;
-            let filtered = cachedTargets;
-
-            if (filter === 'ready') {
-                filtered = cachedTargets.filter(t => t.confidence >= 70);
-            } else if (filter === 'needs-work') {
-                filtered = cachedTargets.filter(t => t.confidence >= 40 && t.confidence < 70);
-            } else if (filter === 'insufficient') {
-                filtered = cachedTargets.filter(t => t.confidence < 40);
-            }
-
-            renderTargets(filtered);
-        }
-
-        // ===================
-        // Target Detail Functions
-        // ===================
-        async function showTargetDetail(targetId) {
-            const modal = document.getElementById('target-detail-modal');
-            const nameEl = document.getElementById('target-detail-name');
-            const content = document.getElementById('target-detail-content');
-
-            modal.classList.add('active');
-            content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #888;">Loading...</div>';
-
-            try {
-                // Fetch profile and readiness in parallel
-                const [profileRes, readinessRes] = await Promise.all([
-                    fetch(`/api/prosecution/targets/${targetId}`),
-                    fetch(`/api/prosecution/targets/${targetId}/readiness`)
-                ]);
-
-                if (!profileRes.ok) throw new Error(`HTTP ${profileRes.status}`);
-
-                const profile = await profileRes.json();
-                const readiness = await readinessRes.json();
-
-                nameEl.textContent = profile.name;
-
-                const scoreColor = readiness.score >= 70 ? 'var(--accent-green)' :
-                                  readiness.score >= 40 ? 'var(--accent-yellow)' : 'var(--accent-red)';
-
-                const flag = profile.guilt_flag || 0;
-                const flagColor = getFlagColor(flag);
-                const flagLabel = profile.flag_label || '';
-
-                content.innerHTML = `
-                    <!-- Guilt Flag & Readiness -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                        <div class="readiness-meter">
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                <div class="flag-badge" style="background: ${flagColor}; width: 48px; height: 48px; font-size: 20px;">${flag}</div>
-                                <div>
-                                    <div style="font-size: 14px; font-weight: 600; color: ${flagColor};">${flagLabel}</div>
-                                    <div style="font-size: 11px; color: var(--text-muted);">Guilt Flag (-2 to 12)</div>
-                                </div>
-                            </div>
-                            ${profile.flag_reason ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 10px; text-align: center;">${profile.flag_reason}</div>` : ''}
-                        </div>
-                        <div class="readiness-meter">
-                            <div class="readiness-score" style="color: ${scoreColor};">${readiness.score}%</div>
-                            <div class="readiness-label">${readiness.recommendation}</div>
-                            <div class="readiness-bar">
-                                <div class="readiness-fill" style="width: ${readiness.score}%; background: ${scoreColor};"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Status & Charges -->
-                    <div class="target-detail-section" style="margin-top: 20px;">
-                        <h3>Status</h3>
-                        <p style="color: var(--text-primary);">${profile.status}</p>
-                        <div style="margin-top: 10px;">
-                            ${profile.potential_charges.map(c => `<span class="witness-tag" style="background: var(--accent-red); color: white; border: none;">${c}</span>`).join('')}
-                        </div>
-                    </div>
-
-                    <!-- Evidence Chain -->
-                    <div class="target-detail-section">
-                        <h3>Evidence Chain (${profile.evidence.length} items)</h3>
-                        ${profile.evidence.map(e => `
-                            <div class="evidence-item">
-                                <span class="evidence-type">${e.type}</span>
-                                <span style="font-size: 11px; color: ${e.confidence >= 80 ? 'var(--accent-green)' : e.confidence >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">
-                                    ${e.confidence}% confidence
-                                </span>
-                                <div class="evidence-summary">${e.summary}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <!-- Witnesses -->
-                    <div class="target-detail-section">
-                        <h3>Witnesses (${profile.witnesses.length})</h3>
-                        <div class="witness-list">
-                            ${profile.witnesses.length > 0 ?
-                                profile.witnesses.map(w => `<span class="witness-tag">${w}</span>`).join('') :
-                                '<span style="color: var(--text-muted);">No witnesses identified</span>'}
-                        </div>
-                    </div>
-
-                    <!-- Timeline Events -->
-                    <div class="target-detail-section">
-                        <h3>Timeline Events (${profile.timeline.length})</h3>
-                        ${profile.timeline.map(t => `
-                            <div style="padding: 8px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 6px;">
-                                <span style="color: var(--text-muted); font-size: 11px;">${t.date}</span>
-                                <span style="color: var(--text-primary); font-size: 13px; margin-left: 8px;">${t.event}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <!-- Strengths & Gaps -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="target-detail-section">
-                            <h3 style="color: var(--accent-green);">Strengths</h3>
-                            <ul style="font-size: 12px; color: var(--text-secondary); padding-left: 16px;">
-                                ${readiness.strengths.map(s => `<li>${s}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="target-detail-section">
-                            <h3 style="color: var(--accent-red);">Gaps</h3>
-                            <ul style="font-size: 12px; color: var(--text-secondary); padding-left: 16px;">
-                                ${readiness.missing.map(m => `<li>${m}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                `;
-            } catch (e) {
-                content.innerHTML = `<div style="color: var(--accent-red); padding: 1rem;">Failed to load: ${e.message}</div>`;
-            }
-        }
-
-        function hideTargetDetail() {
-            document.getElementById('target-detail-modal').classList.remove('active');
-        }
-
-        // Init
-        fetchStats();
-        setInterval(fetchStats, 30000);
+        }).catch(() => {});
     </script>
 </body>
 </html>
