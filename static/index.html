@@ -550,6 +550,7 @@
                 <div class="search-box">
                     <input type="text" class="search-input" id="search-input" placeholder="Search documents, emails, entities...">
                     <button class="search-btn" onclick="doSearch()">Search</button>
+                    <button class="search-btn" onclick="doInvestigate()" style="background:#e74c3c;">Investigate</button>
                     <div class="search-engine-toggle" style="display:flex;gap:5px;margin-left:10px;">
                         <button class="filter-btn active" id="engine-pg" onclick="setSearchEngine('pg')">PostgreSQL</button>
                         <button class="filter-btn" id="engine-blood" onclick="setSearchEngine('blood')">Blood (C++)</button>
@@ -914,6 +915,73 @@
                 `}).join('');
             } catch (e) {
                 results.innerHTML = '<div class="loading">Search error: ' + e.message + '</div>';
+            }
+        }
+
+        // Investigate using Go Brain + all organs
+        async function doInvestigate() {
+            const q = document.getElementById('search-input').value.trim();
+            if (!q) return;
+
+            const results = document.getElementById('search-results');
+            const stats = document.getElementById('search-stats');
+            results.innerHTML = '<div class="loading">Investigating with polyglot organs...</div>';
+            stats.textContent = '';
+
+            const startTime = performance.now();
+
+            try {
+                const resp = await fetch(`${API}/investigate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query: q})
+                });
+                const data = await resp.json();
+                const elapsed = (performance.now() - startTime).toFixed(0);
+
+                if (!data.success) {
+                    results.innerHTML = '<div class="loading">Investigation failed</div>';
+                    return;
+                }
+
+                // Display stats
+                const entityCount = data.entities?.total_count || 0;
+                const searchCount = data.search?.total || 0;
+                stats.innerHTML = `<strong>Investigate:</strong> ${searchCount} docs, ${entityCount} entities in ${elapsed}ms |
+                    Strategy: ${data.strategy?.search_terms?.join(', ') || 'N/A'}`;
+
+                // Build results HTML
+                let html = '';
+
+                // Entities section
+                if (entityCount > 0) {
+                    html += '<div style="margin-bottom:15px;padding:10px;background:#1a1a2e;border-radius:8px;">';
+                    html += '<div style="color:#e74c3c;font-weight:bold;margin-bottom:8px;">Entities Extracted (Rust Cells)</div>';
+                    const ents = data.entities;
+                    if (ents.persons?.length) html += `<div><span style="color:#3498db;">Persons:</span> ${ents.persons.map(p => p.value).join(', ')}</div>`;
+                    if (ents.organizations?.length) html += `<div><span style="color:#2ecc71;">Organizations:</span> ${ents.organizations.map(o => o.value).join(', ')}</div>`;
+                    if (ents.locations?.length) html += `<div><span style="color:#f39c12;">Locations:</span> ${ents.locations.map(l => l.value).join(', ')}</div>`;
+                    if (ents.amounts?.length) html += `<div><span style="color:#9b59b6;">Amounts:</span> ${ents.amounts.map(a => a.value).join(', ')}</div>`;
+                    html += '</div>';
+                }
+
+                // Search results from Blood
+                if (data.search?.results?.length) {
+                    html += '<div style="color:#e74c3c;font-weight:bold;margin-bottom:8px;">Search Results (C++ Blood)</div>';
+                    html += data.search.results.map(r => `
+                        <div class="result" onclick="showSource(${r.id}, 'investigate')">
+                            <div class="result-header">
+                                <span class="result-type blood">${r.score?.toFixed(2) || '0'}</span>
+                                <span class="result-title">${escapeHtml(r.title || 'Untitled')}</span>
+                            </div>
+                            <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 250))}...</div>
+                        </div>
+                    `).join('');
+                }
+
+                results.innerHTML = html || '<div class="loading">No results</div>';
+            } catch (e) {
+                results.innerHTML = '<div class="loading">Investigation error: ' + e.message + '</div>';
             }
         }
 
