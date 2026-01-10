@@ -1,0 +1,35 @@
+# PWND.ICU - Investigation Platform
+# Change :80 to your domain for production
+
+:80 {
+    root * static
+    file_server
+
+    # API proxy
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8002
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
+
+# Production config (uncomment and set your domain):
+# pwnd.icu {
+#     root * static
+#     file_server
+#
+#     handle /api/* {
+#         reverse_proxy 127.0.0.1:8002
+#     }
+#
+#     header {
+#         X-Content-Type-Options nosniff
+#         X-Frame-Options DENY
+#         Strict-Transport-Security "max-age=31536000; includeSubDomains"
+#     }
+# }
