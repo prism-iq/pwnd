@@ -1517,37 +1517,31 @@ NEXT STEP: Try alternate spellings, related names, or broader search terms."""
     else:
         content_hint = "CONTENT ASSESSMENT: No results. Be very brief."
 
-    # Build concise prompt for Haiku (compact to minimize tokens)
+    # Build compact prompt for Phi-3 (minimize tokens for speed)
     top_emails = []
-    for r in all_results[:15]:
-        sender = r.get('sender_email', '?')
-        subject = r.get('name', '')[:50]
-        snippet = re.sub(r'<[^>]+>', '', r.get('snippet', ''))[:100]
-        top_emails.append(f"#{r.get('id')}: {subject} | {sender} | {snippet}")
+    for r in all_results[:5]:  # Only top 5 for speed
+        subject = r.get('name', '')[:35]
+        top_emails.append(f"#{r.get('id')}: {subject}")
 
-    haiku_prompt = f"""Query: "{query}"
-{content_hint}
-Searches: {search_summary}
-Found: {len(all_results)} emails
+    # Compact Phi-3 prompt - shorter system prompt for speed
+    phi3_prompt = f"""<|system|>
+Forensic analyst. Epstein investigation. Be concise. Cite #IDs.
+<|end|>
+
+<|user|>
+Query: "{query}"
+Found: {len(all_results)} docs
 
 {NL.join(top_emails)}
 
 {entities_context}
 
-Analyze briefly. Cite #IDs. Suggest next step."""
-
-    # Local Phi-3 synthesis - no external API
-    phi3_prompt = f"""<|system|>
-{get_system_prompt(user_lang)}
-<|end|>
-
-<|user|>
-{haiku_prompt}
+Key finding with #ID. 2-3 sentences max.
 <|end|>
 
 <|assistant|>"""
 
-    local_response = await call_local(phi3_prompt, max_tokens=800, temperature=0.3)
+    local_response = await call_local(phi3_prompt, max_tokens=150, temperature=0.3)
 
     if local_response and len(local_response) > 30:
         response = local_response

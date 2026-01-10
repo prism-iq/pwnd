@@ -24,7 +24,7 @@ async def call_local(prompt: str, max_tokens: int = 512, temperature: float = 0.
             JobType.SUMMARIZE,
             {"text": prompt, "max_length": max_tokens * 4},
         )
-        job = await worker_pool.get_result(job_id, timeout=60)
+        job = await worker_pool.get_result(job_id, timeout=15)
         if job and job.result:
             return job.result
         return ""
