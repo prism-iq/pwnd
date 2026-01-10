@@ -1,9 +1,14 @@
 """Database connections and utilities - PostgreSQL"""
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
 from contextlib import contextmanager
 from typing import Optional, List, Dict, Any
+
+# Load .env before accessing env vars
+load_dotenv(Path("/opt/rag/.env"))
 
 # Get PostgreSQL connection from environment (required)
 DATABASE_URL = os.getenv('DATABASE_URL')

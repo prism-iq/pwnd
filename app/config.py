@@ -1,8 +1,12 @@
 """Configuration for L Investigation Framework"""
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path("/opt/rag")
+
+# Load .env file
+load_dotenv(BASE_DIR / ".env")
 
 # Database configuration
 # PostgreSQL connection via DATABASE_URL env var

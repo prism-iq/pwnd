@@ -205,7 +205,75 @@ async def get_edge(edge_id: int):
         raise HTTPException(status_code=404, detail="Edge not found")
     return edges[0]
 
-# Investigation
+# Investigation - POST endpoint for JSON response (ChatGPT-style UI)
+@router.post("/api/query")
+async def query_post(request: QueryRequest):
+    """Query endpoint - returns JSON response (non-streaming)"""
+    import sqlite3
+    import asyncio
+
+    q = request.q
+
+    def search_documents(query: str, limit: int = 30):
+        """Search documents using FTS"""
+        conn = sqlite3.connect("/opt/rag/db/sources.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Search contents_fts
+        try:
+            cursor.execute("""
+                SELECT c.doc_id, d.filename, substr(c.full_text, 1, 2000) as content
+                FROM contents c
+                JOIN documents d ON d.id = c.doc_id
+                WHERE c.doc_id IN (
+                    SELECT rowid FROM contents_fts WHERE contents_fts MATCH ?
+                )
+                LIMIT ?
+            """, (query, limit))
+            rows = cursor.fetchall()
+            results = [dict(row) for row in rows]
+        except:
+            results = []
+
+        conn.close()
+        return results
+
+    # Get search results
+    loop = asyncio.get_event_loop()
+    results = await loop.run_in_executor(None, lambda: search_documents(q, 30))
+
+    # Build context from results
+    sources = []
+    context_parts = []
+    for r in results[:20]:
+        sources.append({
+            "title": r.get("filename", r.get("title", "Document")),
+            "score": r.get("score", 0),
+            "snippet": r.get("content", "")[:200]
+        })
+        context_parts.append(r.get("content", "")[:1000])
+
+    context = "\n\n---\n\n".join(context_parts)
+
+    # Return search results directly (no LLM synthesis - Claude Opus handles that in conversation)
+    if results:
+        answer = f"J'ai trouvé {len(results)} documents pour '{q}':\n\n"
+        for i, r in enumerate(results[:5], 1):
+            filename = r.get('filename', 'Document')
+            content = r.get('content', '')[:400].replace('\n', ' ')
+            answer += f"**{i}. {filename}**\n{content}...\n\n"
+    else:
+        answer = f"Aucun document trouvé pour '{q}'."
+
+    return {
+        "answer": answer,
+        "sources": sources,
+        "query": q,
+        "results_count": len(results)
+    }
+
+# Investigation - GET endpoint with SSE streaming
 @router.get("/api/ask")
 async def ask(q: str = Query(..., max_length=10000), conversation_id: Optional[str] = None):
     """Main investigation endpoint with SSE streaming"""
