@@ -39,7 +39,7 @@ type Organ struct {
 var organs = map[string]*Organ{
 	"lungs": {Name: "lungs", URL: "http://127.0.0.1:3000"},  // Node.js
 	"cells": {Name: "cells", URL: "http://127.0.0.1:9001"},  // Rust
-	"veins": {Name: "veins", URL: "http://127.0.0.1:8002"},  // Python
+	"veins": {Name: "veins", URL: "http://127.0.0.1:8000"},  // Python
 	"blood": {Name: "blood", URL: "http://127.0.0.1:9003"},  // C++
 }
 
@@ -379,7 +379,7 @@ func main() {
 ║  Connected Organs:                                        ║
 ║    Lungs (Node.js) → http://127.0.0.1:3000               ║
 ║    Cells (Rust)    → http://127.0.0.1:9001               ║
-║    Veins (Python)  → http://127.0.0.1:8002               ║
+║    Veins (Python)  → http://127.0.0.1:8000               ║
 ║    Blood (C++)     → http://127.0.0.1:9003               ║
 ╚═══════════════════════════════════════════════════════════╝
 `)
