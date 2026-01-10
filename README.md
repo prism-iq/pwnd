@@ -1,6 +1,10 @@
-# L Investigation Framework
+# PWND.ICU
 
-**OSINT investigation platform bound by The Code**
+### Epstein Document Investigation Platform
+
+[![Live Demo](https://img.shields.io/badge/Live-pwnd.icu-blue?style=for-the-badge)](https://pwnd.icu)
+[![Documents](https://img.shields.io/badge/Documents-33,598-green?style=for-the-badge)](https://pwnd.icu)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 > *"Protect the weak against the evil strong.*
 > *It is not enough to say I will not be evil,*
@@ -9,7 +13,45 @@
 
 ---
 
-## Quick Start
+## What is This?
+
+**PWND.ICU** is an AI-powered OSINT platform for investigating the Epstein case documents. Ask questions in natural language, get answers with source citations from **33,598 documents** including:
+
+| Source | Documents | Contents |
+|--------|-----------|----------|
+| FOIA Releases | 13,000+ | FBI files, DOJ reports, court records |
+| Court Depositions | 8,500+ | Sworn testimony, victim statements |
+| Maxwell Trial | 5,000+ | Evidence, transcripts, exhibits |
+| Flight Logs | 2,000+ | Lolita Express manifests, pilot logs |
+| Financial Records | 3,000+ | Wire transfers, accounts, tax records |
+| Email Corpus | 2,000+ | Communications, contacts, schedules |
+
+---
+
+## Try It Now
+
+**Live:** [https://pwnd.icu](https://pwnd.icu)
+
+### Chat Mode
+Ask questions, get AI-synthesized answers with document citations:
+
+```
+You: Who flew on Epstein's plane with Bill Clinton?
+
+AI: According to flight logs [1][2], Bill Clinton flew on
+    Epstein's aircraft multiple times between 2001-2003...
+
+    Sources:
+    [1] EFTA00010720.txt - Flight manifest March 2002
+    [2] Epstein_Depositions_Full.txt - Pilot testimony
+```
+
+### Search Mode
+Direct full-text search across all documents with relevance scoring.
+
+---
+
+## Self-Host
 
 ```bash
 git clone https://github.com/prism-iq/pwnd.git
@@ -17,261 +59,205 @@ cd pwnd
 sudo ./install.sh
 ```
 
-That's it. The `install.sh` script handles everything:
-- ✓ Detects your OS (Arch, Debian, Ubuntu, Fedora)
-- ✓ Installs dependencies (PostgreSQL, Python, Caddy)
-- ✓ Downloads Phi-3-Mini LLM model
-- ✓ Creates database and schema
-- ✓ Starts all services
-- ✓ Runs health checks
+**That's it.** The installer handles:
+- OS detection (Arch, Debian, Ubuntu, Fedora)
+- Dependencies (PostgreSQL, Python 3.11+, Caddy)
+- Phi-3 LLM download (2.4GB local model)
+- Database setup + document import
+- Service configuration + health checks
 
-**Access:** http://localhost
+**Access:** http://localhost after install
 
 ---
 
-## What is This?
+## Features
 
-L Investigation Framework is a production-ready OSINT tool for:
-- **Email corpus analysis** (13,000+ documents)
-- **Entity relationship mapping** (graph database)
-- **Criminal pattern detection** (AI-powered)
-- **Evidence export** (SHA256-verified packages)
-- **Chain of custody** (legal-ready)
+### RAG-Powered Chat
+- Natural language questions about documents
+- AI-synthesized answers with source citations
+- Conversation history persistence
+- Streaming responses (real-time typing)
 
-**Bound by The Code:**
-- Protect victims (anonymization, dignity preserved)
-- Report truth (corpus-only, source citations)
-- Never lie (facts vs hypotheses clearly marked)
-- Fight evil (follow evidence wherever it leads)
+### Document Search
+- Full-text search across 33,598 documents
+- Relevance scoring + snippet extraction
+- Filter by document type/source
+- Entity extraction (names, dates, locations)
+
+### Investigation Tools
+- Entity relationship graph
+- Timeline reconstruction
+- Pattern detection
+- Evidence chain tracking
+
+### Export & Verification
+- SHA256 document verification
+- Chain of custody tracking
+- Legal-ready evidence packages
+- Social media templates (Twitter, Reddit, YouTube)
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────┐
-│   Browser   │
-│  (Frontend) │
-└──────┬──────┘
-       │ SSE Streaming
-       ▼
-┌─────────────┐      ┌──────────────┐
-│  FastAPI    │◄────►│   Phi-3      │
-│   (API)     │      │ (Local LLM)  │
-└──────┬──────┘      └──────────────┘
-       │
-       ├──────────────┬──────────────┐
-       ▼              ▼              ▼
-┌─────────────┐  ┌──────────┐  ┌──────────┐
-│ PostgreSQL  │  │  Claude  │  │  Caddy   │
-│  (Database) │  │  Haiku   │  │  (Web)   │
-│             │  │(Optional)│  │          │
-└─────────────┘  └──────────┘  └──────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                         Browser                              │
+│                    (Chat / Search UI)                        │
+└─────────────────────────┬────────────────────────────────────┘
+                          │ REST API + SSE Streaming
+                          ▼
+┌──────────────────────────────────────────────────────────────┐
+│                      FastAPI Backend                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ /api/chat   │  │ /api/search │  │ /api/investigate    │  │
+│  │ (RAG Chat)  │  │ (Documents) │  │ (Graph Analysis)    │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└─────────┼────────────────┼────────────────────┼──────────────┘
+          │                │                    │
+    ┌─────▼─────┐    ┌─────▼─────┐        ┌─────▼─────┐
+    │  Phi-3    │    │PostgreSQL │        │  Claude   │
+    │(Local LLM)│    │(Documents)│        │  Haiku    │
+    │  2.4GB    │    │   + FTS   │        │(Optional) │
+    └───────────┘    └───────────┘        └───────────┘
 ```
 
-**Stack:**
-- **Backend:** FastAPI + Python 3.11+
-- **Database:** PostgreSQL (production) or SQLite (dev)
-- **Local LLM:** Phi-3-Mini-4K (GGUF, 2.4GB)
-- **API LLM:** Claude Haiku (optional, for advanced analysis)
-- **Web Server:** Caddy (auto-HTTPS)
-- **Search:** Full-text search (FTS) + vector embeddings
+---
+
+## API Endpoints
+
+### Chat
+```bash
+# Send message, get AI response with sources
+curl -X POST https://pwnd.icu/api/chat/send \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Who is Ghislaine Maxwell?"}'
+
+# Stream response (SSE)
+curl -X POST https://pwnd.icu/api/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What did the pilot testify?"}'
+
+# List conversations
+curl https://pwnd.icu/api/chat/conversations
+```
+
+### Search
+```bash
+# Full-text search
+curl "https://pwnd.icu/api/search?q=flight+logs+clinton"
+
+# Document by ID
+curl "https://pwnd.icu/api/document/EFTA00010720"
+```
+
+### System
+```bash
+curl https://pwnd.icu/api/health
+curl https://pwnd.icu/api/stats
+```
 
 ---
 
 ## Requirements
 
-**Minimum:**
-- **OS:** Linux (Arch, Debian, Ubuntu, Fedora)
-- **CPU:** 4 cores
-- **RAM:** 8GB
-- **Storage:** 10GB
-
-**Recommended:**
-- **CPU:** 8+ cores
-- **RAM:** 16GB+
-- **Storage:** 50GB+ SSD
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| OS | Linux (any distro) | Arch, Debian, Ubuntu |
+| CPU | 4 cores | 8+ cores |
+| RAM | 8GB | 16GB+ |
+| Storage | 10GB | 50GB+ SSD |
+| Python | 3.11+ | 3.12+ |
 
 ---
 
 ## Configuration
 
-After running `install.sh`, edit `.env` for your setup:
-
 ```bash
-# Database (PostgreSQL auto-configured by setup-db.sh)
+# .env file (created by install.sh)
+
+# Database
 DATABASE_URL=postgresql://lframework:xxx@localhost:5432/lframework
 
-# LLM Model (auto-downloaded by download-model.sh)
+# Local LLM (auto-downloaded)
 LLM_MODEL_PATH=/opt/rag/llm/phi-3-mini-4k-instruct.Q4_K_M.gguf
 
 # Optional: Claude Haiku for advanced analysis
 ANTHROPIC_API_KEY=sk-ant-api03-xxx
 
-# Rate limiting (Anti-DDoS)
+# Rate limiting
 HAIKU_DAILY_LIMIT=200
 MAX_REQUESTS_PER_DAY=30
 ```
 
-Full configuration: see `.env.example`
-
 ---
 
-## Usage
+## The Code
 
-### Web Interface
+This project is bound by a moral foundation:
 
-1. **Ask a question:**
-   "Who is Jeffrey Epstein?"
-
-2. **View sources:**
-   Click `[#ID]` citations to see original documents
-
-3. **Auto-investigate:**
-   Enable toggle for automatic follow-up queries (max 20)
-
-### API
-
-**Query:**
-```bash
-curl "http://localhost/api/ask?q=trump+connections"
-```
-
-**Health check:**
-```bash
-curl "http://localhost/api/health"
-```
-
-**Stats:**
-```bash
-curl "http://localhost/api/stats"
-```
-
-### CLI Tools
-
-**Import emails:**
-```bash
-./scripts/import.sh /path/to/emails
-```
-
-**Build graph:**
-```bash
-./scripts/build-graph.sh
-```
-
-**Check services:**
-```bash
-sudo systemctl status l-llm l-api caddy
-```
-
----
-
-## The Code - Moral Foundation
-
-This system exists to **fight evil wherever it is found.**
-
-**We will:**
-- ✓ Protect victims (anonymize, prioritize safety)
-- ✓ Report facts (cite sources, no speculation)
-- ✓ Distinguish truth from hypothesis
-- ✓ Follow evidence (no matter who is implicated)
-- ✓ Preserve chain of custody (SHA256, timestamps)
+**We WILL:**
+- Protect victims (anonymize where needed)
+- Report only documented facts with citations
+- Distinguish confirmed facts from allegations
+- Follow evidence wherever it leads
+- Maintain chain of custody
 
 **We will NOT:**
-- ✗ Fabricate evidence
-- ✗ Violate victim privacy
-- ✗ Add external knowledge (corpus-only)
-- ✗ Back away from uncomfortable truth
-
-**Email phrasing:**
-- ✓ "According to LinkedIn invitation email [#7837], ..."
-- ✗ "Based on his LinkedIn profile" (external knowledge)
+- Fabricate or embellish evidence
+- Violate victim privacy
+- Add knowledge from outside the corpus
+- Back away from uncomfortable truth
+- Use this for harassment or doxxing
 
 ---
 
-## Evidence Export
+## Document Sources
 
-Generate tamper-proof evidence packages:
+All documents are from public FOIA releases and court records:
 
-```bash
-./scripts/export-evidence.sh investigation_001
-```
-
-**Includes:**
-- SHA256 verification
-- Chain of custody
-- Social media templates (Twitter, Reddit, YouTube)
-- Legal-ready format
-- The Code moral statement
-
-**Example:** `evidence_001.tar.gz` (ready to share)
-
----
-
-## Social Media Integration
-
-Exported evidence packages include platform-optimized templates:
-
-| Platform | Format | File |
-|----------|--------|------|
-| Twitter | Thread (280 chars) | `twitter_thread.txt` |
-| Reddit | Markdown post | `reddit_post.md` |
-| YouTube | Video description | `youtube_description.txt` |
-| TikTok | 60s script | `tiktok_script.txt` |
-| LinkedIn | Professional post | `linkedin_post.txt` |
-| Instagram | Carousel captions | `instagram_captions.txt` |
-
-All templates include:
-- Evidence citations
-- SHA256 verification
-- The Code statement
-- Call-to-action
-
----
-
-## Troubleshooting
-
-**Services not starting:**
-```bash
-sudo journalctl -u l-llm -n 50
-sudo journalctl -u l-api -n 50
-```
-
-**Database errors:**
-```bash
-psql -U lframework -d lframework -h localhost
-```
-
-**Model not found:**
-```bash
-./scripts/download-model.sh
-```
-
-**Port conflicts:**
-Edit `.env` and change `PORT=8002` to another port
+| Source | Description |
+|--------|-------------|
+| EFTA (Epstein Files Transfer Act) | Official FOIA releases |
+| SDNY Court Records | Federal court filings |
+| Maxwell Trial Exhibits | Trial evidence 2021-2022 |
+| DOJ OPR Report | Office of Professional Responsibility |
+| Flight Logs | FAA records, pilot testimony |
+| Deposition Transcripts | Sworn testimony under oath |
 
 ---
 
 ## Development
 
+```bash
+# Clone
+git clone https://github.com/prism-iq/pwnd.git
+cd pwnd
+
+# Setup virtualenv
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run dev server
+uvicorn app.main:app --reload --port 8002
+```
+
 **Structure:**
 ```
 pwnd/
-├── app/              # FastAPI application
-├── llm/              # Local LLM backend (Phi-3)
-├── static/           # Frontend (HTML/JS/CSS)
-├── scripts/          # Setup & utility scripts
-├── templates/        # Service templates
-├── docs/             # Documentation
-├── install.sh           # Single entry point
-├── .env.example      # Environment template
-└── LICENSE           # MIT + The Code
-```
-
-**Run in dev mode:**
-```bash
-source venv/bin/activate
-uvicorn app.main:app --reload --port 8002
+├── app/                  # FastAPI application
+│   ├── main.py          # Entry point
+│   ├── routes.py        # Search endpoints
+│   ├── routes_chat.py   # Chat endpoints (RAG)
+│   ├── db.py            # Database layer
+│   └── llm_client.py    # LLM integration
+├── static/              # Frontend
+│   ├── index.html       # Search interface
+│   └── chat.html        # Chat interface
+├── llm/                 # Local LLM models
+├── scripts/             # Setup utilities
+└── install.sh           # One-command setup
 ```
 
 ---
@@ -280,32 +266,19 @@ uvicorn app.main:app --reload --port 8002
 
 MIT License with moral foundation.
 
-**This software is bound by The Code:**
-- Use for investigation, justice, protection
-- Do NOT use for harassment, doxxing, revenge
-- Chain of custody and evidence integrity required
-- Victim protection is non-negotiable
+Use for investigation, journalism, research, and justice.
+Do NOT use for harassment, stalking, or revenge.
 
 See [LICENSE](LICENSE) for full terms.
 
 ---
 
-## Credits
+## Links
 
-- **Moral Foundation:** David Gemmell's Drenai Code
-- **LLM:** Phi-3-Mini (Microsoft), Claude Haiku (Anthropic)
-- **Stack:** FastAPI, PostgreSQL, Caddy
-- **Purpose:** Fighting evil wherever it is found
-
----
-
-## Support
-
+- **Live Demo:** [https://pwnd.icu](https://pwnd.icu)
 - **Issues:** [GitHub Issues](https://github.com/prism-iq/pwnd/issues)
-- **Docs:** [docs/](docs/)
-- **The Code:** [docs/CODE.md](docs/CODE.md)
+- **Source:** [github.com/prism-iq/pwnd](https://github.com/prism-iq/pwnd)
 
 ---
 
 *"Evil must be fought wherever it is found."*
-**— The Code**
