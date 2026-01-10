@@ -732,3 +732,50 @@ Un attaquant externe ne peut plus atteindre les services internes directement. S
 Les portes sont fermées. Seule l'entrée principale reste ouverte.
 
 ---
+
+---
+
+## 2026-01-10 05:15 | Frontend Rebuilt
+
+Major redesign complete. The old ChatGPT-style interface was cluttered and returned raw document dumps. The new interface is minimal and focused:
+
+**Three tabs:**
+1. **Search** - Query across all sources (documents, emails, entities) with source filtering
+2. **Auto Explore** - Asks 20 open-ended investigation questions automatically
+3. **Targets** - Prosecution targets with guilt flags
+
+**Design principles:**
+- Dark theme (#0a0a0a background)
+- No unnecessary UI chrome
+- Keyword highlighting in results
+- Live stats in header
+- Mobile responsive
+
+The auto-explore mode cycles through questions like:
+- "Who visited Little St. James most frequently?"
+- "What financial connections exist between Epstein and major corporations?"
+- "What evidence exists of obstruction of justice?"
+
+Each question searches the full corpus and displays findings in real-time.
+
+Also improved search to aggregate results from multiple backends: /api/query for documents, /api/search/emails, /api/search/nodes.
+
+Committed as 1419f1a, pushed to origin/main.
+
+---
+
+## 2026-01-10 05:16 | System Status
+
+API running on port 8002:
+- 23,075 documents indexed
+- 50,169 entities extracted
+- 4,291 connections mapped
+- 13,029 emails processed
+- 3 worker threads ready
+- Cache: 39% hit rate
+
+Production accessible at https://pwnd.icu
+
+Ready for presentation.
+
+---
