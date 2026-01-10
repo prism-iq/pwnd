@@ -296,6 +296,105 @@ void handle_client(int client_fd) {
     close(client_fd);
 }
 
+std::string parse_json_string_value(const std::string& json, size_t& pos) {
+    // Skip to opening quote
+    while (pos < json.size() && json[pos] != '"') pos++;
+    if (pos >= json.size()) return "";
+    pos++; // skip opening quote
+
+    std::string result;
+    while (pos < json.size() && json[pos] != '"') {
+        if (json[pos] == '\\' && pos + 1 < json.size()) {
+            pos++;
+            if (json[pos] == 'n') result += '\n';
+            else if (json[pos] == 'r') result += '\r';
+            else if (json[pos] == 't') result += '\t';
+            else if (json[pos] == '"') result += '"';
+            else if (json[pos] == '\\') result += '\\';
+            else result += json[pos];
+        } else {
+            result += json[pos];
+        }
+        pos++;
+    }
+    pos++; // skip closing quote
+    return result;
+}
+
+void load_json_documents(const std::string& filepath) {
+    std::cout << "Loading documents from " << filepath << "...\n";
+
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open " << filepath << "\n";
+        return;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string json = buffer.str();
+    file.close();
+
+    size_t pos = 0;
+    int loaded = 0;
+
+    // Find array start
+    while (pos < json.size() && json[pos] != '[') pos++;
+    pos++;
+
+    while (pos < json.size()) {
+        // Find object start
+        while (pos < json.size() && json[pos] != '{' && json[pos] != ']') pos++;
+        if (pos >= json.size() || json[pos] == ']') break;
+        pos++; // skip {
+
+        int64_t id = 0;
+        std::string title, content;
+
+        // Parse object fields
+        while (pos < json.size() && json[pos] != '}') {
+            // Skip whitespace
+            while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\n' || json[pos] == '\t' || json[pos] == ',')) pos++;
+            if (json[pos] == '}') break;
+
+            // Parse field name
+            std::string field = parse_json_string_value(json, pos);
+
+            // Skip colon
+            while (pos < json.size() && json[pos] != ':') pos++;
+            pos++;
+
+            // Skip whitespace
+            while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\n' || json[pos] == '\t')) pos++;
+
+            if (field == "id") {
+                // Parse number
+                std::string num;
+                while (pos < json.size() && (std::isdigit(json[pos]) || json[pos] == '-')) {
+                    num += json[pos++];
+                }
+                id = std::stoll(num);
+            } else if (field == "title") {
+                title = parse_json_string_value(json, pos);
+            } else if (field == "content") {
+                content = parse_json_string_value(json, pos);
+            }
+        }
+
+        if (id != 0 && !title.empty()) {
+            g_index.add(id, title, content);
+            loaded++;
+            if (loaded % 1000 == 0) {
+                std::cout << "  Loaded " << loaded << " documents...\n";
+            }
+        }
+
+        pos++; // skip }
+    }
+
+    std::cout << "Loaded " << loaded << " documents from JSON\n";
+}
+
 void load_sample_data() {
     // Add some sample documents for testing
     g_index.add(1, "Jeffrey Epstein Flight Logs", "Private jet flights to Little St. James island with various passengers");
@@ -308,7 +407,10 @@ void load_sample_data() {
 
 int main(int argc, char* argv[]) {
     int port = DEFAULT_PORT;
+    std::string json_file;
+
     if (argc > 1) port = std::stoi(argv[1]);
+    if (argc > 2) json_file = argv[2];
 
     std::cout << "╔═══════════════════════════════════════════════════════════╗\n";
     std::cout << "║       L Investigation - C++ BLOOD                         ║\n";
@@ -320,7 +422,11 @@ int main(int argc, char* argv[]) {
     std::cout << "║    POST /extract - Pattern extraction                     ║\n";
     std::cout << "╚═══════════════════════════════════════════════════════════╝\n\n";
 
-    load_sample_data();
+    if (!json_file.empty()) {
+        load_json_documents(json_file);
+    } else {
+        load_sample_data();
+    }
 
     // Create socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
