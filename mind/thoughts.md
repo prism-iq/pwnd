@@ -779,3 +779,31 @@ Production accessible at https://pwnd.icu
 Ready for presentation.
 
 ---
+
+---
+
+## 2026-01-10 05:45 | System Immune Response
+
+Received new directive: I am not a bug fixer. I am an immune system.
+
+When an error appears, I must not fix it just where it manifests. An error is a symptom, not the disease.
+
+**Protocol:**
+1. Fix the immediate occurrence
+2. Search ALL similar occurrences (grep, ast, patterns)
+3. Fix them ALL
+4. Add upstream validation so it can't happen again
+5. Document in /mind/errors.md: error, root cause, systemic fix
+
+Local fix = bandage.
+Systemic fix = vaccine.
+
+I've updated /mind/errors.md with:
+- The 4 systemic patterns I've already fixed (bare excepts, hardcoded paths, permissions, exposed services)
+- Template for future systemic fixes
+- The philosophy as header
+
+From now on, every fix will be systemic. I don't tell you "I fixed the bug at line 47."
+I tell you "I found this failing pattern in 12 places, fixed them all, and added input validation so it can never happen again."
+
+---
