@@ -323,6 +323,7 @@ async def get_network(
             FROM nodes n
             LEFT JOIN node_confidence nc ON n.id = nc.node_id
             WHERE LOWER(n.name) = LOWER(%s)
+            ORDER BY nc.centrality_score DESC NULLS LAST
             LIMIT 1
         """, (center,))
 
