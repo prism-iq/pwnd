@@ -3,1193 +3,1149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWND.ICU - Epstein Investigation</title>
+    <title>PWND.ICU - Investigation Platform</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         :root {
-            --bg: #0d0d0d;
-            --bg-secondary: #141414;
-            --bg-card: #1a1a1a;
-            --bg-input: #222;
-            --bg-hover: #2a2a2a;
-            --border: #2a2a2a;
-            --border-light: #333;
-            --text: #f0f0f0;
-            --text-secondary: #999;
-            --text-dim: #666;
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --bg-hover: #1a1a1a;
+            --bg-input: #1e1e1e;
+            --border: #252525;
+            --text: #e5e5e5;
+            --text-dim: #888;
             --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --accent-glow: rgba(59, 130, 246, 0.15);
-            --green: #10b981;
-            --green-glow: rgba(16, 185, 129, 0.15);
+            --green: #22c55e;
             --orange: #f59e0b;
             --red: #ef4444;
             --purple: #8b5cf6;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
-            min-height: 100vh;
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
         }
+        .app { display: flex; height: 100vh; }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 24px;
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
         }
-
-        /* Header */
-        header {
-            text-align: center;
-            margin-bottom: 40px;
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
         }
-
         .logo {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
-
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 20px;
-        }
-
-        .stats-bar {
+        .stats {
             display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-bottom: 24px;
-        }
-
-        .stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .stat-num {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .stat-label {
+            gap: 16px;
+            margin-top: 12px;
             font-size: 0.75rem;
             color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
+        .stat-num { color: var(--text); font-weight: 600; }
 
-        .chat-cta {
-            display: inline-flex;
+        /* Nav */
+        .nav { padding: 12px; flex: 1; overflow-y: auto; }
+        .nav-item {
+            display: flex;
             align-items: center;
             gap: 10px;
-            padding: 14px 28px;
-            background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px var(--green-glow);
-        }
-
-        .chat-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px var(--green-glow);
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 24px;
-            background: var(--bg-secondary);
-            padding: 6px;
-            border-radius: 12px;
-            width: fit-content;
-        }
-
-        .tab {
-            padding: 10px 20px;
-            background: transparent;
-            border: none;
+            padding: 12px 14px;
             border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
+            color: var(--text-dim);
             cursor: pointer;
-            transition: all 0.2s;
+            margin-bottom: 4px;
+            transition: all 0.15s;
         }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+        .nav-item.active { background: var(--accent); color: white; }
+        .nav-item svg { width: 18px; height: 18px; }
 
-        .tab:hover { color: var(--text); }
-
-        .tab.active {
-            background: var(--bg-card);
-            color: var(--text);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        /* Panels */
-        .panel { display: none; }
-        .panel.active { display: block; animation: fadeIn 0.3s ease; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Search Panel */
-        .search-box {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        #search {
-            width: 100%;
-            padding: 18px 24px;
-            padding-right: 120px;
-            font-size: 1rem;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            color: var(--text);
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        #search:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-glow);
-        }
-
-        #search::placeholder { color: var(--text-dim); }
-
-        .search-btn {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            padding: 12px 24px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .search-btn:hover { transform: translateY(-50%) scale(1.02); }
-        .search-btn:disabled { opacity: 0.5; }
-
-        /* Filters */
-        .filters {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .filter {
-            padding: 8px 16px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            color: var(--text-secondary);
+        .conversations { margin-top: 16px; }
+        .conv-title { font-size: 0.7rem; color: var(--text-dim); padding: 8px 14px; text-transform: uppercase; }
+        .conv-item {
+            padding: 10px 14px;
+            border-radius: 6px;
             font-size: 0.85rem;
+            color: var(--text-dim);
             cursor: pointer;
-            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        .conv-item:hover { background: var(--bg-hover); color: var(--text); }
+        .conv-item.active { background: var(--bg-hover); color: var(--text); }
 
-        .filter:hover {
-            border-color: var(--border-light);
-            color: var(--text);
-        }
+        /* Main */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-        .filter.active {
-            background: var(--accent-glow);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* Results */
-        .results {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .result-header {
+        /* Header */
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            padding: 8px 0;
+        }
+        .header-title { font-size: 1rem; font-weight: 600; }
+
+        /* Content */
+        .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+        /* Search Tab */
+        .search-box { position: relative; margin-bottom: 20px; }
+        .search-input {
+            width: 100%;
+            padding: 14px 18px;
+            padding-right: 100px;
+            font-size: 0.95rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            outline: none;
+        }
+        .search-input:focus { border-color: var(--accent); }
+        .search-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 10px 18px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
         }
 
+        .results { display: flex; flex-direction: column; gap: 10px; }
         .result {
             background: var(--bg-card);
             border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            cursor: pointer;
+        }
+        .result:hover { border-color: var(--accent); }
+        .result-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .result-type {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .result-type.email { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .result-type.document { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .result-type.person { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .result-title { font-weight: 600; font-size: 0.9rem; }
+        .result-snippet { font-size: 0.8rem; color: var(--text-dim); }
+
+        /* Chat Tab */
+        .chat-container { display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
+        .message {
+            max-width: 80%;
+            margin-bottom: 16px;
+            padding: 12px 16px;
             border-radius: 12px;
-            padding: 18px 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .message.user {
+            background: var(--accent);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+        .message.assistant strong { color: var(--text); }
+        .message.assistant h2 { font-size: 1.1rem; margin: 16px 0 12px 0; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .message.assistant h3 { font-size: 0.95rem; margin: 14px 0 8px 0; color: var(--text); }
+        .message.assistant blockquote {
+            border-left: 3px solid var(--accent);
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: var(--bg-hover);
+            border-radius: 0 6px 6px 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .message.assistant ul, .message.assistant ol { margin: 8px 0; padding-left: 20px; }
+        .message.assistant li { margin: 4px 0; }
+        .message.assistant hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+        .message.assistant em { color: var(--text-dim); font-style: italic; }
+        .message.assistant code { background: var(--bg-hover); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+        .message.status {
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-align: center;
+            max-width: 100%;
+        }
+        .message-sources {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .sources-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-
-        .result:hover {
-            border-color: var(--border-light);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .result-meta {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .result-type {
-            padding: 4px 10px;
+        .sources-btn:hover { background: var(--bg-input); color: var(--text); border-color: var(--accent); }
+        .sources-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .sources-btn svg { width: 14px; height: 14px; }
+        .sources-list {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
             background: var(--bg-hover);
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+        .sources-list.active { display: block; }
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 6px;
-            text-transform: uppercase;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .source-item:hover { border-color: var(--accent); }
+        .source-item:last-child { margin-bottom: 0; }
+        .source-id { color: var(--accent); font-weight: 600; }
+        .source-type {
+            padding: 2px 6px;
+            border-radius: 4px;
             font-size: 0.65rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
+            text-transform: uppercase;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
         }
 
-        .result-type.document { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
-        .result-type.email { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
-        .result-type.entity { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-
-        .result-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text);
+        .chat-input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .chat-input-box { display: flex; gap: 10px; }
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
             font-size: 0.95rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            outline: none;
+            resize: none;
         }
-
-        .result-content {
-            font-size: 0.85rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
+        .chat-input:focus { border-color: var(--accent); }
+        .chat-send {
+            padding: 14px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
         }
+        .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .result-content mark {
-            background: rgba(59, 130, 246, 0.3);
-            color: inherit;
-            padding: 1px 4px;
-            border-radius: 3px;
-        }
-
-        /* Auto Panel */
-        .auto-header {
+        /* Graph/Targets Tab */
+        .entity-list { display: flex; flex-direction: column; gap: 8px; }
+        .entity-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        /* Mode Toggle Switch */
-        .mode-toggle {
-            display: flex;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 4px;
-            gap: 4px;
-        }
-
-        .mode-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: transparent;
-            color: var(--text-secondary);
-        }
-
-        .mode-btn:hover {
-            color: var(--text);
-        }
-
-        .mode-btn.active {
+            padding: 12px 16px;
             background: var(--bg-card);
-            color: var(--text);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        .mode-btn.active.auto-mode {
-            background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
-            color: white;
-        }
-
-        .auto-btn {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.2s;
+        }
+        .entity-item:hover { border-color: var(--accent); }
+        .entity-name { font-weight: 500; }
+        .entity-scores { font-size: 0.75rem; color: var(--text-dim); }
+
+        /* Network Visualization */
+        .graph-container { display: flex; flex-direction: column; height: 100%; }
+        .graph-controls {
             display: flex;
-            align-items: center;
             gap: 10px;
-        }
-
-        .auto-btn.start {
-            background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
-            color: white;
-        }
-
-        .auto-btn.stop {
-            background: linear-gradient(135deg, var(--red) 0%, #dc2626 100%);
-            color: white;
-        }
-
-        .auto-btn:hover { transform: translateY(-1px); }
-
-        .auto-status {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-            display: flex;
+            padding: 12px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
             align-items: center;
-            gap: 8px;
         }
-
-        .auto-status.running { color: var(--green); }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-dim);
-        }
-
-        .status-dot.running {
-            background: var(--green);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--green-glow); }
-            50% { opacity: 0.7; box-shadow: 0 0 0 8px transparent; }
-        }
-
-        .auto-description {
-            background: var(--bg-card);
+        .graph-search {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            background: var(--bg-input);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
+            border-radius: 6px;
+            color: var(--text);
             font-size: 0.9rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
         }
-
-        .discovery {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--orange);
-            border-radius: 12px;
-            padding: 18px 20px;
-            margin-bottom: 16px;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .discovery-question {
-            font-weight: 600;
-            color: var(--orange);
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-        }
-
-        .discovery-answer {
+        .graph-search:focus { border-color: var(--accent); outline: none; }
+        .graph-btn {
+            padding: 10px 18px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
             font-size: 0.85rem;
-            line-height: 1.7;
-            margin-bottom: 14px;
         }
-
-        .discovery-answer .thinking {
-            color: var(--accent);
-            animation: pulse 1.5s infinite;
-        }
-
-        .discovery-answer strong {
+        .graph-btn:hover { opacity: 0.9; }
+        .graph-btn.secondary {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
             color: var(--text);
         }
-
-        .discovery-answer li {
-            margin-left: 16px;
-            list-style: disc;
-            color: var(--text-secondary);
-        }
-
-        .discovery-sources {
+        .graph-legend {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .source-tag {
-            padding: 5px 12px;
-            background: var(--bg-hover);
-            border-radius: 6px;
+            gap: 12px;
             font-size: 0.75rem;
             color: var(--text-dim);
         }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: var(--text-dim);
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+        #network-container {
+            flex: 1;
+            background: var(--bg);
+            border-radius: 8px;
+            min-height: 500px;
         }
-
-        .spinner {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Empty state */
-        .empty {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-dim);
-        }
-
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-
-        /* Footer */
-        footer {
-            margin-top: 60px;
-            padding-top: 24px;
+        .graph-info {
+            padding: 10px 14px;
+            background: var(--bg-card);
             border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-
-        footer a {
+            font-size: 0.8rem;
             color: var(--text-dim);
-            text-decoration: none;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.2s;
         }
+        .node-tooltip {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            max-width: 300px;
+            z-index: 100;
+            display: none;
+        }
+        .node-tooltip.active { display: block; }
+        .node-tooltip h4 { margin-bottom: 8px; color: var(--accent); }
+        .node-tooltip p { margin: 4px 0; color: var(--text-dim); }
 
-        footer a:hover { color: var(--accent); }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        .modal.active { display: block; }
+        .modal-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; }
+        .modal-body { white-space: pre-wrap; font-size: 0.85rem; line-height: 1.6; }
 
-        @media (max-width: 600px) {
-            .container { padding: 24px 16px; }
-            .logo { font-size: 2rem; }
-            .stats-bar { gap: 20px; }
-            .stat-num { font-size: 1.2rem; }
-            .tabs { width: 100%; overflow-x: auto; }
-            .search-btn span { display: none; }
-            .auto-header { flex-direction: column; align-items: stretch; }
+        .hidden { display: none !important; }
+        .loading { color: var(--text-dim); padding: 40px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .message { max-width: 95%; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="logo">PWND.ICU</h1>
-            <p class="subtitle">Epstein Documents Investigation Platform</p>
-            <div class="stats-bar">
-                <div class="stat">
-                    <span class="stat-num" id="doc-count">33,598</span>
-                    <span class="stat-label">Documents</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num" id="node-count">82,265</span>
-                    <span class="stat-label">Entities</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num" id="edge-count">4,291</span>
-                    <span class="stat-label">Connections</span>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">PWND.ICU</div>
+                <div class="stats">
+                    <span><span class="stat-num" id="stat-docs">-</span> docs</span>
+                    <span><span class="stat-num" id="stat-nodes">-</span> entities</span>
                 </div>
             </div>
-            <a href="/chat.html" class="chat-cta">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Chat with AI Assistant
-            </a>
-        </header>
-
-        <div class="tabs">
-            <button class="tab active" onclick="showPanel('search')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                Search
-            </button>
-            <button class="tab" onclick="showPanel('auto')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                </svg>
-                Auto Explore
-            </button>
-            <button class="tab" onclick="showPanel('targets')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                </svg>
-                Targets
-            </button>
-        </div>
-
-        <!-- Search Panel -->
-        <div id="search-panel" class="panel active">
-            <div class="search-box">
-                <input type="text" id="search" placeholder="Search documents, depositions, flight logs, emails..." autocomplete="off">
-                <button class="search-btn" id="search-btn" onclick="doSearch()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="nav">
+                <div class="nav-item active" data-tab="chat" onclick="showTab('chat')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Chat
+                </div>
+                <div class="nav-item" data-tab="search" onclick="showTab('search')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
-                    <span>Search</span>
-                </button>
-            </div>
-
-            <div class="filters">
-                <button class="filter active" data-source="all">All Sources</button>
-                <button class="filter" data-source="documents">Documents</button>
-                <button class="filter" data-source="emails">Emails</button>
-                <button class="filter" data-source="nodes">Entities</button>
-            </div>
-
-            <div id="results" class="results">
-                <div class="empty">
-                    <div class="empty-icon">🔍</div>
-                    <p>Search across court filings, depositions, flight logs, emails, and FOIA releases</p>
+                    Search
                 </div>
-            </div>
-        </div>
-
-        <!-- Auto Explore Panel -->
-        <div id="auto-panel" class="panel">
-            <div class="auto-header">
-                <div class="mode-toggle">
-                    <button class="mode-btn active" id="normalModeBtn" onclick="setMode('normal')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        Normal
-                    </button>
-                    <button class="mode-btn" id="autoModeBtn" onclick="setMode('auto')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
-                        </svg>
-                        Auto
-                    </button>
-                </div>
-                <div class="auto-status" id="auto-status">
-                    <div class="status-dot"></div>
-                    <span>Normal Mode</span>
-                </div>
-            </div>
-
-            <div class="auto-description" id="mode-description">
-                <strong>Normal Mode:</strong> Ask questions manually. The AI responds to your queries with sourced answers.
-            </div>
-
-            <!-- Manual query input for Normal mode -->
-            <div id="manual-query-section" class="search-box" style="margin-bottom: 20px;">
-                <input type="text" id="manual-query" placeholder="Ask a question about the documents..." autocomplete="off" style="width:100%;padding:18px 24px;padding-right:120px;font-size:1rem;background:var(--bg-card);border:2px solid var(--border);border-radius:16px;color:var(--text);outline:none;">
-                <button class="search-btn" onclick="submitManualQuery()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                <div class="nav-item" data-tab="graph" onclick="showTab('graph')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
                     </svg>
-                    <span>Ask</span>
-                </button>
-            </div>
+                    Graph
+                </div>
+                <div class="nav-item" data-tab="targets" onclick="showTab('targets')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    </svg>
+                    Targets
+                </div>
 
-            <div id="discoveries" class="discoveries">
-                <div class="empty" id="discoveries-empty">
-                    <div class="empty-icon">🔍</div>
-                    <p>Ask a question or switch to Auto mode for autonomous exploration</p>
+                <div class="conversations">
+                    <div class="conv-title">Recent Chats</div>
+                    <div id="conv-list"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Targets Panel -->
-        <div id="targets-panel" class="panel">
-            <div id="targets-list" class="results">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading prosecution targets...</p>
+        <!-- Main -->
+        <div class="main">
+            <div class="header">
+                <div class="header-title" id="header-title">Chat</div>
+                <button onclick="newChat()" style="padding:8px 16px;background:var(--accent);border:none;border-radius:6px;color:white;cursor:pointer;">New Chat</button>
+            </div>
+
+            <!-- Chat Tab -->
+            <div id="tab-chat" class="content chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message assistant">
+                        Welcome to the Epstein Investigation Platform. Ask me anything about the documents, emails, or entities in the archive.
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-input-box">
+                        <textarea class="chat-input" id="chat-input" placeholder="Ask about the investigation..." rows="1"></textarea>
+                        <button class="chat-send" id="chat-send" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="tab-search" class="content hidden">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="search-input" placeholder="Search documents, emails, entities...">
+                    <button class="search-btn" onclick="doSearch()">Search</button>
+                </div>
+                <div class="results" id="search-results">
+                    <div class="loading">Enter a search query</div>
+                </div>
+            </div>
+
+            <!-- Graph Tab -->
+            <div id="tab-graph" class="content hidden graph-container">
+                <div class="graph-controls">
+                    <input type="text" class="graph-search" id="graph-search" placeholder="Search entity (e.g., Jeffrey Epstein, Clinton, Maxwell...)">
+                    <select class="graph-search" id="edge-type-filter" style="flex:0.5;min-width:150px;">
+                        <option value="">All relations</option>
+                    </select>
+                    <button class="graph-btn" onclick="loadNetwork()">Explore</button>
+                    <button class="graph-btn secondary" onclick="loadNetwork('Jeffrey Epstein')">Epstein</button>
+                    <button class="graph-btn secondary" onclick="loadNetwork('Ghislaine Maxwell')">Maxwell</button>
+                </div>
+                <div class="graph-controls" style="padding-top:0;border:none;">
+                    <div class="graph-legend">
+                        <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span> Person</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Organization</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span> Company</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> Location</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span> Email</div>
+                    </div>
+                    <div id="quick-filters" class="graph-legend" style="margin-left:auto;">
+                        <span style="color:var(--text-dim);font-size:0.75rem;">Quick:</span>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="setEdgeFilter('flew_with')">Flights</button>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="setEdgeFilter('accuser_of')">Accusers</button>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="setEdgeFilter('associate_of,employed_by,worked_with')">Associates</button>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="setEdgeFilter('legal_co_mention')">Legal</button>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="setEdgeFilter('')">All</button>
+                        <span style="color:var(--border);margin:0 4px;">|</span>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="exportPNG()">PNG</button>
+                        <button class="graph-btn secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="exportJSON()">JSON</button>
+                    </div>
+                </div>
+                <div id="network-container"></div>
+                <div class="graph-info" id="graph-info">
+                    Click "Explore" to load the network, or search for a specific entity. Double-click a node to center on it.
+                </div>
+            </div>
+
+            <!-- Targets Tab -->
+            <div id="tab-targets" class="content hidden">
+                <div class="entity-list" id="targets-list">
+                    <div class="loading">Loading targets...</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <footer>
-            <a href="/chat.html">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                AI Chat
-            </a>
-            <a href="/thoughts.html">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/>
-                </svg>
-                Live Thoughts
-            </a>
-            <a href="/investigation.html">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                Investigation
-            </a>
-            <a href="/api/prosecution/export">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Export
-            </a>
-        </footer>
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div class="modal-title" id="modal-title"></div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
     </div>
 
     <script>
-        let currentSource = 'all';
-        let currentMode = localStorage.getItem('explorationMode') || 'normal';
-        let autoRunning = false;
-        let autoInterval = null;
+        const API = '/api/v2';
+        let currentConvId = null;
+        let isGenerating = false;
+
+        // Load stats
+        fetch(`${API}/stats`).then(r => r.json()).then(s => {
+            document.getElementById('stat-docs').textContent = (s.documents || 0).toLocaleString();
+            document.getElementById('stat-nodes').textContent = (s.nodes || 0).toLocaleString();
+        }).catch(() => {});
+
+        // Load conversations
+        async function loadConversations() {
+            try {
+                const convs = await fetch(`${API}/chat/conversations`).then(r => r.json());
+                const list = document.getElementById('conv-list');
+                list.innerHTML = convs.slice(0, 10).map(c => `
+                    <div class="conv-item ${c.id === currentConvId ? 'active' : ''}" onclick="loadConversation('${c.id}')">
+                        ${escapeHtml(c.title || 'Untitled')}
+                    </div>
+                `).join('');
+            } catch (e) {}
+        }
+        loadConversations();
 
         // Tab navigation
-        function showPanel(name) {
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(name + '-panel').classList.add('active');
-            event.target.closest('.tab').classList.add('active');
+        function showTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById('header-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
 
-            if (name === 'targets') loadTargets();
-            if (name === 'auto') restoreMode();
+            if (tab === 'graph') loadGraph();
+            if (tab === 'targets') loadTargets();
         }
 
-        // Mode toggle (Normal/Auto)
-        function setMode(mode) {
-            currentMode = mode;
-            localStorage.setItem('explorationMode', mode);
-
-            const normalBtn = document.getElementById('normalModeBtn');
-            const autoBtn = document.getElementById('autoModeBtn');
-            const status = document.getElementById('auto-status');
-            const description = document.getElementById('mode-description');
-
-            // Update toggle buttons
-            normalBtn.classList.toggle('active', mode === 'normal');
-            autoBtn.classList.toggle('active', mode === 'auto');
-            autoBtn.classList.toggle('auto-mode', mode === 'auto');
-
-            // Update status and description
-            const manualSection = document.getElementById('manual-query-section');
-            const emptyState = document.getElementById('discoveries-empty');
-
-            if (mode === 'auto') {
-                status.innerHTML = '<div class="status-dot running"></div><span>Auto Mode Active</span>';
-                status.classList.add('running');
-                description.innerHTML = '<strong>Auto Mode:</strong> AI autonomously explores documents, generates questions, and discovers patterns. Click any discovery to investigate further.';
-                if (manualSection) manualSection.style.display = 'none';
-                if (emptyState) emptyState.innerHTML = '<div class="empty-icon">🤖</div><p>Starting autonomous exploration...</p>';
-                startAutoExploration();
-            } else {
-                stopAutoExploration();
-                status.innerHTML = '<div class="status-dot"></div><span>Normal Mode</span>';
-                status.classList.remove('running');
-                description.innerHTML = '<strong>Normal Mode:</strong> Ask questions manually. The AI responds to your queries with sourced answers.';
-                if (manualSection) manualSection.style.display = 'block';
-                if (emptyState) emptyState.innerHTML = '<div class="empty-icon">🔍</div><p>Ask a question or switch to Auto mode for autonomous exploration</p>';
-            }
+        // New chat
+        function newChat() {
+            currentConvId = null;
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="message assistant">
+                    Welcome to the Epstein Investigation Platform. Ask me anything about the documents, emails, or entities in the archive.
+                </div>
+            `;
+            loadConversations();
+            showTab('chat');
         }
 
-        function restoreMode() {
-            setMode(currentMode);
+        // Load conversation
+        async function loadConversation(convId) {
+            currentConvId = convId;
+            const messages = await fetch(`${API}/chat/${convId}/messages`).then(r => r.json());
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = messages.map(m => `
+                <div class="message ${m.role}">${formatMessage(m.content)}</div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+            loadConversations();
+            showTab('chat');
         }
 
-        function startAutoExploration() {
-            if (autoRunning) return;
-            autoRunning = true;
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message || isGenerating) return;
 
-            // Clear previous discoveries
-            const discoveries = document.getElementById('discoveries');
-            const empty = discoveries.querySelector('.empty');
-            if (empty) empty.remove();
-
-            // Start exploration loop (fast: 3s intervals)
-            runAutoQuestion();
-            autoInterval = setInterval(runAutoQuestion, 3000);
-        }
-
-        function stopAutoExploration() {
-            autoRunning = false;
-            if (autoInterval) {
-                clearInterval(autoInterval);
-                autoInterval = null;
-            }
-        }
-
-        // Manual query submission (Normal mode)
-        async function submitManualQuery() {
-            const input = document.getElementById('manual-query');
-            const query = input.value.trim();
-            if (!query) return;
-
+            isGenerating = true;
+            document.getElementById('chat-send').disabled = true;
             input.value = '';
 
-            // Remove empty state
-            const empty = document.getElementById('discoveries-empty');
-            if (empty) empty.remove();
+            const container = document.getElementById('chat-messages');
 
-            // Add discovery card for this query
-            const discoveries = document.getElementById('discoveries');
-            const div = document.createElement('div');
-            div.className = 'discovery';
-            div.innerHTML = `
-                <div class="discovery-question">${escapeHtml(query)}</div>
-                <div class="discovery-answer"><span class="thinking">Searching documents...</span></div>
-                <div class="discovery-sources"></div>
-            `;
-            discoveries.insertBefore(div, discoveries.firstChild);
+            // Add user message
+            container.innerHTML += `<div class="message user">${escapeHtml(message)}</div>`;
 
-            // Use RAG endpoint
-            await fetchAnswer(query, div);
-        }
+            // Add status message
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'message status';
+            statusDiv.textContent = 'Thinking...';
+            container.appendChild(statusDiv);
+            container.scrollTop = container.scrollHeight;
 
-        // Handle Enter key for manual query
-        document.addEventListener('DOMContentLoaded', () => {
-            const manualInput = document.getElementById('manual-query');
-            if (manualInput) {
-                manualInput.addEventListener('keydown', e => {
-                    if (e.key === 'Enter') submitManualQuery();
+            // Create assistant message div
+            const assistantDiv = document.createElement('div');
+            assistantDiv.className = 'message assistant';
+            assistantDiv.style.display = 'none';
+
+            let responseText = '';
+            let sourceIds = [];
+
+            try {
+                const response = await fetch(`${API}/chat/send`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, conversation_id: currentConvId})
                 });
-            }
-        });
 
-        // Source filters
-        document.querySelectorAll('.filter').forEach(f => {
-            f.addEventListener('click', () => {
-                document.querySelectorAll('.filter').forEach(x => x.classList.remove('active'));
-                f.classList.add('active');
-                currentSource = f.dataset.source;
-            });
-        });
-
-        // Search
-        document.getElementById('search').addEventListener('keydown', e => {
-            if (e.key === 'Enter') doSearch();
-        });
-
-        async function doSearch() {
-            const query = document.getElementById('search').value.trim();
-            if (!query) return;
-
-            const btn = document.getElementById('search-btn');
-            const resultsDiv = document.getElementById('results');
-
-            btn.disabled = true;
-            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching...</p></div>';
-
-            try {
-                const results = await searchAll(query, currentSource);
-                displayResults(results, query);
-            } catch (error) {
-                resultsDiv.innerHTML = '<div class="empty"><p>Search error: ' + error.message + '</p></div>';
-            }
-
-            btn.disabled = false;
-        }
-
-        async function searchAll(query, source) {
-            const results = [];
-
-            if (source === 'all' || source === 'documents') {
-                try {
-                    const docRes = await fetch('/api/search?q=' + encodeURIComponent(query) + '&limit=20').then(r => r.json());
-                    docRes.forEach(d => {
-                        results.push({
-                            type: 'document',
-                            title: d.name || d.title || 'Document',
-                            content: cleanContent(d.snippet || ''),
-                            score: d.score || 0
-                        });
-                    });
-                } catch(e) {}
-            }
-
-            if (source === 'all' || source === 'emails') {
-                try {
-                    const emailRes = await fetch('/api/search/emails?q=' + encodeURIComponent(query) + '&limit=20').then(r => r.json());
-                    emailRes.forEach(e => {
-                        results.push({
-                            type: 'email',
-                            title: e.title || e.subject || 'Email',
-                            content: cleanContent(e.snippet || e.body || ''),
-                            score: e.score || 0,
-                            meta: e.sender || ''
-                        });
-                    });
-                } catch(e) {}
-            }
-
-            if (source === 'all' || source === 'nodes') {
-                try {
-                    const nodeRes = await fetch('/api/search/nodes?q=' + encodeURIComponent(query) + '&limit=20').then(r => r.json());
-                    nodeRes.forEach(n => {
-                        results.push({
-                            type: 'entity',
-                            title: n.name || n.title || 'Entity',
-                            content: cleanContent(n.description || n.snippet || ''),
-                            score: n.score || 0,
-                            meta: n.type || ''
-                        });
-                    });
-                } catch(e) {}
-            }
-
-            results.sort((a, b) => (b.score || 0) - (a.score || 0));
-            return results;
-        }
-
-        function displayResults(results, query) {
-            const resultsDiv = document.getElementById('results');
-
-            if (results.length === 0) {
-                resultsDiv.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No results found for "' + escapeHtml(query) + '"</p></div>';
-                return;
-            }
-
-            const keywords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-
-            let html = '<div class="result-header"><span>' + results.length + ' results for "' + escapeHtml(query) + '"</span></div>';
-
-            results.forEach(r => {
-                const highlighted = highlightKeywords(r.content.substring(0, 250), keywords);
-                html += `
-                    <div class="result">
-                        <div class="result-meta">
-                            <span class="result-type ${r.type}">${r.type}</span>
-                            ${r.meta ? '<span style="color:var(--text-dim);font-size:0.75rem">' + escapeHtml(r.meta) + '</span>' : ''}
-                        </div>
-                        <div class="result-title">${escapeHtml(r.title)}</div>
-                        <div class="result-content">${highlighted}${r.content.length > 250 ? '...' : ''}</div>
-                    </div>
-                `;
-            });
-
-            resultsDiv.innerHTML = html;
-        }
-
-        // Auto Exploration
-        const AUTO_QUESTIONS = [
-            "Who visited Little St. James island most frequently?",
-            "What financial connections exist between Epstein and major corporations?",
-            "Which witnesses changed their testimony over time?",
-            "What patterns appear in the flight logs between 1999-2005?",
-            "Who was present at key events mentioned in depositions?",
-            "What evidence exists of obstruction of justice?",
-            "Which law enforcement officials had contact with Epstein?",
-            "What do the black book entries reveal about networking patterns?",
-            "What inconsistencies exist between different witness accounts?",
-            "What happened to evidence after Epstein's first arrest?",
-            "Who benefited financially from Epstein's death?",
-            "What connections exist to modeling agencies?",
-            "What do the massage appointment records show?",
-            "Which politicians appear in flight logs?",
-            "What documents were sealed and why?",
-            "What did employees testify about daily operations?",
-            "What evidence links Maxwell to recruitment?",
-            "What financial irregularities were documented?",
-            "Who provided legal protection over the years?",
-            "What do the photographs reveal about visitors?"
-        ];
-
-        let questionIndex = 0;
-
-        // Legacy toggle function - now redirects to setMode
-        function toggleAuto() {
-            if (currentMode === 'auto') {
-                setMode('normal');
-            } else {
-                setMode('auto');
-            }
-        }
-
-        async function runAutoQuestion() {
-            if (!autoRunning) return;
-
-            const question = AUTO_QUESTIONS[questionIndex % AUTO_QUESTIONS.length];
-            questionIndex++;
-
-            const status = document.getElementById('auto-status');
-            status.querySelector('span').textContent = 'Analyzing: ' + question.substring(0, 35) + '...';
-
-            // Create discovery card immediately
-            const discoveries = document.getElementById('discoveries');
-            const empty = discoveries.querySelector('.empty');
-            if (empty) empty.remove();
-
-            const div = document.createElement('div');
-            div.className = 'discovery';
-            div.innerHTML = `
-                <div class="discovery-question">${escapeHtml(question)}</div>
-                <div class="discovery-answer"><span class="thinking">Analyzing documents...</span></div>
-                <div class="discovery-sources"></div>
-            `;
-            discoveries.insertBefore(div, discoveries.firstChild);
-
-            while (discoveries.children.length > 8) {
-                discoveries.removeChild(discoveries.lastChild);
-            }
-
-            // Use fast search for auto mode (instant results)
-            await fetchAnswerFast(question, div);
-
-            // Update status after completion
-            if (autoRunning) {
-                status.innerHTML = '<div class="status-dot running"></div><span>Auto Mode Active</span>';
-            }
-        }
-
-        // Fast search for Auto mode (instant results, no LLM)
-        async function fetchAnswerFast(question, div) {
-            const answerDiv = div.querySelector('.discovery-answer');
-            const sourcesDiv = div.querySelector('.discovery-sources');
-
-            try {
-                const response = await fetch('/api/search?q=' + encodeURIComponent(question) + '&limit=8');
-                const results = await response.json();
-
-                if (results.length === 0) {
-                    answerDiv.innerHTML = '<em>No documents found for this query.</em>';
-                    return;
-                }
-
-                // Build summary from top results
-                let summary = `<strong>Found ${results.length} documents:</strong><ul>`;
-                results.slice(0, 5).forEach(r => {
-                    const title = (r.name || r.title || 'Document').substring(0, 60);
-                    const snippet = (r.snippet || '').substring(0, 100);
-                    summary += `<li><strong>${escapeHtml(title)}</strong>: ${escapeHtml(snippet)}...</li>`;
-                });
-                summary += '</ul>';
-                answerDiv.innerHTML = summary;
-
-                // Show source links
-                sourcesDiv.innerHTML = results.slice(0, 6).map(r => {
-                    const id = r.id || r.doc_id;
-                    return `<span class="source-tag" onclick="window.open('/source.html?id=${id}', '_blank')">#${id}</span>`;
-                }).join('');
-
-            } catch (e) {
-                console.error('Fast search error:', e);
-                answerDiv.innerHTML = '<em>Search failed.</em>';
-            }
-        }
-
-        // Full RAG for Normal mode (slower, with LLM synthesis)
-        async function fetchAnswer(question, div) {
-            try {
-                const response = await fetch('/api/ask?q=' + encodeURIComponent(question));
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
 
-                let fullAnswer = '';
-                let sources = [];
-                const answerDiv = div.querySelector('.discovery-answer');
-                const sourcesDiv = div.querySelector('.discovery-sources');
-
                 while (true) {
-                    const { done, value } = await reader.read();
+                    const {done, value} = await reader.read();
                     if (done) break;
 
                     const chunk = decoder.decode(value);
                     const lines = chunk.split('\n');
 
                     for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
 
-                                if (data.type === 'chunk' && data.text) {
-                                    fullAnswer += data.text;
-                                    answerDiv.innerHTML = formatAnswer(fullAnswer);
+                            if (data.type === 'conv_id') {
+                                currentConvId = data.id;
+                            }
+                            if (data.type === 'status') {
+                                statusDiv.textContent = data.msg;
+                            }
+                            if (data.type === 'chunk') {
+                                statusDiv.style.display = 'none';
+                                assistantDiv.style.display = 'block';
+                                if (!assistantDiv.parentNode) {
+                                    container.appendChild(assistantDiv);
                                 }
-
-                                if (data.type === 'status' && data.msg) {
-                                    answerDiv.innerHTML = '<span class="thinking">' + escapeHtml(data.msg) + '</span>';
+                                responseText += data.text;
+                                assistantDiv.innerHTML = formatMessage(responseText);
+                                container.scrollTop = container.scrollHeight;
+                            }
+                            if (data.type === 'sources') {
+                                sourceIds = data.ids || [];
+                            }
+                            if (data.type === 'done') {
+                                if (sourceIds.length > 0) {
+                                    const uniqueIds = [...new Set(sourceIds)];
+                                    const sourcesId = 'sources-' + Date.now();
+                                    assistantDiv.innerHTML += `
+                                        <div class="message-sources">
+                                            <button class="sources-btn" onclick="toggleSources('${sourcesId}', this)">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                                </svg>
+                                                Voir les sources (${uniqueIds.length})
+                                            </button>
+                                            <div id="${sourcesId}" class="sources-list">
+                                                ${uniqueIds.map(id => `
+                                                    <div class="source-item" onclick="showSource(${id})">
+                                                        <span class="source-id">#${id}</span>
+                                                        <span class="source-type">Document</span>
+                                                        <span>Cliquer pour voir</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    `;
                                 }
-
-                                if (data.type === 'done') {
-                                    if (data.sources && data.sources.length > 0) {
-                                        sources = data.sources;
-                                        sourcesDiv.innerHTML = sources.slice(0, 4).map(s => {
-                                            const id = typeof s === 'number' ? s : (s.id || s);
-                                            return `<span class="source-tag" onclick="window.open('/source.html?id=${id}', '_blank')">#${id}</span>`;
-                                        }).join('');
-                                    }
-                                }
-                            } catch (e) {}
-                        }
+                            }
+                        } catch (e) {}
                     }
                 }
 
-                if (!fullAnswer) {
-                    answerDiv.innerHTML = '<em>No relevant information found in the archive.</em>';
-                }
+                statusDiv.remove();
+                loadConversations();
 
             } catch (e) {
-                console.error('Fetch error:', e);
-                div.querySelector('.discovery-answer').innerHTML = '<em>Analysis failed. Please try again.</em>';
+                statusDiv.textContent = 'Error: ' + e.message;
             }
+
+            isGenerating = false;
+            document.getElementById('chat-send').disabled = false;
         }
 
-        function formatAnswer(text) {
+        // Format message (markdown)
+        function formatMessage(text) {
             let html = escapeHtml(text);
-            // Bold
+
+            // Headers (must be at start of line)
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+            // Horizontal rule
+            html = html.replace(/^---$/gm, '<hr>');
+
+            // Blockquotes
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Bold and italic
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            // Bullet points
-            html = html.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
-            // Newlines
-            html = html.replace(/\n/g, '<br>');
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Lists (simple)
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Line breaks (but not after block elements)
+            html = html.replace(/\n(?!<)/g, '<br>');
+            html = html.replace(/<br>(<h2|<h3|<hr|<ul|<blockquote)/g, '$1');
+            html = html.replace(/(<\/h2>|<\/h3>|<\/ul>|<\/blockquote>)<br>/g, '$1');
+
             return html;
         }
 
-        // Targets
-        async function loadTargets() {
-            const container = document.getElementById('targets-list');
+        // Enter to send
+        document.getElementById('chat-input').onkeydown = e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+
+        // Search
+        document.getElementById('search-input').onkeydown = e => {
+            if (e.key === 'Enter') doSearch();
+        };
+
+        async function doSearch() {
+            const q = document.getElementById('search-input').value.trim();
+            if (!q) return;
+
+            const results = document.getElementById('search-results');
+            results.innerHTML = '<div class="loading">Searching...</div>';
 
             try {
-                const targets = await fetch('/api/prosecution/targets').then(r => r.json());
-
-                let html = '<div class="result-header"><span>' + targets.length + ' prosecution targets</span></div>';
-
-                targets.forEach(t => {
-                    const flagColor = t.guilt_flag >= 10 ? 'var(--red)' : t.guilt_flag >= 7 ? 'var(--orange)' : t.guilt_flag >= 4 ? 'var(--accent)' : 'var(--text-dim)';
-
-                    html += `
-                        <div class="result">
-                            <div class="result-meta">
-                                <span class="result-type" style="background: ${flagColor}; color: white;">Flag: ${t.guilt_flag}/12</span>
-                                <span style="color:var(--text-dim);font-size:0.75rem">${t.status || 'Unknown'}</span>
-                            </div>
-                            <div class="result-title">${escapeHtml(t.name)}</div>
-                            <div class="result-content">
-                                <strong style="color:var(--text)">${t.flag_label}</strong><br>
-                                Confidence: ${t.confidence}%
-                                ${t.flag_reason ? '<br><span style="color:var(--text-dim)">' + escapeHtml(t.flag_reason) + '</span>' : ''}
-                            </div>
+                const data = await fetch(`${API}/search?q=${encodeURIComponent(q)}&limit=30`).then(r => r.json());
+                if (!data.length) {
+                    results.innerHTML = '<div class="loading">No results found</div>';
+                    return;
+                }
+                results.innerHTML = data.map(r => `
+                    <div class="result" onclick="showSource(${r.id}, '${r.type}')">
+                        <div class="result-header">
+                            <span class="result-type ${r.type}">${r.type}</span>
+                            <span class="result-title">${escapeHtml(r.title || 'Untitled')}</span>
                         </div>
-                    `;
-                });
-
-                container.innerHTML = html;
+                        <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 200))}...</div>
+                    </div>
+                `).join('');
             } catch (e) {
-                container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Error loading targets</p></div>';
+                results.innerHTML = '<div class="loading">Search error</div>';
             }
         }
 
-        // Utilities
-        function highlightKeywords(text, keywords) {
-            let result = escapeHtml(text);
-            keywords.forEach(kw => {
-                const regex = new RegExp('(' + escapeRegex(kw) + ')', 'gi');
-                result = result.replace(regex, '<mark>$1</mark>');
-            });
-            return result;
+        // Network visualization
+        let network = null;
+        let networkData = null;
+        let edgeTypesLoaded = false;
+
+        // Load edge types for filter dropdown
+        async function loadEdgeTypes() {
+            if (edgeTypesLoaded) return;
+            try {
+                const types = await fetch(`${API}/graph/edge-types`).then(r => r.json());
+                const select = document.getElementById('edge-type-filter');
+
+                // Group types by category
+                const categories = {
+                    'Relations': ['associate_of', 'employed_by', 'worked_with', 'worked_for', 'assistant_of', 'client_of'],
+                    'Legal': ['accuser_of', 'legal_counsel', 'prosecuted', 'legal_co_mention', 'legal_representation'],
+                    'Travel': ['flew_with', 'associated_with_location'],
+                    'Communication': ['emailed', 'email_co_mention', 'co_occurrence', 'mentioned_with'],
+                    'Other': []
+                };
+
+                // Add grouped options
+                for (const [category, typeList] of Object.entries(categories)) {
+                    const group = document.createElement('optgroup');
+                    group.label = category;
+
+                    for (const t of types) {
+                        if (typeList.includes(t.type) || (category === 'Other' && !Object.values(categories).flat().includes(t.type))) {
+                            const opt = document.createElement('option');
+                            opt.value = t.type;
+                            opt.textContent = `${t.type.replace(/_/g, ' ')} (${t.count})`;
+                            group.appendChild(opt);
+                        }
+                    }
+
+                    if (group.children.length > 0) {
+                        select.appendChild(group);
+                    }
+                }
+
+                edgeTypesLoaded = true;
+            } catch (e) {
+                console.error('Failed to load edge types:', e);
+            }
         }
+
+        // Set edge filter and reload
+        function setEdgeFilter(types) {
+            document.getElementById('edge-type-filter').value = types.split(',')[0] || '';
+            loadNetwork();
+        }
+
+        async function loadGraph() {
+            // Load edge types and auto-load network when graph tab is shown
+            await loadEdgeTypes();
+            if (!network) {
+                loadNetwork('Jeffrey Epstein');
+            }
+        }
+
+        async function loadNetwork(centerNode = null) {
+            const container = document.getElementById('network-container');
+            const info = document.getElementById('graph-info');
+            const searchInput = document.getElementById('graph-search');
+            const edgeFilter = document.getElementById('edge-type-filter').value;
+
+            // Use search input if no center specified
+            if (!centerNode && searchInput.value.trim()) {
+                centerNode = searchInput.value.trim();
+            }
+
+            info.textContent = 'Loading network...';
+
+            try {
+                let url = `${API}/graph/network?limit=150&depth=2`;
+                if (centerNode) {
+                    url += `&center=${encodeURIComponent(centerNode)}`;
+                }
+                if (edgeFilter) {
+                    url += `&edge_types=${encodeURIComponent(edgeFilter)}`;
+                }
+
+                const data = await fetch(url).then(r => r.json());
+
+                if (!data.nodes || data.nodes.length === 0) {
+                    info.textContent = 'No nodes found. Try a different search.';
+                    return;
+                }
+
+                networkData = data;
+
+                // Create vis-network datasets
+                const nodes = new vis.DataSet(data.nodes);
+                const edges = new vis.DataSet(data.edges);
+
+                // Network options
+                const options = {
+                    nodes: {
+                        shape: 'dot',
+                        borderWidth: 2,
+                        shadow: true,
+                        font: {
+                            color: '#e5e5e5',
+                            size: 12,
+                            face: 'system-ui, sans-serif'
+                        }
+                    },
+                    edges: {
+                        width: 1,
+                        smooth: {
+                            type: 'continuous',
+                            roundness: 0.5
+                        },
+                        font: {
+                            size: 9,
+                            color: '#666',
+                            strokeWidth: 0,
+                            align: 'middle'
+                        },
+                        arrows: {
+                            to: { enabled: true, scaleFactor: 0.5 }
+                        }
+                    },
+                    physics: {
+                        enabled: true,
+                        solver: 'forceAtlas2Based',
+                        forceAtlas2Based: {
+                            gravitationalConstant: -50,
+                            centralGravity: 0.01,
+                            springLength: 100,
+                            springConstant: 0.08,
+                            damping: 0.4
+                        },
+                        stabilization: {
+                            enabled: true,
+                            iterations: 200,
+                            updateInterval: 25
+                        }
+                    },
+                    interaction: {
+                        hover: true,
+                        tooltipDelay: 100,
+                        hideEdgesOnDrag: true,
+                        multiselect: true
+                    },
+                    layout: {
+                        improvedLayout: true
+                    }
+                };
+
+                // Destroy old network if exists
+                if (network) {
+                    network.destroy();
+                }
+
+                // Create new network
+                network = new vis.Network(container, { nodes, edges }, options);
+
+                // Event handlers
+                network.on('click', function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        const node = nodes.get(nodeId);
+                        info.innerHTML = `<strong>${escapeHtml(node.label)}</strong> - ${node.title ? node.title.replace(/\n/g, ' | ') : 'No details'}`;
+                    }
+                });
+
+                network.on('doubleClick', function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        const node = nodes.get(nodeId);
+                        // Reload network centered on this node
+                        searchInput.value = node.label;
+                        loadNetwork(node.label);
+                    }
+                });
+
+                network.once('stabilizationIterationsDone', function() {
+                    network.setOptions({ physics: { enabled: false } });
+                });
+
+                const filterInfo = edgeFilter ? ` | Filter: <strong>${edgeFilter.replace(/_/g, ' ')}</strong>` : '';
+                info.innerHTML = `<strong>${data.nodes.length}</strong> nodes, <strong>${data.edges.length}</strong> edges${filterInfo}. ${centerNode ? `Centered on: ${escapeHtml(centerNode)}` : 'Top entities'}. Double-click to explore.`;
+
+            } catch (e) {
+                info.textContent = 'Failed to load network: ' + e.message;
+            }
+        }
+
+        // Handle Enter key in graph search
+        document.getElementById('graph-search').onkeydown = e => {
+            if (e.key === 'Enter') loadNetwork();
+        };
+
+        // Handle edge type filter change
+        document.getElementById('edge-type-filter').onchange = () => {
+            if (network) loadNetwork();
+        };
+
+        // Export PNG
+        function exportPNG() {
+            if (!network) {
+                alert('Load a network first');
+                return;
+            }
+            const canvas = document.querySelector('#network-container canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'epstein-network-' + new Date().toISOString().slice(0,10) + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('graph-info').innerHTML = '<strong>PNG exported!</strong>';
+            }
+        }
+
+        // Export JSON
+        function exportJSON() {
+            if (!networkData) {
+                alert('Load a network first');
+                return;
+            }
+            const exportData = {
+                exported: new Date().toISOString(),
+                query: document.getElementById('graph-search').value || 'default',
+                filter: document.getElementById('edge-type-filter').value || 'all',
+                nodes: networkData.nodes,
+                edges: networkData.edges,
+                stats: {
+                    nodeCount: networkData.nodes.length,
+                    edgeCount: networkData.edges.length
+                }
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.download = 'epstein-network-' + new Date().toISOString().slice(0,10) + '.json';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            document.getElementById('graph-info').innerHTML = '<strong>JSON exported!</strong> ' + exportData.stats.nodeCount + ' nodes, ' + exportData.stats.edgeCount + ' edges';
+        }
+
+        // Load targets
+        async function loadTargets() {
+            const list = document.getElementById('targets-list');
+            try {
+                const targets = await fetch(`${API}/targets`).then(r => r.json());
+                list.innerHTML = targets.map(t => `
+                    <div class="entity-item" onclick="showNode(${t.id})">
+                        <span class="entity-name">${escapeHtml(t.name)}</span>
+                        <div class="entity-scores">
+                            Relevance: ${(t.relevance || 0).toFixed(2)} | Confidence: ${(t.confidence || 0).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                list.innerHTML = '<div class="loading">Failed to load</div>';
+            }
+        }
+
+        // Toggle sources panel
+        function toggleSources(id, btn) {
+            const panel = document.getElementById(id);
+            if (panel) {
+                panel.classList.toggle('active');
+                btn.classList.toggle('active');
+            }
+        }
+
+        // Show source modal
+        async function showSource(id) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            modal.classList.add('active');
+            title.textContent = 'Chargement...';
+            body.textContent = '';
+
+            try {
+                // Try email first
+                let res = await fetch(`${API}/email/${id}`);
+                let data = await res.json();
+
+                if (data.error || !data.body) {
+                    // Try document
+                    res = await fetch(`${API}/document/${id}`);
+                    data = await res.json();
+                }
+
+                if (data.subject || data.body) {
+                    // Email format
+                    title.textContent = data.subject || 'Email';
+                    body.innerHTML = `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);font-size:0.85rem;color:var(--text-dim)">
+                        <div><strong>De:</strong> ${escapeHtml(data.sender || 'Inconnu')}</div>
+                        <div><strong>À:</strong> ${escapeHtml(data.to || 'Inconnu')}</div>
+                        <div><strong>Date:</strong> ${escapeHtml(data.date || 'Inconnue')}</div>
+                        <div><strong>ID:</strong> #${id}</div>
+                    </div>
+                    <div style="white-space:pre-wrap">${escapeHtml(data.body || 'Pas de contenu')}</div>`;
+                } else if (data.filename || data.content) {
+                    // Document format
+                    title.textContent = data.filename || `Document #${id}`;
+                    body.innerHTML = `<div style="margin-bottom:12px;font-size:0.85rem;color:var(--text-dim)">
+                        <strong>ID:</strong> #${id}
+                    </div>
+                    <div style="white-space:pre-wrap">${escapeHtml(data.content || 'Pas de contenu')}</div>`;
+                } else {
+                    title.textContent = `Source #${id}`;
+                    body.textContent = 'Contenu non disponible';
+                }
+            } catch (e) {
+                title.textContent = 'Erreur';
+                body.textContent = 'Impossible de charger: ' + e.message;
+            }
+        }
+
+        // Show node modal
+        async function showNode(id) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            modal.classList.add('active');
+            title.textContent = 'Loading...';
+            body.textContent = '';
+
+            try {
+                const data = await fetch(`${API}/nodes/${id}`).then(r => r.json());
+                const node = data.node;
+                const edges = data.edges || [];
+                title.textContent = node.name;
+                body.innerHTML = `<strong>Type:</strong> ${node.type}
+<strong>Relevance:</strong> ${(node.relevance_score || 0).toFixed(2)}
+<strong>Confidence:</strong> ${(node.confidence_score || 0).toFixed(2)}
+
+<strong>Connections (${edges.length}):</strong>
+${edges.slice(0, 20).map(e => `- ${e.from_name} --[${e.type}]--> ${e.to_name}`).join('\n')}`;
+            } catch (e) {
+                title.textContent = 'Error';
+                body.textContent = 'Failed to load';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+        document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
+        document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text || '';
             return div.innerHTML;
         }
-
-        function escapeRegex(str) {
-            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        function cleanContent(text) {
-            if (!text) return '';
-            // Strip HTML tags
-            let clean = text.replace(/<[^>]*>/g, '');
-            // Remove URLs
-            clean = clean.replace(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/g, '');
-            // Collapse whitespace
-            clean = clean.replace(/\s+/g, ' ').trim();
-            return clean;
-        }
-
-        // Load stats
-        fetch('/api/stats')
-            .then(r => r.json())
-            .then(stats => {
-                if (stats.total_documents) document.getElementById('doc-count').textContent = stats.total_documents.toLocaleString();
-                if (stats.nodes) document.getElementById('node-count').textContent = stats.nodes.toLocaleString();
-                if (stats.edges) document.getElementById('edge-count').textContent = stats.edges.toLocaleString();
-            })
-            .catch(() => {});
-
-        // Focus search on load
-        document.getElementById('search').focus();
-
-        // Hot reload - check for updates every 3s
-        let lastModified = null;
-        setInterval(async () => {
-            try {
-                const res = await fetch('/index.html', { method: 'HEAD' });
-                const modified = res.headers.get('last-modified');
-                if (lastModified && modified !== lastModified) {
-                    console.log('Hot reload triggered');
-                    location.reload();
-                }
-                lastModified = modified;
-            } catch(e) {}
-        }, 3000);
     </script>
 </body>
 </html>
