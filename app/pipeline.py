@@ -116,6 +116,18 @@ SPAM_KEYWORDS = {
     # More misc spam
     'three colors', 'first responder', 'ever ready', 'batteries',
     'weather', 'forecast', 'hurricane', 'tropical storm',
+    # News/media spam
+    'the post', 'washington post', 'new york times', 'wall street',
+    'cnn', 'fox news', 'msnbc', 'nbc', 'cbs', 'abc news',
+    'publisher', 'editor', 'reporter', 'journalist', 'columnist',
+    'headline', 'breaking news', 'daily', 'weekly', 'newsletter',
+    # Political spam (not investigation related)
+    'text member', 'keeping america', 'make america', 'campaign',
+    'donate', 'contribution', 'fundraising', 'rally', 'vote',
+    'democrat', 'republican', 'congress', 'senate', 'house of',
+    'steve bannon', 'fred ryan', 'jason rezaian',
+    # Generic spam
+    'the week', 'post most', 'crime victims', 'daily headlines',
 }
 
 SPAM_DOMAINS = {
@@ -166,10 +178,17 @@ def is_spam_entity(text: str) -> bool:
 
     return False
 
-def filter_suggestions(suggestions: List[str], query: str) -> List[str]:
-    """Filter suggestions to only include investigation-relevant ones"""
+def filter_suggestions(suggestions: List[str], query: str, strict: bool = True) -> List[str]:
+    """Filter suggestions to only include investigation-relevant ones
+
+    Args:
+        suggestions: List of suggested queries
+        query: Current query (to avoid duplicates)
+        strict: If True, only allow investigation-relevant suggestions
+    """
     query_lower = query.lower()
-    filtered = []
+    relevant = []
+    maybe = []
 
     for s in suggestions:
         s_lower = s.lower().strip()
@@ -182,17 +201,21 @@ def filter_suggestions(suggestions: List[str], query: str) -> List[str]:
         if is_spam_entity(s):
             continue
 
-        # Prefer investigation-relevant
+        # Investigation-relevant gets priority
         if is_investigation_relevant(s):
-            filtered.append(s)
-        # Allow if not obviously spam and reasonably long
-        elif len(s) > 6 and not any(spam in s_lower for spam in SPAM_KEYWORDS):
-            # Check if it looks like a name (capitalized words)
+            relevant.append(s)
+        # In non-strict mode, allow potential names
+        elif not strict and len(s) > 8:
             words = s.split()
             if len(words) >= 2 and all(w[0].isupper() for w in words if w):
-                filtered.append(s)
+                maybe.append(s)
 
-    return filtered[:4]
+    # Return relevant first, then maybe (if not strict)
+    result = relevant[:4]
+    if len(result) < 4 and not strict:
+        result.extend(maybe[:4 - len(result)])
+
+    return result[:4]
 
 def get_curated_suggestions(query: str) -> List[str]:
     """Get suggestions from curated investigation documents based on query"""
