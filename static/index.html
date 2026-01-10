@@ -901,13 +901,21 @@
                 results.innerHTML = items.map(r => {
                     const id = r.doc_id || r.id;
                     const type = r.doc_type || r.type || 'document';
-                    const title = r.title || 'Untitled';
+                    const title = r.title || r.name || 'Untitled';
                     const snippet = r.snippet || '';
-                    const score = r.score ? ` (${r.score.toFixed(2)})` : '';
+                    const score = r.score ? r.score.toFixed(2) : '0';
+                    const meta = r.metadata || {};
+                    const pertinence = meta.pertinence || 0;
+                    const suspicion = meta.suspicion || 0;
+                    const badges = [];
+                    if (pertinence > 70) badges.push('<span style="background:#27ae60;padding:2px 6px;border-radius:3px;font-size:10px;">HIGH RELEVANCE</span>');
+                    if (suspicion > 50) badges.push('<span style="background:#e74c3c;padding:2px 6px;border-radius:3px;font-size:10px;">SUSPICIOUS</span>');
                     return `
                     <div class="result" onclick="showSource(${id}, '${type}')">
                         <div class="result-header">
-                            <span class="result-type ${type}">${type}${score}</span>
+                            <span class="result-type ${type}">${type}</span>
+                            <span style="color:#888;font-size:11px;margin-left:5px;">score:${score} pert:${pertinence} susp:${suspicion}</span>
+                            ${badges.join(' ')}
                             <span class="result-title">${escapeHtml(title)}</span>
                         </div>
                         <div class="result-snippet">${escapeHtml(snippet.substring(0, 250))}...</div>
@@ -965,18 +973,38 @@
                     html += '</div>';
                 }
 
-                // Search results from Blood
+                // Separate emails from entities
                 if (data.search?.results?.length) {
-                    html += '<div style="color:#e74c3c;font-weight:bold;margin-bottom:8px;">Search Results (C++ Blood)</div>';
-                    html += data.search.results.map(r => `
-                        <div class="result" onclick="showSource(${r.id}, 'investigate')">
-                            <div class="result-header">
-                                <span class="result-type blood">${r.score?.toFixed(2) || '0'}</span>
-                                <span class="result-title">${escapeHtml(r.title || 'Untitled')}</span>
+                    const emails = data.search.results.filter(r => r.title?.toLowerCase().includes('[email]'));
+                    const entities = data.search.results.filter(r => !r.title?.toLowerCase().includes('[email]'));
+
+                    // Entities section
+                    if (entities.length) {
+                        html += '<div style="color:#e74c3c;font-weight:bold;margin-bottom:8px;">Entities & Documents (C++ Blood)</div>';
+                        html += entities.slice(0, 10).map(r => `
+                            <div class="result" onclick="showSource(${r.id}, 'investigate')">
+                                <div class="result-header">
+                                    <span class="result-type blood">${r.score?.toFixed(2) || '0'}</span>
+                                    <span class="result-title">${escapeHtml(r.title || 'Untitled')}</span>
+                                </div>
+                                <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 200))}...</div>
                             </div>
-                            <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 250))}...</div>
-                        </div>
-                    `).join('');
+                        `).join('');
+                    }
+
+                    // Emails section
+                    if (emails.length) {
+                        html += '<div style="color:#3498db;font-weight:bold;margin:15px 0 8px 0;">Emails Found (' + emails.length + ')</div>';
+                        html += emails.slice(0, 10).map(r => `
+                            <div class="result" onclick="showSource(${r.id}, 'email')" style="border-left:3px solid #3498db;">
+                                <div class="result-header">
+                                    <span class="result-type email">${r.score?.toFixed(2) || '0'}</span>
+                                    <span class="result-title">${escapeHtml(r.title?.replace('[email] ', '').replace('[Email] ', '') || 'Email')}</span>
+                                </div>
+                                <div class="result-snippet">${escapeHtml((r.snippet || '').substring(0, 250))}...</div>
+                            </div>
+                        `).join('');
+                    }
                 }
 
                 results.innerHTML = html || '<div class="loading">No results</div>';
