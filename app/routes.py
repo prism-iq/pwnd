@@ -1,10 +1,13 @@
 """FastAPI routes"""
+import logging
+import os
+import json
+import uuid
+from datetime import datetime
+from typing import Optional, List
+
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Optional, List
-import json
-from datetime import datetime
-import uuid
 
 from app.models import (
     SearchResult, QueryRequest, AutoSessionRequest, LanguageRequest
@@ -12,7 +15,8 @@ from app.models import (
 from app.search import search_all, search_emails, search_nodes
 from app.db import execute_query, execute_insert, execute_update
 from app.pipeline import process_query, auto_investigate
-import os
+
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,7 +27,7 @@ async def get_version():
     try:
         stat = os.stat("/opt/rag/static/index.html")
         return {"v": int(stat.st_mtime)}
-    except:
+    except OSError:
         return {"v": 0}
 
 # Health & Stats
@@ -42,7 +46,7 @@ async def stats():
     # Get total documents
     try:
         docs_count = execute_query("sources", "SELECT COUNT(*) as c FROM documents", ())[0]["c"]
-    except:
+    except Exception:
         docs_count = emails_count
 
     # Worker stats if available
@@ -51,7 +55,7 @@ async def stats():
         from app.workers import worker_pool
         if worker_pool.workers:
             worker_stats = worker_pool.stats()
-    except:
+    except (ImportError, AttributeError):
         pass
 
     # Cache stats
@@ -59,7 +63,7 @@ async def stats():
     try:
         from app.pipeline import _search_cache
         cache_stats = _search_cache.stats()
-    except:
+    except (ImportError, AttributeError):
         pass
 
     return {
@@ -87,7 +91,7 @@ async def get_thoughts(stream: bool = False, last_n: int = 10):
         try:
             with open(THOUGHTS_FILE, "r") as f:
                 content = f.read()
-        except:
+        except (OSError, IOError):
             return []
 
         # Split by --- delimiter
@@ -137,8 +141,8 @@ async def get_thoughts(stream: bool = False, last_n: int = 10):
                             yield f"data: {json.dumps(thought)}\n\n"
                         last_count = len(thoughts)
                     last_mtime = mtime
-            except:
-                pass
+            except OSError:
+                pass  # File not found or inaccessible
 
             await asyncio.sleep(1)
 

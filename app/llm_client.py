@@ -4,9 +4,12 @@ Architecture:
 - Phi-3 (local, free): Entity extraction, filtering, simple tasks
 - Haiku (API, paid): Complex synthesis, final analysis
 """
+import logging
 import httpx
 from typing import Dict, Any, Optional, List
 from app.config import LLM_MISTRAL_URL, LLM_HAIKU_API_KEY
+
+log = logging.getLogger(__name__)
 
 
 async def call_local(prompt: str, max_tokens: int = 512, temperature: float = 0.3) -> str:
@@ -44,7 +47,7 @@ async def extract_entities_local(text: str) -> List[Dict]:
         if job and job.result:
             return job.result
         return []
-    except:
+    except Exception:
         return []
 
 
@@ -63,7 +66,7 @@ async def extract_relationships_local(text: str, entities: List[Dict]) -> List[D
         if job and job.result:
             return job.result
         return []
-    except:
+    except Exception:
         return []
 
 
@@ -105,7 +108,7 @@ async def parse_query_intent(query: str) -> Dict:
         if job and job.result:
             return job.result
         return {"intent": "other", "targets": [], "keywords": []}
-    except:
+    except Exception:
         return {"intent": "other", "targets": [], "keywords": []}
 
 
@@ -124,7 +127,7 @@ async def generate_subqueries(query: str, context: str = "") -> List[str]:
         if job and job.result:
             return job.result
         return []
-    except:
+    except Exception:
         return []
 
 
@@ -158,7 +161,7 @@ def insert_extracted_entities(validated: Dict, source_email_id: int = None) -> D
                 ("person", name, name.lower(), person)
             )
             counts["persons"] += 1
-        except:
+        except Exception:
             pass
 
     # Insert organizations
@@ -176,7 +179,7 @@ def insert_extracted_entities(validated: Dict, source_email_id: int = None) -> D
                 ("organization", name, name.lower(), org)
             )
             counts["orgs"] += 1
-        except:
+        except Exception:
             pass
 
     # Insert locations
@@ -194,7 +197,7 @@ def insert_extracted_entities(validated: Dict, source_email_id: int = None) -> D
                 ("location", name, name.lower(), loc)
             )
             counts["locations"] += 1
-        except:
+        except Exception:
             pass
 
     # If we have a source email, create edges
@@ -224,7 +227,7 @@ def insert_extracted_entities(validated: Dict, source_email_id: int = None) -> D
                             (email_node_id, person_node[0]["id"])
                         )
                         counts["edges"] += 1
-                except:
+                except Exception:
                     pass
 
     return counts

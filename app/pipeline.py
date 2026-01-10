@@ -16,20 +16,24 @@ LICENSE COMPLIANCE:
 - Report truth (cite sources)
 - Fight evil (follow evidence)
 """
+import json
+import logging
 import re
 import random
 import asyncio
 import hashlib
+import threading
+import time
 from datetime import datetime
 from typing import AsyncGenerator, Dict, Any, List
 from functools import lru_cache
 from collections import OrderedDict
-import threading
-import time
+
 from app.llm_client import call_haiku
 from app.db import execute_query, execute_insert, execute_update
 from app.search import search_corpus_scored, search_nodes, search_go_sync, auto_score_result
-import json
+
+log = logging.getLogger(__name__)
 
 # =============================================================================
 # INVESTIGATION ENTITY WHITELIST - Known relevant persons, places, orgs
@@ -532,8 +536,8 @@ def rust_extract_entities(text: str) -> Dict[str, List]:
                 "emails": [{"value": e["value"]} for e in data.get("emails", [])],
                 "patterns": []
             }
-    except:
-        pass
+    except (httpx.RequestError, httpx.TimeoutException, ValueError):
+        pass  # Rust service unavailable, fallback to Python
     return fast_extract_python(text)
 
 def fast_extract_entities(text: str) -> Dict[str, List]:
@@ -678,8 +682,8 @@ def record_session_search(conversation_id: str, term: str, email_ids: List[int])
                VALUES (%s, %s, %s)""",
             (conversation_id, term.lower(), json.dumps(email_ids))
         )
-    except:
-        pass
+    except Exception as e:
+        log.debug("Failed to record session search: %s", e)
 
 
 def get_session_seen_emails(conversation_id: str) -> set:
@@ -781,8 +785,8 @@ def get_graph_context(query: str, discovered_names: List[str] = None) -> str:
                 suspicion = meta.get('suspicion', 0)
                 marker = " [!]" if suspicion >= 30 else ""
                 graph_lines.append(f"  {r.type.upper()}: {r.name}{marker}")
-    except:
-        pass
+    except Exception as e:
+        log.debug("Node search failed: %s", e)
 
     # Also search for discovered names
     if discovered_names:
@@ -793,8 +797,8 @@ def get_graph_context(query: str, discovered_names: List[str] = None) -> str:
                     line = f"  {r.type.upper()}: {r.name}"
                     if line not in graph_lines:
                         graph_lines.append(line)
-            except:
-                pass
+            except Exception:
+                pass  # Continue with other names
 
     # Get edges/relationships for key entities
     if graph_lines:
@@ -813,8 +817,8 @@ def get_graph_context(query: str, discovered_names: List[str] = None) -> str:
                 graph_lines.append("\nRELATIONSHIPS:")
                 for r in rows[:8]:
                     graph_lines.append(f"  {r['from_name']} --[{r['type']}]--> {r['to_name']}")
-        except:
-            pass
+        except Exception as e:
+            log.debug("Edge query failed: %s", e)
 
     return NL.join(graph_lines) if graph_lines else ""
 
@@ -1140,8 +1144,8 @@ async def process_query(query: str, conversation_id: str = None, is_auto: bool =
                 "INSERT INTO messages (conversation_id, role, content, is_auto) VALUES (%s, %s, %s, %s)",
                 (conversation_id, "user", query, 1 if is_auto else 0)
             )
-        except:
-            pass
+        except Exception as e:
+            log.debug("Failed to save user message: %s", e)
 
     # Get session history for anti-loop
     session_history = get_session_search_history(conversation_id)
@@ -1546,8 +1550,8 @@ Analyze briefly. Cite #IDs. Suggest next step."""
                 "INSERT INTO messages (conversation_id, role, content, is_auto) VALUES (%s, %s, %s, %s)",
                 (conversation_id, "assistant", response, 1 if is_auto else 0)
             )
-        except:
-            pass
+        except Exception as e:
+            log.debug("Failed to save assistant message: %s", e)
 
     # Background: Enrich DB with extracted entities (non-blocking)
     if parallel_extracted:
@@ -1564,14 +1568,14 @@ Analyze briefly. Cite #IDs. Suggest next step."""
                     execute_insert("graph",
                         "INSERT INTO nodes (name, name_normalized, type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                         (name, name.lower(), "organization"))
-            for l in parallel_extracted.get("locations", [])[:10]:
-                name = l.get("name", "").strip()
+            for loc in parallel_extracted.get("locations", [])[:10]:
+                name = loc.get("name", "").strip()
                 if len(name) > 2:
                     execute_insert("graph",
                         "INSERT INTO nodes (name, name_normalized, type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                         (name, name.lower(), "location"))
-        except:
-            pass
+        except Exception as e:
+            log.debug("Entity enrichment failed: %s", e)
 
     # Suggest follow-ups - NO FILTERING, anything could be a lead
     query_lower = query.lower()
@@ -1708,7 +1712,7 @@ def get_unscored_entity_count() -> int:
             WHERE s.target_id IS NULL
         """, ())
         return rows[0]['cnt'] if rows else 0
-    except:
+    except Exception:
         return 0
 
 # =============================================================================

@@ -416,7 +416,7 @@ Text: {text[:2500]}
                 start = response.index("[")
                 end = response.rindex("]") + 1
                 return json.loads(response[start:end])
-        except:
+        except Exception:
             pass
         return []
 
@@ -436,7 +436,7 @@ Text: {text[:2000]}
                 start = response.index("[")
                 end = response.rindex("]") + 1
                 return json.loads(response[start:end])
-        except:
+        except Exception:
             pass
         return []
 
@@ -457,7 +457,7 @@ Items:
                 end = response.rindex("]") + 1
                 indices = json.loads(response[start:end])
                 return [items[i] for i in indices if i < len(items)]
-        except:
+        except Exception:
             pass
         return items
 
@@ -490,7 +490,7 @@ Query: {query}
                 start = response.index("{")
                 end = response.rindex("}") + 1
                 return json.loads(response[start:end])
-        except:
+        except Exception:
             pass
         return {"intent": "other", "targets": [], "keywords": query.split()[:3], "confidence": 0.3}
 
@@ -511,7 +511,7 @@ Return JSON array of strings: ["question1", "question2", ...]
                 start = response.index("[")
                 end = response.rindex("]") + 1
                 return json.loads(response[start:end])
-        except:
+        except Exception:
             pass
         return []
 
@@ -529,7 +529,7 @@ Text: {text[:2000]}
                 start = response.index("[")
                 end = response.rindex("]") + 1
                 return json.loads(response[start:end])
-        except:
+        except Exception:
             pass
         return []
 
@@ -559,7 +559,7 @@ Results:
                         results[idx]["llm_score"] = s.get("score", 0.5)
                         results[idx]["llm_reason"] = s.get("reason", "")
                 return results
-        except:
+        except Exception:
             pass
         return results
 
@@ -879,7 +879,7 @@ Only include entities with confidence > 0.5. Fix obvious errors."""
                         "sql_inserts": sql_inserts,
                         "haiku_cost": haiku_response.get("cost_usd", 0)
                     }
-            except:
+            except Exception:
                 pass
 
         # Fallback: return unvalidated

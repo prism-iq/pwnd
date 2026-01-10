@@ -1,11 +1,16 @@
-"""Database connections and utilities - PostgreSQL"""
+"""Database connections and utilities - PostgreSQL with connection pooling"""
+import logging
 import os
 from pathlib import Path
+from contextlib import contextmanager
+from typing import List, Dict, Any
+
 from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
-from contextlib import contextmanager
-from typing import Optional, List, Dict, Any
+import psycopg2.pool
+
+log = logging.getLogger(__name__)
 
 # Load .env before accessing env vars
 load_dotenv(Path("/opt/rag/.env"))
@@ -15,19 +20,35 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL environment variable is required")
 
+# Connection pool - min 2 connections, max 10
+_pool = None
+
+def _get_pool():
+    """Get or create the connection pool (lazy initialization)"""
+    global _pool
+    if _pool is None:
+        _pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn=2,
+            maxconn=10,
+            dsn=DATABASE_URL
+        )
+        log.info("PostgreSQL connection pool initialized (2-10 connections)")
+    return _pool
+
 @contextmanager
 def get_db(db_name: str = None):
-    """Context manager for PostgreSQL connection
+    """Context manager for PostgreSQL connection from pool
 
     Note: db_name parameter is kept for compatibility but ignored
     since PostgreSQL uses single database with multiple tables
     """
-    conn = psycopg2.connect(DATABASE_URL)
+    pool = _get_pool()
+    conn = pool.getconn()
     conn.set_session(autocommit=False)
     try:
         yield conn
     finally:
-        conn.close()
+        pool.putconn(conn)
 
 def execute_query(db_name: str, query: str, params: tuple = ()) -> List[Dict[str, Any]]:
     """Execute a SELECT query and return results as list of dicts"""
@@ -56,14 +77,12 @@ def execute_insert(db_name: str, query: str, params: tuple = ()) -> int:
         conn.commit()
 
         # For PostgreSQL, try to get last inserted id from sequence if available
-        # This is a best-effort attempt - prefer using RETURNING clause in query
         try:
             cursor.execute("SELECT lastval();")
             result = cursor.fetchone()
             return result[0] if result else 0
-        except Exception:
+        except psycopg2.ProgrammingError:
             # lastval() fails if no sequence was used in this session
-            # Return 0 as fallback
             return 0
 
 def init_databases():
@@ -147,10 +166,14 @@ def init_databases():
             ON haiku_calls(created_at);
         """)
 
-        # Ensure defaults are set (migration for existing tables)
-        cursor.execute("ALTER TABLE conversations ALTER COLUMN created_at SET DEFAULT NOW()")
-        cursor.execute("ALTER TABLE conversations ALTER COLUMN updated_at SET DEFAULT NOW()")
-        cursor.execute("ALTER TABLE messages ALTER COLUMN created_at SET DEFAULT NOW()")
-
         conn.commit()
         cursor.close()
+        log.info("Database tables initialized")
+
+def close_pool():
+    """Close all connections in the pool (for graceful shutdown)"""
+    global _pool
+    if _pool is not None:
+        _pool.closeall()
+        _pool = None
+        log.info("PostgreSQL connection pool closed")

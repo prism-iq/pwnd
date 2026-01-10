@@ -122,7 +122,7 @@ async def rust_extract(text: str) -> Dict[str, List]:
                                   timeout=5.0)
             if r.status_code == 200:
                 return r.json()
-        except:
+        except Exception:
             pass
     return {}
 
@@ -300,7 +300,7 @@ async def haiku_validate(entities: Dict[str, List], text: str) -> Dict:
         json_match = re.search(r'\{.*\}', response, re.DOTALL)
         if json_match:
             return json.loads(json_match.group())
-    except:
+    except Exception:
         pass
 
     # Fallback: accept all entities

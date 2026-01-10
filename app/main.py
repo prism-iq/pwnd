@@ -12,7 +12,7 @@ from pathlib import Path
 
 from app.routes import router
 from app.routes_auth import router as auth_router
-from app.db import init_databases
+from app.db import init_databases, close_pool
 from app.config import API_HOST, API_PORT
 
 # =============================================================================
@@ -75,17 +75,20 @@ async def lifespan(app: FastAPI):
         await init_workers()
         log.info("Worker pool initialized")
     except Exception as e:
-        log.warning(f"Worker pool not started: {e}")
+        log.warning("Worker pool not started: %s", e)
 
     yield
 
-    # Shutdown: cleanup workers
+    # Shutdown: cleanup workers and database pool
     try:
         from app.workers import shutdown_workers
         await shutdown_workers()
         log.info("Worker pool shutdown")
-    except:
-        pass
+    except Exception as e:
+        log.debug("Worker shutdown error: %s", e)
+
+    # Close database connection pool
+    close_pool()
 
 
 app = FastAPI(

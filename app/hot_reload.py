@@ -54,7 +54,7 @@ class HotReloadManager:
         for queue in self._subscribers:
             try:
                 await queue.put(event)
-            except:
+            except Exception:
                 dead_queues.add(queue)
 
         self._subscribers -= dead_queues
@@ -63,7 +63,7 @@ class HotReloadManager:
         """Compute SHA256 hash of file"""
         try:
             return hashlib.sha256(filepath.read_bytes()).hexdigest()
-        except:
+        except Exception:
             return ""
 
     async def watch_files(self):
