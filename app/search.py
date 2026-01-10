@@ -6,12 +6,15 @@ Hybrid search architecture:
 - In-memory caching: Avoid redundant queries
 """
 from typing import List, Dict, Any, Optional
+import logging
 import httpx
 import threading
 import time
 from collections import OrderedDict
 from app.db import execute_query
 from app.models import SearchResult
+
+log = logging.getLogger(__name__)
 
 GO_SEARCH_URL = "http://127.0.0.1:8003"
 
@@ -140,8 +143,12 @@ def search_go_sync(terms: List[str], limit: int = 15) -> List[Dict[str, Any]]:
                     "rank": r["rank"], "type": "email"} for r in results[:limit]]
             _search_cache.set(cache_key, out)
             return out
-    except:
-        pass
+    except httpx.TimeoutException:
+        log.debug("Go search timeout for terms: %s", terms[:4])
+    except httpx.RequestError as e:
+        log.debug("Go search connection error: %s", e)
+    except (KeyError, ValueError) as e:
+        log.warning("Go search response parse error: %s", e)
     return []
 
 async def search_go_fast(terms: List[str], limit: int = 15) -> List[Dict[str, Any]]:
@@ -161,8 +168,12 @@ async def search_go_fast(terms: List[str], limit: int = 15) -> List[Dict[str, An
                          "rank": r["rank"], "type": "email"} for r in results[:limit]]
                 _search_cache.set(cache_key, out)
                 return out
-    except:
-        pass
+    except httpx.TimeoutException:
+        log.debug("Go search async timeout for terms: %s", terms[:4])
+    except httpx.RequestError as e:
+        log.debug("Go search async connection error: %s", e)
+    except (KeyError, ValueError) as e:
+        log.warning("Go search async response parse error: %s", e)
     return []
 
 # =============================================================================
@@ -193,7 +204,8 @@ def get_scores(target_type: str, target_ids: List[int]) -> Dict[int, Dict[str, i
                 'anomaly': row['anomaly'] or 0
             }
         return scores
-    except Exception:
+    except Exception as e:
+        log.debug("Failed to fetch scores for %s: %s", target_type, e)
         return {}
 
 
@@ -433,5 +445,6 @@ def search_corpus_scored(search_term: str, limit: int = 15) -> List[Dict[str, An
         results.sort(key=lambda x: x['rank'], reverse=True)
 
         return results[:limit]
-    except Exception:
+    except Exception as e:
+        log.warning("search_corpus_scored failed for '%s': %s", search_term, e)
         return []
