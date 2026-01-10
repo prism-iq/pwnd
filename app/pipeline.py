@@ -342,6 +342,53 @@ def create_evidence_record(query: str, results: List[Dict], entities: Dict) -> D
 # SMART RESPONSE BUILDER (when Haiku unavailable)
 # =============================================================================
 
+# Prosecution targets who could face charges
+PROSECUTION_TARGETS = {
+    'prince andrew': {'crimes': ['sexual abuse', 'trafficking'], 'status': 'settled lawsuit'},
+    'alan dershowitz': {'crimes': ['sexual abuse allegations'], 'status': 'denies'},
+    'les wexner': {'crimes': ['financial enablement', 'property transfer'], 'status': 'not charged'},
+    'leon black': {'crimes': ['payments to felon', 'financial ties'], 'status': 'under scrutiny'},
+    'bill gates': {'crimes': ['meetings post-conviction'], 'status': 'admitted meetings'},
+    'jes staley': {'crimes': ['maintaining contact'], 'status': 'lost job'},
+    'jean-luc brunel': {'crimes': ['trafficking', 'rape'], 'status': 'died in custody'},
+    'ghislaine maxwell': {'crimes': ['trafficking', 'conspiracy'], 'status': 'convicted'},
+}
+
+def format_prosecution_evidence(results: List[Dict], query: str) -> str:
+    """Format evidence relevant to prosecution of targets"""
+    query_lower = query.lower()
+    evidence_lines = []
+
+    for target, info in PROSECUTION_TARGETS.items():
+        if target in query_lower:
+            # Find documents mentioning this target
+            relevant_docs = []
+            for r in results[:20]:
+                snippet = str(r.get('snippet', '')).lower()
+                name = str(r.get('name', '')).lower()
+                if target in snippet or target in name:
+                    doc_id = r.get('id')
+                    relevant_docs.append({
+                        'id': doc_id,
+                        'snippet': r.get('snippet', '')[:100]
+                    })
+
+            if relevant_docs:
+                target_title = target.title()
+                crimes = ', '.join(info['crimes'])
+                status = info['status']
+
+                evidence_lines.append(f"\n**EVIDENCE AGAINST {target_title.upper()}:**")
+                evidence_lines.append(f"- Potential charges: {crimes}")
+                evidence_lines.append(f"- Current status: {status}")
+                evidence_lines.append(f"- Documents found: {len(relevant_docs)}")
+
+                for doc in relevant_docs[:3]:
+                    evidence_lines.append(f"  - #{doc['id']}: {doc['snippet'][:60]}...")
+
+    return '\n'.join(evidence_lines) if evidence_lines else ''
+
+
 def build_smart_response(query: str, results: List[Dict], entities: Dict) -> str:
     """Build intelligent response using curated document content"""
     if not results:
@@ -386,6 +433,11 @@ def build_smart_response(query: str, results: List[Dict], entities: Dict) -> str
                 lines.append("")
                 lines.append(f"**Key persons:** {', '.join(names[:5])}")
 
+        # Add prosecution evidence if target mentioned
+        prosecution_evidence = format_prosecution_evidence(results, query)
+        if prosecution_evidence:
+            lines.append(prosecution_evidence)
+
         # Suggest next step
         lines.append("")
         lines.append("**Next:** Click source documents for full details.")
@@ -396,13 +448,19 @@ def build_smart_response(query: str, results: List[Dict], entities: Dict) -> str
     top_ids = ', '.join([f'#{r.get("id")}' for r in results[:5]])
     senders = list(set(r.get('sender_email', '') for r in results[:10] if r.get('sender_email')))[:3]
 
-    return f"""Found {len(results)} documents matching '{query}'.
+    response = f"""Found {len(results)} documents matching '{query}'.
 
 **Top results:** {top_ids}
 
-**Sources:** {', '.join(senders[:2]) if senders else 'various'}
+**Sources:** {', '.join(senders[:2]) if senders else 'various'}"""
 
-Review the source documents for detailed information."""
+    # Add prosecution evidence if target mentioned
+    prosecution_evidence = format_prosecution_evidence(results, query)
+    if prosecution_evidence:
+        response += prosecution_evidence
+
+    response += "\n\nReview the source documents for detailed information."
+    return response
 
 # =============================================================================
 # FAST REGEX EXTRACTION (replaces slow Phi-3)
