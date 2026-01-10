@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PWND.ICU - Investigation Platform</title>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://unpkg.com/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js"></script>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -350,12 +351,56 @@
         }
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-        #network-container {
+        #network-container, #timeline-container {
             flex: 1;
             background: var(--bg);
             border-radius: 8px;
             min-height: 500px;
         }
+        #timeline-container { display: none; }
+        #timeline-container.active { display: block; }
+        #network-container.hidden { display: none; }
+        .mode-toggle {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-input);
+            padding: 3px;
+            border-radius: 6px;
+            margin-right: 12px;
+        }
+        .mode-btn {
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.15s;
+        }
+        .mode-btn:hover { color: var(--text); }
+        .mode-btn.active { background: var(--accent); color: white; }
+        /* Timeline styles */
+        .vis-timeline {
+            border: none !important;
+            background: var(--bg) !important;
+        }
+        .vis-item {
+            background: var(--bg-card) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+            border-radius: 4px !important;
+            font-size: 0.75rem !important;
+        }
+        .vis-item.vis-selected { border-color: var(--accent) !important; }
+        .vis-item.legal { background: var(--accent) !important; border-color: var(--accent) !important; }
+        .vis-item.death { background: var(--red) !important; border-color: var(--red) !important; }
+        .vis-item.arrest { background: var(--orange) !important; border-color: var(--orange) !important; }
+        .vis-item.investigation { background: var(--purple) !important; border-color: var(--purple) !important; }
+        .vis-item.media { background: var(--green) !important; border-color: var(--green) !important; }
+        .vis-time-axis .vis-text { color: var(--text-dim) !important; fill: var(--text-dim) !important; }
+        .vis-panel.vis-background { background: var(--bg) !important; }
+        .vis-panel.vis-center { background: var(--bg) !important; }
         .graph-info {
             padding: 10px 14px;
             background: var(--bg-card);
@@ -496,6 +541,10 @@
             <!-- Graph Tab -->
             <div id="tab-graph" class="content hidden graph-container">
                 <div class="graph-controls">
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="mode-network" onclick="setGraphMode('network')">Network</button>
+                        <button class="mode-btn" id="mode-timeline" onclick="setGraphMode('timeline')">Timeline</button>
+                    </div>
                     <input type="text" class="graph-search" id="graph-search" placeholder="Search entity (e.g., Jeffrey Epstein, Clinton, Maxwell...)">
                     <select class="graph-search" id="edge-type-filter" style="flex:0.5;min-width:150px;">
                         <option value="">All relations</option>
@@ -525,8 +574,19 @@
                     </div>
                 </div>
                 <div id="network-container"></div>
+                <div id="timeline-container"></div>
                 <div class="graph-info" id="graph-info">
                     Click "Explore" to load the network, or search for a specific entity. Double-click a node to center on it.
+                </div>
+                <div class="graph-info" id="timeline-info" style="display:none;">
+                    <div class="graph-legend" style="gap:16px;flex-wrap:wrap;">
+                        <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Legal</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span> Death</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span> Arrest</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span> Investigation</div>
+                        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Media</div>
+                    </div>
+                    <span style="margin-left:auto;">Scroll to zoom • Drag to pan • Click event for details</span>
                 </div>
             </div>
 
@@ -799,6 +859,91 @@
         let network = null;
         let networkData = null;
         let edgeTypesLoaded = false;
+        let timeline = null;
+        let currentMode = 'network';
+
+        // Set graph mode (network or timeline)
+        function setGraphMode(mode) {
+            currentMode = mode;
+            document.getElementById('mode-network').classList.toggle('active', mode === 'network');
+            document.getElementById('mode-timeline').classList.toggle('active', mode === 'timeline');
+            document.getElementById('network-container').classList.toggle('hidden', mode !== 'network');
+            document.getElementById('timeline-container').classList.toggle('active', mode === 'timeline');
+            document.getElementById('graph-info').style.display = mode === 'network' ? 'block' : 'none';
+            document.getElementById('timeline-info').style.display = mode === 'timeline' ? 'flex' : 'none';
+
+            // Hide network-specific controls in timeline mode
+            document.getElementById('edge-type-filter').style.display = mode === 'network' ? 'block' : 'none';
+            document.getElementById('quick-filters').style.display = mode === 'network' ? 'flex' : 'none';
+
+            if (mode === 'timeline' && !timeline) {
+                loadTimeline();
+            }
+        }
+
+        // Load timeline data
+        async function loadTimeline() {
+            const container = document.getElementById('timeline-container');
+            const info = document.getElementById('timeline-info');
+
+            container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-dim)">Loading timeline...</div>';
+
+            try {
+                const response = await fetch(`${API}/graph/timeline?subject=epstein&limit=200`);
+                const data = await response.json();
+
+                if (!data.events || data.events.length === 0) {
+                    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-dim)">No timeline events found</div>';
+                    return;
+                }
+
+                // Convert events to vis-timeline format
+                const items = new vis.DataSet(data.events.map(evt => ({
+                    id: evt.id,
+                    content: evt.title,
+                    start: evt.date,
+                    className: evt.type,
+                    title: `<strong>${evt.title}</strong><br>${evt.date}<br>${evt.description || ''}`
+                })));
+
+                // Create timeline
+                container.innerHTML = '';
+                const options = {
+                    height: '100%',
+                    min: new Date('2000-01-01'),
+                    max: new Date('2025-12-31'),
+                    start: new Date('2005-01-01'),
+                    end: new Date('2024-01-01'),
+                    zoomMin: 1000 * 60 * 60 * 24 * 30,     // 1 month
+                    zoomMax: 1000 * 60 * 60 * 24 * 365 * 25, // 25 years
+                    orientation: 'top',
+                    showCurrentTime: false,
+                    stack: true,
+                    margin: { item: 10 }
+                };
+
+                timeline = new vis.Timeline(container, items, options);
+
+                // Handle click on timeline item
+                timeline.on('select', function(properties) {
+                    if (properties.items.length > 0) {
+                        const itemId = properties.items[0];
+                        const evt = data.events.find(e => e.id === itemId);
+                        if (evt) {
+                            showModal(evt.title, `
+                                <p><strong>Date:</strong> ${evt.date}</p>
+                                <p><strong>Type:</strong> ${evt.type}</p>
+                                <p><strong>Description:</strong> ${evt.description || 'No description'}</p>
+                            `);
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.error('Failed to load timeline:', e);
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">Failed to load timeline</div>';
+            }
+        }
 
         // Load edge types for filter dropdown
         async function loadEdgeTypes() {

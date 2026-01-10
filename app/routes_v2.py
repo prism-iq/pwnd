@@ -302,6 +302,133 @@ async def get_edge_types():
     """)
     return types
 
+@router.get("/api/v2/graph/timeline")
+async def get_timeline(
+    subject: Optional[str] = Query(None, description="Filter by subject (e.g., 'Epstein')"),
+    limit: int = Query(100, ge=10, le=500)
+):
+    """Get timeline events for visualization"""
+    import re
+
+    # Key Epstein case events with known dates
+    key_events = [
+        {"id": "evt_1", "date": "2005-03-01", "title": "Palm Beach Investigation Begins", "type": "investigation", "description": "Palm Beach Police begin investigating Epstein after mother's complaint"},
+        {"id": "evt_2", "date": "2006-05-01", "title": "FBI Investigation", "type": "investigation", "description": "FBI opens federal investigation"},
+        {"id": "evt_3", "date": "2006-07-01", "title": "Grand Jury Indictment", "type": "legal", "description": "State grand jury indicts Epstein on one count"},
+        {"id": "evt_4", "date": "2007-06-30", "title": "NPA Signed", "type": "legal", "description": "Non-Prosecution Agreement signed with federal prosecutors"},
+        {"id": "evt_5", "date": "2008-06-30", "title": "State Plea Deal", "type": "legal", "description": "Epstein pleads guilty to state charges, 18-month sentence"},
+        {"id": "evt_6", "date": "2008-07-01", "title": "Prison Sentence Begins", "type": "legal", "description": "Begins serving sentence at Palm Beach County Stockade"},
+        {"id": "evt_7", "date": "2009-07-22", "title": "Prison Release", "type": "legal", "description": "Released after 13 months with work release"},
+        {"id": "evt_8", "date": "2010-01-01", "title": "Sex Offender Registration", "type": "legal", "description": "Required to register as Level 3 sex offender"},
+        {"id": "evt_9", "date": "2015-01-01", "title": "Virginia Giuffre Lawsuit", "type": "legal", "description": "Giuffre files lawsuit naming prominent figures"},
+        {"id": "evt_10", "date": "2018-11-28", "title": "Miami Herald Investigation", "type": "media", "description": "\"Perversion of Justice\" series published"},
+        {"id": "evt_11", "date": "2019-07-06", "title": "Arrest at Teterboro", "type": "arrest", "description": "Arrested by FBI-NYPD task force at Teterboro Airport"},
+        {"id": "evt_12", "date": "2019-07-08", "title": "SDNY Indictment", "type": "legal", "description": "Indicted on sex trafficking charges by SDNY"},
+        {"id": "evt_13", "date": "2019-07-18", "title": "Bail Denied", "type": "legal", "description": "Judge denies bail, deemed flight risk"},
+        {"id": "evt_14", "date": "2019-07-23", "title": "First Incident", "type": "incident", "description": "Found injured in cell with marks on neck"},
+        {"id": "evt_15", "date": "2019-07-24", "title": "Suicide Watch", "type": "custody", "description": "Placed on suicide watch at MCC"},
+        {"id": "evt_16", "date": "2019-07-29", "title": "Off Suicide Watch", "type": "custody", "description": "Removed from suicide watch after 6 days"},
+        {"id": "evt_17", "date": "2019-08-08", "title": "Document Dump", "type": "legal", "description": "2,000 pages of Giuffre v. Maxwell documents unsealed"},
+        {"id": "evt_18", "date": "2019-08-10", "title": "Death at MCC", "type": "death", "description": "Found dead in cell at 6:30 AM"},
+        {"id": "evt_19", "date": "2019-08-11", "title": "Autopsy Performed", "type": "investigation", "description": "NYC Medical Examiner performs autopsy"},
+        {"id": "evt_20", "date": "2019-08-16", "title": "Suicide Ruling", "type": "investigation", "description": "Death ruled suicide by hanging"},
+        {"id": "evt_21", "date": "2019-11-19", "title": "Guards Indicted", "type": "legal", "description": "MCC guards Noel and Thomas indicted for falsifying records"},
+        {"id": "evt_22", "date": "2020-07-02", "title": "Maxwell Arrested", "type": "arrest", "description": "Ghislaine Maxwell arrested in New Hampshire"},
+        {"id": "evt_23", "date": "2020-12-17", "title": "Brunel Arrested", "type": "arrest", "description": "Jean-Luc Brunel arrested in Paris"},
+        {"id": "evt_24", "date": "2021-11-29", "title": "Maxwell Trial Begins", "type": "legal", "description": "Federal trial begins in SDNY"},
+        {"id": "evt_25", "date": "2021-12-29", "title": "Maxwell Verdict", "type": "legal", "description": "Guilty on 5 of 6 counts"},
+        {"id": "evt_26", "date": "2022-02-19", "title": "Brunel Death", "type": "death", "description": "Jean-Luc Brunel found dead in Paris prison"},
+        {"id": "evt_27", "date": "2022-02-21", "title": "Prince Andrew Settlement", "type": "legal", "description": "Prince Andrew settles with Virginia Giuffre"},
+        {"id": "evt_28", "date": "2022-06-28", "title": "Maxwell Sentenced", "type": "legal", "description": "Sentenced to 20 years in federal prison"},
+        {"id": "evt_29", "date": "2023-06-05", "title": "JPMorgan Settlement", "type": "legal", "description": "JPMorgan settles with victims for $290M"},
+        {"id": "evt_30", "date": "2023-07-12", "title": "Deutsche Bank Settlement", "type": "legal", "description": "Deutsche Bank settles for $75M"},
+    ]
+
+    # Also get events from database
+    db_events = execute_query("graph", """
+        SELECT n.id, n.name, n.type,
+               COALESCE(nc.total_connections, 0) as connections
+        FROM nodes n
+        LEFT JOIN node_confidence nc ON n.id = nc.node_id
+        WHERE n.type = 'event'
+          AND (n.name ~ '^[0-9]{4}' OR n.name ~ '[0-9]{4}')
+        ORDER BY n.name
+        LIMIT %s
+    """, (limit,))
+
+    # Parse dates from event names
+    def parse_date(name):
+        # Try to extract year from name
+        match = re.search(r'(20[0-2][0-9]|19[0-9]{2})', name)
+        if match:
+            year = match.group(1)
+            # Try to find month
+            months = {'january': '01', 'february': '02', 'march': '03', 'april': '04',
+                     'may': '05', 'june': '06', 'july': '07', 'august': '08',
+                     'september': '09', 'october': '10', 'november': '11', 'december': '12',
+                     'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'jun': '06',
+                     'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'}
+            name_lower = name.lower()
+            month = '06'  # Default to mid-year
+            day = '15'
+            for m, num in months.items():
+                if m in name_lower:
+                    month = num
+                    break
+            # Try to find day
+            day_match = re.search(r'\b([0-3]?[0-9])\b', name)
+            if day_match and 1 <= int(day_match.group(1)) <= 31:
+                day = day_match.group(1).zfill(2)
+            return f"{year}-{month}-{day}"
+        return None
+
+    # Convert db events to timeline format
+    timeline_events = []
+    for evt in db_events:
+        date = parse_date(evt['name'])
+        if date:
+            # Determine event category
+            name_lower = evt['name'].lower()
+            if any(w in name_lower for w in ['arrest', 'indictment', 'trial', 'plea', 'sentence', 'verdict']):
+                evt_type = 'legal'
+            elif any(w in name_lower for w in ['death', 'died', 'suicide']):
+                evt_type = 'death'
+            elif any(w in name_lower for w in ['investigation', 'fbi', 'police']):
+                evt_type = 'investigation'
+            else:
+                evt_type = 'event'
+
+            timeline_events.append({
+                "id": f"db_{evt['id']}",
+                "date": date,
+                "title": evt['name'],
+                "type": evt_type,
+                "connections": evt['connections'],
+                "description": f"Database event with {evt['connections']} connections"
+            })
+
+    # Combine key events with db events, sort by date
+    all_events = key_events + timeline_events
+    all_events.sort(key=lambda x: x['date'])
+
+    # Filter by subject if provided
+    if subject:
+        subject_lower = subject.lower()
+        # Key events are all Epstein-related
+        if 'epstein' in subject_lower or 'maxwell' in subject_lower:
+            pass  # Keep all key_events
+        else:
+            all_events = [e for e in timeline_events if subject_lower in e.get('title', '').lower()]
+
+    return {
+        "events": all_events,
+        "total": len(all_events),
+        "range": {
+            "start": all_events[0]['date'] if all_events else None,
+            "end": all_events[-1]['date'] if all_events else None
+        }
+    }
+
 @router.get("/api/v2/graph/network")
 async def get_network(
     center: Optional[str] = None,
