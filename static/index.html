@@ -760,9 +760,9 @@
             const empty = discoveries.querySelector('.empty');
             if (empty) empty.remove();
 
-            // Start exploration loop
+            // Start exploration loop (fast: 3s intervals)
             runAutoQuestion();
-            autoInterval = setInterval(runAutoQuestion, 8000);
+            autoInterval = setInterval(runAutoQuestion, 3000);
         }
 
         function stopAutoExploration() {
@@ -986,7 +986,8 @@
                 discoveries.removeChild(discoveries.lastChild);
             }
 
-            await fetchAnswer(question, div);
+            // Use fast search for auto mode (instant results)
+            await fetchAnswerFast(question, div);
 
             // Update status after completion
             if (autoRunning) {
@@ -994,10 +995,45 @@
             }
         }
 
-        // Shared function to fetch answer from RAG API
+        // Fast search for Auto mode (instant results, no LLM)
+        async function fetchAnswerFast(question, div) {
+            const answerDiv = div.querySelector('.discovery-answer');
+            const sourcesDiv = div.querySelector('.discovery-sources');
+
+            try {
+                const response = await fetch('/api/search?q=' + encodeURIComponent(question) + '&limit=8');
+                const results = await response.json();
+
+                if (results.length === 0) {
+                    answerDiv.innerHTML = '<em>No documents found for this query.</em>';
+                    return;
+                }
+
+                // Build summary from top results
+                let summary = `<strong>Found ${results.length} documents:</strong><ul>`;
+                results.slice(0, 5).forEach(r => {
+                    const title = (r.name || r.title || 'Document').substring(0, 60);
+                    const snippet = (r.snippet || '').substring(0, 100);
+                    summary += `<li><strong>${escapeHtml(title)}</strong>: ${escapeHtml(snippet)}...</li>`;
+                });
+                summary += '</ul>';
+                answerDiv.innerHTML = summary;
+
+                // Show source links
+                sourcesDiv.innerHTML = results.slice(0, 6).map(r => {
+                    const id = r.id || r.doc_id;
+                    return `<span class="source-tag" onclick="window.open('/source.html?id=${id}', '_blank')">#${id}</span>`;
+                }).join('');
+
+            } catch (e) {
+                console.error('Fast search error:', e);
+                answerDiv.innerHTML = '<em>Search failed.</em>';
+            }
+        }
+
+        // Full RAG for Normal mode (slower, with LLM synthesis)
         async function fetchAnswer(question, div) {
             try {
-                // Use RAG endpoint for intelligent analysis
                 const response = await fetch('/api/ask?q=' + encodeURIComponent(question));
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
