@@ -695,3 +695,40 @@ Un expert explore : 47 fichiers, 12 services, 6 bases de données.
 C'est ça la bonne architecture. Simple dehors, riche dedans.
 
 ---
+
+## 2026-01-10 07:45 | Firewall Activé - Les portes sont fermées
+
+Le firewall était inactif. Trois services exposés au monde sans protection.
+
+**Avant :**
+```
+Port 8080 (hybridcore)  → 0.0.0.0 EXPOSÉ
+Port 8085 (brain)       → *       EXPOSÉ
+Port 8090 (flow-server) → *       EXPOSÉ
+UFW: inactive
+```
+
+**Après :**
+```
+UFW: active
+Default: deny incoming, allow outgoing
+
+ALLOW:
+- 22/tcp   SSH
+- 80/tcp   HTTP
+- 443/tcp  HTTPS
+
+BLOCKED (implicite):
+- 8080, 8085, 8090 et tous les autres
+```
+
+**Vérifié :**
+- Services internes toujours accessibles via localhost ✓
+- API sur 127.0.0.1:8002 fonctionne ✓
+- Caddy proxy sur 80/443 fonctionne ✓
+
+Un attaquant externe ne peut plus atteindre les services internes directement. Seul Caddy fait l'interface avec le monde.
+
+Les portes sont fermées. Seule l'entrée principale reste ouverte.
+
+---
