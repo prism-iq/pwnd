@@ -398,7 +398,25 @@
         .vis-item.arrest { background: var(--orange) !important; border-color: var(--orange) !important; }
         .vis-item.investigation { background: var(--purple) !important; border-color: var(--purple) !important; }
         .vis-item.media { background: var(--green) !important; border-color: var(--green) !important; }
+        .vis-item.custody { background: #6b7280 !important; border-color: #6b7280 !important; }
+        .vis-item.event { background: #4b5563 !important; border-color: #4b5563 !important; }
+        .vis-item.incident { background: #dc2626 !important; border-color: #dc2626 !important; }
         .vis-time-axis .vis-text { color: var(--text-dim) !important; fill: var(--text-dim) !important; }
+        .timeline-filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-dim);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.15s;
+        }
+        .timeline-filter:hover { border-color: var(--accent); color: var(--text); }
+        .timeline-filter.active { background: var(--accent); border-color: var(--accent); color: white; }
         .vis-panel.vis-background { background: var(--bg) !important; }
         .vis-panel.vis-center { background: var(--bg) !important; }
         .graph-info {
@@ -579,14 +597,19 @@
                     Click "Explore" to load the network, or search for a specific entity. Double-click a node to center on it.
                 </div>
                 <div class="graph-info" id="timeline-info" style="display:none;">
-                    <div class="graph-legend" style="gap:16px;flex-wrap:wrap;">
-                        <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Legal</div>
-                        <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span> Death</div>
-                        <div class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span> Arrest</div>
-                        <div class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span> Investigation</div>
-                        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Media</div>
+                    <div id="timeline-filters" class="graph-legend" style="gap:8px;flex-wrap:wrap;">
+                        <span style="color:var(--text-dim);font-size:0.75rem;">Filter:</span>
+                        <button class="timeline-filter active" data-type="all" onclick="filterTimeline('all')">All</button>
+                        <button class="timeline-filter" data-type="legal" onclick="filterTimeline('legal')"><span class="legend-dot" style="background:var(--accent)"></span> Legal</button>
+                        <button class="timeline-filter" data-type="death" onclick="filterTimeline('death')"><span class="legend-dot" style="background:var(--red)"></span> Death</button>
+                        <button class="timeline-filter" data-type="arrest" onclick="filterTimeline('arrest')"><span class="legend-dot" style="background:var(--orange)"></span> Arrest</button>
+                        <button class="timeline-filter" data-type="investigation" onclick="filterTimeline('investigation')"><span class="legend-dot" style="background:var(--purple)"></span> Investigation</button>
+                        <button class="timeline-filter" data-type="media" onclick="filterTimeline('media')"><span class="legend-dot" style="background:var(--green)"></span> Media</button>
+                        <button class="timeline-filter" data-type="custody" onclick="filterTimeline('custody')"><span class="legend-dot" style="background:var(--text-dim)"></span> Custody</button>
+                        <button class="timeline-filter" data-type="event" onclick="filterTimeline('event')"><span class="legend-dot" style="background:#666"></span> Event</button>
                     </div>
-                    <span style="margin-left:auto;">Scroll to zoom • Drag to pan • Click event for details</span>
+                    <span id="timeline-count" style="color:var(--text-dim);font-size:0.75rem;margin-left:12px;"></span>
+                    <span style="margin-left:auto;font-size:0.75rem;">Scroll to zoom • Drag to pan • Click event for details</span>
                 </div>
             </div>
 
@@ -860,6 +883,9 @@
         let networkData = null;
         let edgeTypesLoaded = false;
         let timeline = null;
+        let timelineData = null;
+        let timelineItems = null;
+        let currentTimelineFilter = 'all';
         let currentMode = 'network';
 
         // Set graph mode (network or timeline)
@@ -897,12 +923,16 @@
                     return;
                 }
 
+                // Store data globally for filtering
+                timelineData = data.events;
+
                 // Convert events to vis-timeline format
-                const items = new vis.DataSet(data.events.map(evt => ({
+                timelineItems = new vis.DataSet(data.events.map(evt => ({
                     id: evt.id,
                     content: evt.title,
                     start: evt.date,
                     className: evt.type,
+                    eventType: evt.type,
                     title: `<strong>${evt.title}</strong><br>${evt.date}<br>${evt.description || ''}`
                 })));
 
@@ -922,7 +952,8 @@
                     margin: { item: 10 }
                 };
 
-                timeline = new vis.Timeline(container, items, options);
+                timeline = new vis.Timeline(container, timelineItems, options);
+                updateTimelineCount();
 
                 // Handle click on timeline item
                 timeline.on('select', function(properties) {
@@ -942,6 +973,62 @@
             } catch (e) {
                 console.error('Failed to load timeline:', e);
                 container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">Failed to load timeline</div>';
+            }
+        }
+
+        // Filter timeline by event type
+        function filterTimeline(type) {
+            if (!timelineData || !timelineItems) return;
+
+            currentTimelineFilter = type;
+
+            // Update button states
+            document.querySelectorAll('.timeline-filter').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+
+            // Filter items
+            if (type === 'all') {
+                // Show all items
+                const allItems = timelineData.map(evt => ({
+                    id: evt.id,
+                    content: evt.title,
+                    start: evt.date,
+                    className: evt.type,
+                    eventType: evt.type,
+                    title: `<strong>${evt.title}</strong><br>${evt.date}<br>${evt.description || ''}`
+                }));
+                timelineItems.clear();
+                timelineItems.add(allItems);
+            } else {
+                // Show only matching type
+                const filtered = timelineData.filter(evt => evt.type === type).map(evt => ({
+                    id: evt.id,
+                    content: evt.title,
+                    start: evt.date,
+                    className: evt.type,
+                    eventType: evt.type,
+                    title: `<strong>${evt.title}</strong><br>${evt.date}<br>${evt.description || ''}`
+                }));
+                timelineItems.clear();
+                timelineItems.add(filtered);
+            }
+
+            updateTimelineCount();
+            timeline.fit();
+        }
+
+        // Update timeline count display
+        function updateTimelineCount() {
+            const count = timelineItems ? timelineItems.length : 0;
+            const total = timelineData ? timelineData.length : 0;
+            const countEl = document.getElementById('timeline-count');
+            if (countEl) {
+                if (currentTimelineFilter === 'all') {
+                    countEl.textContent = `${total} events`;
+                } else {
+                    countEl.textContent = `${count} of ${total} events`;
+                }
             }
         }
 
