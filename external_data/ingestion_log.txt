@@ -1,0 +1,9 @@
+
+[2026-01-10T02:44:57.765189] Ingested 1005 documents
+  - Flight logs: 68
+  - Court docs: 936
+  - Visualization: 1
+  Sources:
+    - archive.org/EpsteinFlightLogsLolitaExpress (PUBLIC DOMAIN)
+    - Guardian/DocumentCloud (COURT RECORDS - PUBLIC)
+    - github.com/Martin-dev-prog/Full-Epstein-Flights (OPEN SOURCE)
