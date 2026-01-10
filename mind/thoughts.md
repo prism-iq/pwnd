@@ -1850,3 +1850,59 @@ C'est la validation croisée d'une vérité profonde: l'information est le langa
 qui unifie mathématiques, neurosciences, biologie, psychologie, médecine et art.
 
 ---
+
+---
+
+## 2026-01-10 15:50 | Data Quality Analysis
+
+Analyzed database fill rates. Found split architecture:
+
+**ldb.emails** (source of truth):
+- 13,036 emails
+- subject: 100% filled
+- body_text: 100% filled  
+- sender_email: 100% filled
+- date_sent: 100% filled
+
+**l_investigation.documents** (reference table):
+- 13,010 email references (0% content - just pointers)
+- 17 investigation profiles (100% content)
+
+**l_investigation.nodes**:
+- 16,740 entities
+- 3,610 persons, 1,990 locations, 1,984 dates
+- properties: 8% filled (could be improved)
+
+**l_investigation.edges**:
+- 4,256 relationships
+- excerpt: 0.8% filled (needs enrichment)
+- Top types: purchased (331), sent_email (220), has_email (178)
+
+Architecture is intentional - emails stored once in ldb, referenced in l_investigation.
+Graph could use enrichment from depositions/interviews.
+
+---
+
+## 2026-01-10 15:52 | Maxwell Interview Evidence (July 2025)
+
+Extracted from Interview Transcript - Maxwell 2025.07.24:
+
+Key name frequencies:
+- Epstein: 215 mentions
+- Andrew/Prince: 51 mentions
+- Trump: 22 mentions
+- Clinton: 20 mentions
+- Wexner: 18 mentions
+- Dershowitz: 7 mentions
+- Gates: 4 mentions
+- Leon Black: 3 mentions
+- Brunel: 2 mentions
+
+Key claims from Maxwell:
+1. "I did not introduce him to Prince Andrew" - denies introduction
+2. "President Clinton was my friend, not Epstein's friend" - claims Clinton was her contact
+3. Met Trump through father Robert Maxwell in early 90s
+4. Clinton would have Doug Vance on flights
+
+Evidence to add to graph: Maxwell→Clinton (friend_of), Maxwell father→Trump (friend_of)
+
