@@ -167,13 +167,14 @@ class Phi3Worker:
                 prompt,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                stop=["</s>", "[/INST]", "\n\n\n"],
+                stop=["<|end|>", "<|user|>", "<|system|>", "</s>", "\n\n\n"],
                 echo=False,
             )
+            elapsed = time.time() - start
             result = response["choices"][0]["text"].strip()
             with self.lock:
                 self.jobs_processed += 1
-                self.total_time += time.time() - start
+                self.total_time += elapsed
             return result
         except Exception as e:
             log.error(f"Worker {self.worker_id} generation error: {e}")
@@ -310,7 +311,6 @@ class WorkerPool:
             job.error = "No workers available"
             job.completed = True
             return None
-
         # Execute based on job type
         loop = asyncio.get_event_loop()
         try:
@@ -397,7 +397,12 @@ class WorkerPool:
 
     def _extract_entities(self, worker: Phi3Worker, text: str) -> List[Dict]:
         """Extract entities using Phi-3 - detect ALL entities"""
-        prompt = f"""[INST] Extract ALL named entities from this text.
+        prompt = f"""<|system|>
+You are an entity extraction assistant. Extract ALL named entities accurately.
+<|end|>
+
+<|user|>
+Extract ALL named entities from this text.
 
 Entity types:
 - person: Human names (e.g., "Jeffrey Epstein", "Bill Clinton")
@@ -410,7 +415,9 @@ Entity types:
 Return JSON array: [{{"name": "...", "type": "person|org|location|date|amount|media"}}]
 
 Text: {text[:2500]}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=800, temperature=0.1)
         try:
@@ -425,12 +432,19 @@ Text: {text[:2500]}
     def _extract_relationships(self, worker: Phi3Worker, text: str, entities: List[Dict]) -> List[Dict]:
         """Extract relationships between entities"""
         names = [e.get("name", "") for e in entities[:15]]
-        prompt = f"""[INST] Find relationships between these entities in the text.
+        prompt = f"""<|system|>
+You are a relationship extraction assistant. Find connections between entities.
+<|end|>
+
+<|user|>
+Find relationships between these entities in the text.
 Entities: {', '.join(names)}
 Format: [{{"from": "...", "to": "...", "type": "..."}}]
 
 Text: {text[:2000]}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=600, temperature=0.2)
         try:
@@ -445,12 +459,19 @@ Text: {text[:2000]}
     def _filter_relevance(self, worker: Phi3Worker, query: str, items: List[Dict]) -> List[Dict]:
         """Filter items by relevance to query"""
         items_text = "\n".join([f"{i}: {item.get('text', '')[:100]}" for i, item in enumerate(items[:20])])
-        prompt = f"""[INST] Which items are relevant to: "{query}"?
+        prompt = f"""<|system|>
+You are a relevance filter. Select only items relevant to the query.
+<|end|>
+
+<|user|>
+Which items are relevant to: "{query}"?
 Return JSON array of indices (0-based).
 
 Items:
 {items_text}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=100, temperature=0.1)
         try:
@@ -464,17 +485,36 @@ Items:
         return items
 
     def _summarize(self, worker: Phi3Worker, text: str, max_length: int) -> str:
-        """Summarize text"""
-        prompt = f"""[INST] Summarize in {max_length} chars max. Facts only.
+        """Process text - if already formatted (contains <|), pass through. Otherwise wrap."""
+        if "<|" in text:
+            # Already Phi-3 formatted prompt - pass through
+            prompt = text[:8000]
+        else:
+            # Raw text - wrap in Phi-3 format
+            prompt = f"""<|system|>
+You are a concise summarizer. Extract key facts only.
+<|end|>
+
+<|user|>
+Summarize in {max_length} chars max:
 
 {text[:3000]}
-[/INST]"""
+<|end|>
 
-        return worker.generate(prompt, max_tokens=max_length // 3, temperature=0.3)
+<|assistant|>"""
+
+        # Cap max_tokens to 512 for reasonable response time (about 20-30s)
+        max_tokens = min(512, max_length // 3)
+        return worker.generate(prompt, max_tokens=max_tokens, temperature=0.3)
 
     def _parse_intent(self, worker: Phi3Worker, query: str) -> Dict:
         """Parse user query intent - what are they looking for?"""
-        prompt = f"""[INST] Analyze this investigation query. Return JSON:
+        prompt = f"""<|system|>
+You are a query analysis assistant. Parse investigation queries into structured format.
+<|end|>
+
+<|user|>
+Analyze this investigation query. Return JSON:
 {{
   "intent": "find_person|find_connection|timeline|financial|communication|other",
   "targets": ["name1", "name2"],
@@ -484,7 +524,9 @@ Items:
 }}
 
 Query: {query}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=300, temperature=0.1)
         try:
@@ -498,14 +540,21 @@ Query: {query}
 
     def _generate_subqueries(self, worker: Phi3Worker, query: str, context: str = "") -> List[str]:
         """Self-questioning - generate follow-up queries to explore"""
-        prompt = f"""[INST] Given this investigation query, generate 3-5 related questions to explore.
+        prompt = f"""<|system|>
+You are an investigator assistant. Generate follow-up questions to explore.
+<|end|>
+
+<|user|>
+Given this investigation query, generate 3-5 related questions to explore.
 Think like an investigator - what angles should we check?
 
 Query: {query}
 {f"Context: {context[:500]}" if context else ""}
 
 Return JSON array of strings: ["question1", "question2", ...]
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=400, temperature=0.4)
         try:
@@ -519,11 +568,18 @@ Return JSON array of strings: ["question1", "question2", ...]
 
     def _extract_keywords(self, worker: Phi3Worker, text: str) -> List[Dict]:
         """Extract searchable keywords from text"""
-        prompt = f"""[INST] Extract key search terms from this text.
+        prompt = f"""<|system|>
+You are a keyword extraction assistant. Extract searchable terms from text.
+<|end|>
+
+<|user|>
+Extract key search terms from this text.
 Return JSON: [{{"term": "...", "type": "name|org|place|date|keyword", "priority": 1-5}}]
 
 Text: {text[:2000]}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=400, temperature=0.1)
         try:
@@ -541,12 +597,19 @@ Text: {text[:2000]}
             f"{i}: {r.get('name', '')[:60]} - {r.get('sender_email', '')} - {r.get('snippet', '')[:80]}"
             for i, r in enumerate(results[:15])
         ])
-        prompt = f"""[INST] Score these email results for relevance to: "{query}"
+        prompt = f"""<|system|>
+You are a relevance scoring assistant. Score email results for relevance to a query.
+<|end|>
+
+<|user|>
+Score these email results for relevance to: "{query}"
 Return JSON: [{{"index": 0, "score": 0.0-1.0, "reason": "why relevant"}}]
 
 Results:
 {results_text}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
 
         response = worker.generate(prompt, max_tokens=600, temperature=0.1)
         try:
@@ -566,7 +629,7 @@ Results:
         return results
 
     async def get_result(self, job_id: str, timeout: float = JOB_TIMEOUT) -> Optional[Job]:
-        """Wait for job result"""
+        """Wait for job result with timeout"""
         job = self.pending_jobs.get(job_id)
         if not job:
             return None
@@ -576,7 +639,12 @@ Results:
 
         # Process the job directly if not yet completed
         if not job.completed and not job.error:
-            await self.process_job(job)
+            try:
+                await asyncio.wait_for(self.process_job(job), timeout=timeout)
+            except asyncio.TimeoutError:
+                log.warning(f"Job {job_id} timed out after {timeout}s")
+                job.error = f"Timeout after {timeout}s"
+                job.completed = True
 
         return job
 
@@ -628,41 +696,76 @@ class ParallelExtractor:
     """
 
     ENTITY_PROMPTS = {
-        "dates": """[INST] Extract ALL dates from this text.
+        "dates": """<|system|>
+You are a date extraction assistant. Extract all dates from text.
+<|end|>
+
+<|user|>
+Extract ALL dates from this text.
 Return JSON: [{{"value": "YYYY-MM-DD", "context": "what happened", "confidence": 0.0-1.0}}]
 If date is partial (e.g. "March 2015"), use first of month.
 If only year, use January 1.
 
 Text: {text}
-[/INST]""",
+<|end|>
 
-        "persons": """[INST] Extract ALL person names from this text.
+<|assistant|>""",
+
+        "persons": """<|system|>
+You are a person extraction assistant. Extract all person names from text.
+<|end|>
+
+<|user|>
+Extract ALL person names from this text.
 Return JSON: [{{"name": "Full Name", "role": "their role if known", "email": "if found", "confidence": 0.0-1.0}}]
 Include variations (e.g. "Jeff Epstein" and "Jeffrey Epstein" separately).
 
 Text: {text}
-[/INST]""",
+<|end|>
 
-        "orgs": """[INST] Extract ALL organizations from this text.
+<|assistant|>""",
+
+        "orgs": """<|system|>
+You are an organization extraction assistant. Extract all organizations from text.
+<|end|>
+
+<|user|>
+Extract ALL organizations from this text.
 Return JSON: [{{"name": "Org Name", "type": "company|foundation|gov|media|other", "confidence": 0.0-1.0}}]
 Include companies, foundations, agencies, universities, media outlets.
 
 Text: {text}
-[/INST]""",
+<|end|>
 
-        "amounts": """[INST] Extract ALL money amounts from this text.
+<|assistant|>""",
+
+        "amounts": """<|system|>
+You are a financial extraction assistant. Extract all money amounts from text.
+<|end|>
+
+<|user|>
+Extract ALL money amounts from this text.
 Return JSON: [{{"value": "amount", "currency": "USD|EUR|etc", "context": "what for", "confidence": 0.0-1.0}}]
 Normalize to numbers (e.g. "$5 million" → "5000000").
 
 Text: {text}
-[/INST]""",
+<|end|>
 
-        "locations": """[INST] Extract ALL locations from this text.
+<|assistant|>""",
+
+        "locations": """<|system|>
+You are a location extraction assistant. Extract all locations from text.
+<|end|>
+
+<|user|>
+Extract ALL locations from this text.
 Return JSON: [{{"name": "Location", "type": "city|country|address|property", "coordinates": "if known", "confidence": 0.0-1.0}}]
 Include addresses, cities, islands, properties.
 
 Text: {text}
-[/INST]"""
+<|end|>
+
+<|assistant|>"""
     }
 
     @staticmethod
