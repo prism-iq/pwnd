@@ -46,6 +46,7 @@ async def stats():
         "chunks": chunks,
         "nodes": nodes,
         "edges": edges,
+        "llm": {"status": "disabled", "reason": "CPU inference too slow"},
         "status": "ok"
     }
 
@@ -740,60 +741,12 @@ async def chat_send(msg: ChatMessage):
 
         context = "\n\n---\n\n".join(context_parts)
 
-        # Try local Phi-3 synthesis (direct call, no worker pool)
-        response_text = ""
-        try:
-            from llama_cpp import Llama
-            import os
-            from app.config import LLM_DIR
-
-            model_path = str(LLM_DIR / "Phi-3-mini-4k-instruct-q4.gguf")
-
-            if os.path.exists(model_path):
-                yield f'data: {json.dumps({"type": "status", "msg": "Loading Phi-3..."})}\n\n'
-
-                llm = Llama(model_path=model_path, n_ctx=2048, n_threads=4, verbose=False)
-
-                prompt = f"""<|system|>
-You are an investigative analyst. Answer questions about the Epstein case. Be concise.
-<|end|>
-<|user|>
-Based on these documents:
-{context[:1500]}
-
-Question: {msg.message}
-<|end|>
-<|assistant|>"""
-
-                yield f'data: {json.dumps({"type": "status", "msg": "Generating (Phi-3)..."})}\n\n'
-
-                output = llm(prompt, max_tokens=300, temperature=0.4, stop=["<|end|>", "<|user|>"])
-                response_text = output["choices"][0]["text"].strip()
-
-                if response_text:
-                    # Stream response
-                    words = response_text.split()
-                    chunk = ""
-                    for i, word in enumerate(words):
-                        chunk += word + " "
-                        if i % 5 == 4:
-                            yield f'data: {json.dumps({"type": "chunk", "text": chunk})}\n\n'
-                            chunk = ""
-                            await asyncio.sleep(0.02)
-                    if chunk:
-                        yield f'data: {json.dumps({"type": "chunk", "text": chunk})}\n\n'
-                else:
-                    response_text = format_search_response(msg.message, search_results)
-                    yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
-            else:
-                log.warning(f"Model not found: {model_path}")
-                response_text = format_search_response(msg.message, search_results)
-                yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
-
-        except Exception as e:
-            log.warning(f"Phi-3 synthesis failed: {e}")
-            response_text = format_search_response(msg.message, search_results)
-            yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
+        # Format search results
+        # Note: Phi-3 local inference too slow on CPU (~50s per response)
+        # Using structured fallback for instant results
+        yield f'data: {json.dumps({"type": "status", "msg": "Formatting results..."})}\n\n'
+        response_text = format_search_response(msg.message, search_results)
+        yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
 
         # Save assistant response
         execute_update("sessions", """

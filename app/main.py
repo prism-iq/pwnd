@@ -85,23 +85,11 @@ init_databases()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
-    # Startup: initialize worker pool
-    try:
-        from app.workers import init_workers
-        await init_workers()
-        log.info("Worker pool initialized")
-    except Exception as e:
-        log.warning("Worker pool not started: %s", e)
+    # Phi-3 local inference disabled - too slow on CPU (~50s/response)
+    # Using structured search result formatting instead
+    log.info("Phi-3 disabled (CPU inference too slow), using structured fallback")
 
     yield
-
-    # Shutdown: cleanup workers and database pool
-    try:
-        from app.workers import shutdown_workers
-        await shutdown_workers()
-        log.info("Worker pool shutdown")
-    except Exception as e:
-        log.debug("Worker shutdown error: %s", e)
 
     # Close database connection pool
     close_pool()
