@@ -740,45 +740,58 @@ async def chat_send(msg: ChatMessage):
 
         context = "\n\n---\n\n".join(context_parts)
 
-        # Try LLM synthesis
+        # Try local Phi-3 synthesis (direct call, no worker pool)
         response_text = ""
         try:
-            from app.llm_client import call_haiku
+            from llama_cpp import Llama
+            import os
+            from app.config import LLM_DIR
 
-            prompt = f"""Based on these documents from the Epstein investigation, answer the user's question.
+            model_path = str(LLM_DIR / "Phi-3-mini-4k-instruct-q4.gguf")
 
-DOCUMENTS:
-{context}
+            if os.path.exists(model_path):
+                yield f'data: {json.dumps({"type": "status", "msg": "Loading Phi-3..."})}\n\n'
 
-USER QUESTION: {msg.message}
+                llm = Llama(model_path=model_path, n_ctx=2048, n_threads=4, verbose=False)
 
-Provide a clear, factual answer citing specific documents when possible. Use [#ID] to reference sources."""
+                prompt = f"""<|system|>
+You are an investigative analyst. Answer questions about the Epstein case. Be concise.
+<|end|>
+<|user|>
+Based on these documents:
+{context[:1500]}
 
-            yield f'data: {json.dumps({"type": "status", "msg": "Generating response..."})}\n\n'
+Question: {msg.message}
+<|end|>
+<|assistant|>"""
 
-            result = await call_haiku(prompt, max_tokens=1024)
+                yield f'data: {json.dumps({"type": "status", "msg": "Generating (Phi-3)..."})}\n\n'
 
-            if result.get("text"):
-                response_text = result["text"]
-                # Stream the response in chunks
-                words = response_text.split()
-                chunk = ""
-                for i, word in enumerate(words):
-                    chunk += word + " "
-                    if i % 5 == 4:  # Every 5 words
+                output = llm(prompt, max_tokens=300, temperature=0.4, stop=["<|end|>", "<|user|>"])
+                response_text = output["choices"][0]["text"].strip()
+
+                if response_text:
+                    # Stream response
+                    words = response_text.split()
+                    chunk = ""
+                    for i, word in enumerate(words):
+                        chunk += word + " "
+                        if i % 5 == 4:
+                            yield f'data: {json.dumps({"type": "chunk", "text": chunk})}\n\n'
+                            chunk = ""
+                            await asyncio.sleep(0.02)
+                    if chunk:
                         yield f'data: {json.dumps({"type": "chunk", "text": chunk})}\n\n'
-                        chunk = ""
-                        await asyncio.sleep(0.02)
-                if chunk:
-                    yield f'data: {json.dumps({"type": "chunk", "text": chunk})}\n\n'
+                else:
+                    response_text = format_search_response(msg.message, search_results)
+                    yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
             else:
-                # Fallback: format search results
+                log.warning(f"Model not found: {model_path}")
                 response_text = format_search_response(msg.message, search_results)
                 yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
 
         except Exception as e:
-            log.warning(f"LLM call failed: {e}")
-            # Fallback to search results
+            log.warning(f"Phi-3 synthesis failed: {e}")
             response_text = format_search_response(msg.message, search_results)
             yield f'data: {json.dumps({"type": "chunk", "text": response_text})}\n\n'
 

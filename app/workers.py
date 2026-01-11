@@ -376,6 +376,14 @@ class WorkerPool:
                     job.payload.get("query", ""),
                     job.payload.get("results", [])
                 )
+            elif job.job_type == JobType.SYNTHESIZE:
+                result = await loop.run_in_executor(
+                    self.executor,
+                    self._synthesize,
+                    worker,
+                    job.payload.get("text", ""),
+                    job.payload.get("max_length", 512)
+                )
             else:
                 result = None
 
@@ -627,6 +635,12 @@ Results:
         except Exception:
             pass
         return results
+
+    def _synthesize(self, worker: Phi3Worker, prompt: str, max_length: int) -> str:
+        """Generate synthesis response from prompt"""
+        # The prompt already includes the Phi-3 format
+        response = worker.generate(prompt, max_tokens=max_length, temperature=0.4)
+        return response.strip() if response else ""
 
     async def get_result(self, job_id: str, timeout: float = JOB_TIMEOUT) -> Optional[Job]:
         """Wait for job result with timeout"""
