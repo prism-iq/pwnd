@@ -1,74 +1,98 @@
-import { wsConnected, notify } from '../stores/app.js'
+import { io } from 'socket.io-client'
+import { wsConnected, notify, stats } from '../stores/app.js'
 
-let ws = null
-let reconnectTimer = null
+let socket = null
 const handlers = new Map()
 
 export function connect() {
-  if (ws && ws.readyState === WebSocket.OPEN) return
+  if (socket?.connected) return
 
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${location.host}/ws`)
+  // Connect via same origin - Caddy proxies /socket.io to Node Lungs
+  socket = io({
+    path: '/socket.io',
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: Infinity
+  })
 
-  ws.onopen = () => {
-    console.log('WebSocket connected')
+  socket.on('connect', () => {
+    console.log('Socket.IO connected')
     wsConnected.set(true)
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-  }
+  })
 
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data)
-
-      // Handle built-in events
-      if (data.type === 'notification') {
-        notify(data.message, data.level || 'info')
-      }
-      if (data.type === 'refresh') {
-        location.reload()
-      }
-
-      // Call registered handlers
-      const handler = handlers.get(data.type)
-      if (handler) handler(data)
-
-    } catch (err) {
-      console.log('WS raw message:', event.data)
-    }
-  }
-
-  ws.onclose = () => {
-    console.log('WebSocket disconnected')
+  socket.on('disconnect', () => {
+    console.log('Socket.IO disconnected')
     wsConnected.set(false)
-    reconnectTimer = setTimeout(connect, 3000)
-  }
+  })
 
-  ws.onerror = (err) => {
-    console.error('WebSocket error:', err)
-    ws.close()
-  }
+  socket.on('connect_error', (err) => {
+    console.log('Socket.IO connection error:', err.message)
+    wsConnected.set(false)
+  })
+
+  // Built-in events
+  socket.on('notification', (data) => {
+    notify(data.message, data.level || 'info')
+  })
+
+  socket.on('refresh', () => {
+    location.reload()
+  })
+
+  socket.on('stats', (data) => {
+    stats.set(data)
+  })
+
+  // Investigation progress
+  socket.on('session:progress', (data) => {
+    const handler = handlers.get('progress')
+    if (handler) handler(data)
+  })
+
+  // Generic event handler
+  socket.onAny((eventName, data) => {
+    const handler = handlers.get(eventName)
+    if (handler) handler(data)
+  })
 }
 
 export function send(type, data = {}) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type, ...data }))
+  if (socket?.connected) {
+    socket.emit(type, data)
   }
 }
 
 export function on(type, handler) {
   handlers.set(type, handler)
+  if (socket) {
+    socket.on(type, handler)
+  }
 }
 
 export function off(type) {
   handlers.delete(type)
+  if (socket) {
+    socket.off(type)
+  }
 }
 
 export function disconnect() {
-  if (ws) {
-    ws.close()
-    ws = null
+  if (socket) {
+    socket.disconnect()
+    socket = null
+  }
+}
+
+// Join a session for real-time updates
+export function joinSession(sessionId) {
+  if (socket?.connected) {
+    socket.emit('join', { sessionId })
+  }
+}
+
+export function leaveSession(sessionId) {
+  if (socket?.connected) {
+    socket.emit('leave', { sessionId })
   }
 }
