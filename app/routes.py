@@ -22,6 +22,18 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 # Hot reload version - changes when index.html is modified
+@router.get("/api/notifications")
+async def get_notifications():
+    """Get unread notifications"""
+    try:
+        rows = execute_query('graph', """
+            SELECT id, message, type, created_at FROM notifications
+            WHERE read = FALSE ORDER BY created_at DESC LIMIT 5
+        """)
+        return rows
+    except:
+        return []
+
 @router.get("/api/version")
 async def get_version():
     """Get frontend version for hot-reload"""

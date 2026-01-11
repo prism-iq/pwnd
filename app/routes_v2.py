@@ -743,7 +743,7 @@ async def chat_send(msg: ChatMessage):
         # Try LLM synthesis
         response_text = ""
         try:
-            from app.llm_client import call_opus
+            from app.llm_client import call_haiku
 
             prompt = f"""Based on these documents from the Epstein investigation, answer the user's question.
 
@@ -756,7 +756,7 @@ Provide a clear, factual answer citing specific documents when possible. Use [#I
 
             yield f'data: {json.dumps({"type": "status", "msg": "Generating response..."})}\n\n'
 
-            result = await call_opus(prompt, max_tokens=1024)
+            result = await call_haiku(prompt, max_tokens=1024)
 
             if result.get("text"):
                 response_text = result["text"]

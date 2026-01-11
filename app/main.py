@@ -138,15 +138,11 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(v2_router)  # Clean v2 API
 
-# Serve static files
+# Serve Svelte frontend at /
 from app.config import STATIC_DIR
-if STATIC_DIR.exists():
-    # Serve Svelte app at /app/
-    svelte_dir = STATIC_DIR / "svelte"
-    if svelte_dir.exists():
-        app.mount("/app", StaticFiles(directory=str(svelte_dir), html=True), name="svelte")
-    # Serve legacy static at /
-    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+svelte_dir = STATIC_DIR / "svelte"
+if svelte_dir.exists():
+    app.mount("/", StaticFiles(directory=str(svelte_dir), html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
