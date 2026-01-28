@@ -8,7 +8,7 @@ Harvests papers from multiple sources:
 - arXiv (preprints, math/physics/CS)
 - PubMed Central (biomedical open access)
 - Unpaywall (legal OA PDF discovery)
-- Sci-Hub (fallback for paywalled content)
+- Unpaywall (legal OA PDF discovery via DOI)
 
 Priority domains: Mathematics, Neuroscience, Biology, Psychology, Medicine, Art
 """
@@ -38,8 +38,6 @@ OPENALEX_API = "https://api.openalex.org"
 SEMANTIC_API = "https://api.semanticscholar.org/graph/v1"
 ARXIV_API = "http://export.arxiv.org/api/query"
 UNPAYWALL_API = "https://api.unpaywall.org/v2"
-SCIHUB_DOMAINS = ["sci-hub.se", "sci-hub.st", "sci-hub.ru"]
-
 # Priority fields for investigation
 PRIORITY_FIELDS = {
     "Mathematics": ["pure mathematics", "applied mathematics", "statistics"],
@@ -529,103 +527,6 @@ class ArxivClient:
         return list(fields)
 
 
-class SciHubClient:
-    """
-    Client for Sci-Hub - fallback for paywalled papers.
-
-    Uses scidownl package or direct HTTP.
-    This is for research purposes in OSINT investigation.
-    """
-
-    def __init__(self):
-        self.domains = SCIHUB_DOMAINS
-        self.client = httpx.AsyncClient(
-            timeout=60.0,
-            follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
-        )
-        self.working_domain = None
-
-    async def close(self):
-        await self.client.aclose()
-
-    async def find_working_domain(self) -> Optional[str]:
-        """Find a working Sci-Hub domain."""
-        for domain in self.domains:
-            try:
-                response = await self.client.get(f"https://{domain}", timeout=10.0)
-                if response.status_code == 200:
-                    self.working_domain = domain
-                    logger.info(f"Sci-Hub working domain: {domain}")
-                    return domain
-            except Exception as e:
-                logger.debug(f"Sci-Hub domain {domain} failed: {e}")
-                continue
-
-        logger.warning("No working Sci-Hub domain found")
-        return None
-
-    async def get_pdf_url(self, doi: str) -> Optional[str]:
-        """Get PDF URL from Sci-Hub for a DOI."""
-        if not self.working_domain:
-            await self.find_working_domain()
-
-        if not self.working_domain:
-            return None
-
-        doi = doi.replace("https://doi.org/", "").replace("http://doi.org/", "")
-        url = f"https://{self.working_domain}/{doi}"
-
-        try:
-            response = await self.client.get(url)
-            if response.status_code != 200:
-                return None
-
-            # Parse response to find PDF iframe/embed
-            html = response.text
-
-            # Look for PDF URL patterns
-            patterns = [
-                r'iframe[^>]+src=["\']([^"\']+\.pdf[^"\']*)["\']',
-                r'embed[^>]+src=["\']([^"\']+\.pdf[^"\']*)["\']',
-                r'(https?://[^\s"\']+\.pdf)',
-            ]
-
-            for pattern in patterns:
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    pdf_url = match.group(1)
-                    if pdf_url.startswith("//"):
-                        pdf_url = "https:" + pdf_url
-                    return pdf_url
-
-            return None
-
-        except Exception as e:
-            logger.warning(f"Sci-Hub error for {doi}: {e}")
-            return None
-
-    async def download_pdf(self, doi: str, output_path: Path) -> bool:
-        """Download PDF for a DOI."""
-        pdf_url = await self.get_pdf_url(doi)
-        if not pdf_url:
-            return False
-
-        try:
-            response = await self.client.get(pdf_url)
-            if response.status_code == 200 and len(response.content) > 1000:
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_bytes(response.content)
-                logger.info(f"Downloaded: {doi} -> {output_path}")
-                return True
-
-            return False
-
-        except Exception as e:
-            logger.warning(f"Failed to download {doi}: {e}")
-            return False
-
-
 class SemanticScholarClient:
     """Client for Semantic Scholar API."""
 
@@ -710,15 +611,13 @@ def doi_to_filename(doi: str) -> str:
 async def download_paper_pdf(
     paper: Paper,
     unpaywall: UnpaywallClient,
-    scihub: Optional[SciHubClient] = None,
 ) -> Optional[Path]:
     """
-    Try to download PDF for a paper.
+    Try to download PDF for a paper via legal open access sources.
 
     Priority:
-    1. Direct OA URL from paper
-    2. Unpaywall (legal OA)
-    3. Sci-Hub (fallback)
+    1. Direct OA URL from paper metadata
+    2. Unpaywall (legal OA discovery)
     """
     if not paper.doi:
         return None
@@ -753,13 +652,6 @@ async def download_paper_pdf(
                     return output_path
         except Exception as e:
             logger.debug(f"Unpaywall download failed for {paper.doi}: {e}")
-
-    # Try Sci-Hub as last resort
-    if scihub:
-        success = await scihub.download_pdf(paper.doi, output_path)
-        if success:
-            paper.pdf_path = str(output_path)
-            return output_path
 
     return None
 

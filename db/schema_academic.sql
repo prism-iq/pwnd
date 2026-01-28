@@ -1,5 +1,5 @@
 -- Schema for Academic Papers Ingestion
--- Part of the Sci-Hub/OpenAlex/arXiv integration
+-- Part of the OpenAlex/arXiv/Unpaywall/Semantic Scholar integration
 -- Created: 2026-01-10
 
 -- Create schema
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS academic.papers (
     pdf_path TEXT,
 
     -- Processing status
-    source TEXT,  -- 'openalex', 'arxiv', 'pmc', 'semantic', 'scihub'
+    source TEXT,  -- 'openalex', 'arxiv', 'pmc', 'semantic', 'unpaywall'
     ingested_at TIMESTAMP DEFAULT NOW(),
     processed_at TIMESTAMP,
 
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS academic.entity_links (
 -- Ingestion jobs tracking
 CREATE TABLE IF NOT EXISTS academic.ingestion_jobs (
     id SERIAL PRIMARY KEY,
-    job_type TEXT,  -- 'openalex', 'arxiv', 'pmc', 'scihub'
+    job_type TEXT,  -- 'openalex', 'arxiv', 'pmc', 'semantic', 'unpaywall'
     query TEXT,
     status TEXT DEFAULT 'pending',  -- 'pending', 'running', 'completed', 'failed'
 
@@ -221,7 +221,7 @@ VALUES
     ('Gratitude America', 'Gratitude America Ltd', TRUE, 'Epstein shell entity')
 ON CONFLICT (openalex_id) DO NOTHING;
 
-COMMENT ON TABLE academic.papers IS 'Academic papers from OpenAlex, arXiv, PMC, Semantic Scholar, Sci-Hub';
+COMMENT ON TABLE academic.papers IS 'Academic papers from OpenAlex, arXiv, PMC, Semantic Scholar, Unpaywall';
 COMMENT ON TABLE academic.authors IS 'Disambiguated authors with links to investigation entities';
 COMMENT ON TABLE academic.institutions IS 'Research institutions with Epstein connection flags';
 COMMENT ON TABLE academic.funders IS 'Funding sources with Epstein connection flags';

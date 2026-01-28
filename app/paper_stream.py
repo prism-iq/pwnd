@@ -3,7 +3,7 @@ Paper Streaming Module - Read, Extract, Forget
 ===============================================
 
 Cognitive streaming for academic papers:
-1. Fetch paper (Sci-Hub, arXiv, PMC, etc.)
+1. Fetch paper (arXiv, PMC, Unpaywall OA)
 2. Extract essential information
 3. Store only metadata
 4. Delete the PDF
@@ -43,8 +43,9 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# Sci-Hub domains to try
-SCIHUB_DOMAINS = ["sci-hub.se", "sci-hub.st", "sci-hub.ru"]
+# Open access APIs
+UNPAYWALL_API = "https://api.unpaywall.org/v2"
+ARXIV_PDF_BASE = "https://arxiv.org/pdf"
 
 # Epstein keywords for red flag detection
 EPSTEIN_KEYWORDS = [
@@ -107,7 +108,7 @@ class ExtractedPaper:
     is_relevant: bool = False
 
     # Source tracking
-    source: str = "unknown"  # 'scihub', 'arxiv', 'pmc', 'unpaywall'
+    source: str = "unknown"  # 'arxiv', 'pmc', 'unpaywall', 'openalex'
     extracted_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -303,107 +304,75 @@ class PaperStreamer:
     Read, extract, forget.
     """
 
-    def __init__(self, use_tor: bool = True):
-        self.use_tor = use_tor
-
-        # Configure client - use Tor to bypass blocks
-        if use_tor:
-            self.client = httpx.AsyncClient(
-                timeout=120.0,
-                follow_redirects=True,
-                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"},
-                proxy="socks5://127.0.0.1:9050"
-            )
-        else:
-            self.client = httpx.AsyncClient(
-                timeout=60.0,
-                follow_redirects=True,
-                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
-            )
-
-        self.working_scihub = None
+    def __init__(self, email: str = "research@pwnd.icu"):
+        self.email = email
+        self.client = httpx.AsyncClient(
+            timeout=60.0,
+            follow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) PaperStream/1.0"}
+        )
         self.extractor = PaperExtractor()
 
     async def close(self):
         await self.client.aclose()
 
-    async def find_scihub_domain(self) -> Optional[str]:
-        """Find working Sci-Hub domain."""
-        for domain in SCIHUB_DOMAINS:
-            try:
-                response = await self.client.get(f"https://{domain}", timeout=10.0)
-                if response.status_code == 200:
-                    self.working_scihub = domain
-                    logger.info(f"Sci-Hub working: {domain}")
-                    return domain
-            except:
-                continue
-        return None
-
     async def fetch_pdf_content(self, doi: str) -> Optional[bytes]:
-        """Fetch PDF content from Sci-Hub (in memory, not saved)."""
-        if not self.working_scihub:
-            await self.find_scihub_domain()
+        """Fetch PDF content via legal open access sources (in memory, not saved).
 
-        if not self.working_scihub:
-            logger.warning("No working Sci-Hub domain")
-            return None
-
-        # Clean DOI
+        Tries in order:
+        1. Unpaywall (legal OA discovery)
+        2. arXiv (if arXiv ID detected)
+        3. PubMed Central
+        """
         doi = doi.replace("https://doi.org/", "").replace("http://doi.org/", "")
-        url = f"https://{self.working_scihub}/{doi}"
 
+        # Try Unpaywall first
         try:
-            response = await self.client.get(url)
-            if response.status_code != 200:
-                return None
-
-            html = response.text
-            base_url = f"https://{self.working_scihub}"
-
-            # New Sci-Hub patterns (2025+ interface)
-            patterns = [
-                r'data\s*=\s*["\']([^"\']+\.pdf)',  # <object data="/storage/...pdf">
-                r'href\s*=\s*["\']([^"\']+/download/[^"\']+\.pdf)',  # download link
-                r'["\'](/storage/[^"\']+\.pdf)',  # /storage/ path
-                r'["\'](/download/[^"\']+\.pdf)',  # /download/ path
-                # Old patterns
-                r'iframe[^>]+src=["\']([^"\']+\.pdf[^"\']*)["\']',
-                r'embed[^>]+src=["\']([^"\']+\.pdf[^"\']*)["\']',
-                r'(https?://[^\s"\'<>]+\.pdf)',
-            ]
-
-            pdf_url = None
-            for pattern in patterns:
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    pdf_url = match.group(1)
-                    break
-
-            if not pdf_url:
-                logger.warning(f"No PDF URL found in page for {doi}")
-                return None
-
-            # Fix relative URLs
-            if pdf_url.startswith("/"):
-                pdf_url = base_url + pdf_url
-            elif pdf_url.startswith("//"):
-                pdf_url = "https:" + pdf_url
-
-            # Remove URL fragments
-            pdf_url = pdf_url.split('#')[0]
-
-            logger.info(f"Fetching PDF from: {pdf_url[:80]}...")
-
-            # Fetch PDF content (in memory)
-            pdf_response = await self.client.get(pdf_url)
-            if pdf_response.status_code == 200 and len(pdf_response.content) > 1000:
-                logger.info(f"Got {len(pdf_response.content)} bytes")
-                return pdf_response.content
-
+            url = f"{UNPAYWALL_API}/{doi}?email={self.email}"
+            response = await self.client.get(url, timeout=15.0)
+            if response.status_code == 200:
+                data = response.json()
+                best_oa = data.get("best_oa_location", {}) or {}
+                pdf_url = best_oa.get("url_for_pdf") or best_oa.get("url")
+                if pdf_url:
+                    logger.info(f"Unpaywall PDF: {pdf_url[:80]}...")
+                    pdf_response = await self.client.get(pdf_url)
+                    if pdf_response.status_code == 200 and len(pdf_response.content) > 1000:
+                        logger.info(f"Got {len(pdf_response.content)} bytes via Unpaywall")
+                        return pdf_response.content
         except Exception as e:
-            logger.warning(f"Failed to fetch {doi}: {e}")
+            logger.debug(f"Unpaywall failed for {doi}: {e}")
 
+        # Try arXiv if DOI contains arxiv pattern
+        if "arxiv" in doi.lower():
+            try:
+                arxiv_id = doi.split("/")[-1]
+                pdf_url = f"{ARXIV_PDF_BASE}/{arxiv_id}.pdf"
+                pdf_response = await self.client.get(pdf_url)
+                if pdf_response.status_code == 200 and len(pdf_response.content) > 1000:
+                    logger.info(f"Got {len(pdf_response.content)} bytes via arXiv")
+                    return pdf_response.content
+            except Exception as e:
+                logger.debug(f"arXiv failed for {doi}: {e}")
+
+        # Try PMC
+        try:
+            pmc_url = f"https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids={doi}&format=json"
+            response = await self.client.get(pmc_url, timeout=15.0)
+            if response.status_code == 200:
+                data = response.json()
+                records = data.get("records", [])
+                if records and records[0].get("pmcid"):
+                    pmcid = records[0]["pmcid"]
+                    pdf_url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/{pmcid}/pdf/"
+                    pdf_response = await self.client.get(pdf_url)
+                    if pdf_response.status_code == 200 and len(pdf_response.content) > 1000:
+                        logger.info(f"Got {len(pdf_response.content)} bytes via PMC")
+                        return pdf_response.content
+        except Exception as e:
+            logger.debug(f"PMC failed for {doi}: {e}")
+
+        logger.warning(f"No open access PDF found for {doi}")
         return None
 
     def extract_text_from_pdf(self, pdf_content: bytes) -> str:
@@ -455,7 +424,7 @@ class PaperStreamer:
         # Step 3: Extract essential information
         extracted = ExtractedPaper(
             doi=doi,
-            source="scihub",
+            source="open_access",
         )
 
         # Extract title (usually first significant line)

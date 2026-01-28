@@ -45,32 +45,23 @@ Pour chaque erreur:
 
 ---
 
-## Erreurs Session Sci-Hub (2026-01-10)
+## Erreurs Session Paper Ingestion (2026-01-10)
 
 ### Extraction PDF bruitée
 - **Symptôme:** Titre extrait = fragment de figure au lieu du vrai titre
-- **Exemple:** DOI 10.1126/science.1127647 → "larized nearly vertically" au lieu de "Reducing the Dimensionality..."
 - **Cause:** pdftotext -layout ne gère pas bien les layouts multi-colonnes
 - **Solution proposée:** Utiliser métadonnées OpenAlex pour titre/auteurs
 - **Status:** CONTOURNÉ
-
-### Circuits Tor qui expirent
-- **Symptôme:** `find_scihub_domain()` retourne None après quelques minutes
-- **Cause:** Circuits Tor ont durée de vie limitée
-- **Solution proposée:** Reconnecter automatiquement ou utiliser `stem`
-- **Status:** CONTOURNÉ (redémarrer Tor avant batch)
-
-### Sci-Hub 403 sans Tor
-- **Symptôme:** 403 Forbidden sur sci-hub.st/.se/.ru
-- **Cause:** IP blacklistée ou pays bloqué
-- **Solution:** Tor systématique
-- **Status:** RÉSOLU
 
 ### Extraction de claims insuffisante
 - **Symptôme:** 0 claims extraites de papers réels
 - **Cause:** Patterns regex trop simples pour texte scientifique bruité
 - **Solution proposée:** Utiliser LLM (Phi-3/Haiku) pour extraction intelligente
 - **Status:** OUVERT - priorité critique
+
+### Migration vers Open Access APIs
+- **Action:** Remplacé par Unpaywall, arXiv, PubMed Central, OpenAlex, Semantic Scholar
+- **Status:** TERMINÉ (2026-01-27)
 
 ---
 

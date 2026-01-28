@@ -88,25 +88,14 @@ if isinstance(result, dict):
 
 ---
 
-## Sci-Hub / Academic Papers
+## Open Access Academic Papers
 
-### Accès via Tor
-```bash
-systemctl start tor
-# Puis dans Python:
-httpx.AsyncClient(proxy="socks5://127.0.0.1:9050")
-```
-- Sci-Hub bloque certaines IPs sans Tor
-- Circuits expirent - reconnecter si échec
-
-### Nouveau format Sci-Hub (2025+)
-```python
-# Le PDF est dans ces patterns:
-r'data\s*=\s*["\']([^"\']+\.pdf)'  # <object data="/storage/...">
-r'["\'](/storage/[^"\']+\.pdf)'    # chemin /storage/
-r'["\'](/download/[^"\']+\.pdf)'   # chemin /download/
-```
-- Plus d'iframes, format moderne
+### Sources légales
+- **Unpaywall** - Résolution OA par DOI (`api.unpaywall.org/v2/{doi}?email=...`)
+- **arXiv** - Preprints ouverts (`export.arxiv.org/api/query`)
+- **PubMed Central** - Articles biomédicaux OA
+- **OpenAlex** - Métadonnées 240M+ works
+- **Semantic Scholar** - Métadonnées + OA PDFs
 
 ### OpenAlex pour métadonnées
 ```python
